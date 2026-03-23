@@ -21,8 +21,12 @@ export default function RootLayout({
       <body className="bg-dark-900 text-dark-50">
         {children}
         <Toaster position="top-right" />
+        <link
+          rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.css"
+        />
         <Script 
-          src="https://www.marzipano.net/dist/marzipano.js" 
+          src="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.js" 
           strategy="beforeInteractive" 
         />
       </body>

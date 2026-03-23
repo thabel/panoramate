@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { MarzipanoViewer } from '@/components/viewer/MarzipanoViewer';
+import { PannellumViewer } from '@/components/viewer/PannellumViewer';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { TourWithImages } from '@/types';
 
@@ -80,8 +80,9 @@ export default function PublicTourPage({
       {/* Viewer */}
       <div className="flex-1">
         {tour.images.length > 0 ? (
-          <MarzipanoViewer
+          <PannellumViewer
             scenes={tour.images}
+            hotspots={tour.images.flatMap(img => (img as any).hotspots || [])}
             editorMode={false}
           />
         ) : (

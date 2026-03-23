@@ -37,7 +37,7 @@ export default function DashboardLayout({
 
   if (isLoading) {
     return (
-      <div className="h-screen flex items-center justify-center">
+      <div className="flex items-center justify-center h-screen">
         <LoadingSpinner size="lg" />
       </div>
     );
@@ -84,11 +84,11 @@ export default function DashboardLayout({
   ];
 
   return (
-    <div className="h-screen flex bg-dark-900">
+    <div className="flex h-screen bg-dark-900">
       {/* Mobile Sidebar Backdrop */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          className="fixed inset-0 z-40 bg-black/50 lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
@@ -100,13 +100,13 @@ export default function DashboardLayout({
         }`}
       >
         <div className="p-4 border-b border-dark-700">
-          <div className="text-2xl font-bold bg-gradient-to-r from-primary-400 to-primary-600 bg-clip-text text-transparent">
+          <div className="text-2xl font-bold text-transparent bg-gradient-to-r from-primary-400 to-primary-600 bg-clip-text">
             Panoramate
           </div>
-          <p className="text-dark-400 text-sm mt-1">{organization.name}</p>
+          <p className="mt-1 text-sm text-dark-400">{organization.name}</p>
         </div>
 
-        <nav className="p-4 space-y-2 flex-1">
+        <nav className="flex-1 p-4 space-y-2">
           {navItems.map((item) => {
             const Icon = item.icon;
             return (
@@ -114,7 +114,7 @@ export default function DashboardLayout({
                 key={item.href}
                 href={item.href}
                 onClick={() => setSidebarOpen(false)}
-                className="flex items-center gap-3 px-4 py-2 text-dark-300 hover:text-white hover:bg-dark-700 rounded-lg transition-colors"
+                className="flex items-center gap-3 px-4 py-2 transition-colors rounded-lg text-dark-300 hover:text-white hover:bg-dark-700"
               >
                 <Icon size={20} />
                 <span>{item.label}</span>
@@ -123,9 +123,9 @@ export default function DashboardLayout({
           })}
         </nav>
 
-        <div className="p-4 border-t border-dark-700 space-y-3">
-          <div className="bg-dark-700 rounded-lg p-3">
-            <Badge variant="plan" className="mb-2 block text-center">
+        <div className="p-4 space-y-3 border-t border-dark-700">
+          <div className="p-3 rounded-lg bg-dark-700">
+            <Badge variant="plan" className="block mb-2 text-center">
               {organization.plan === 'FREE_TRIAL'
                 ? 'Free Trial'
                 : organization.plan}
@@ -139,7 +139,7 @@ export default function DashboardLayout({
 
           <button
             onClick={logout}
-            className="w-full flex items-center gap-2 px-4 py-2 text-dark-300 hover:text-white hover:bg-dark-700 rounded-lg transition-colors text-sm"
+            className="flex items-center w-full gap-2 px-4 py-2 text-sm transition-colors rounded-lg text-dark-300 hover:text-white hover:bg-dark-700"
           >
             <LogOut size={18} />
             Sign Out
@@ -148,12 +148,12 @@ export default function DashboardLayout({
       </aside>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex flex-col flex-1 overflow-hidden">
         {/* Header */}
-        <header className="bg-dark-800 border-b border-dark-700 px-4 py-4 flex items-center justify-between">
+        <header className="flex items-center justify-between px-4 py-4 border-b bg-dark-800 border-dark-700">
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="lg:hidden p-2 hover:bg-dark-700 rounded-lg"
+            className="p-2 rounded-lg lg:hidden hover:bg-dark-700"
           >
             {sidebarOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
@@ -161,9 +161,9 @@ export default function DashboardLayout({
           <div className="flex-1" />
 
           <div className="flex items-center gap-4">
-            <button className="p-2 hover:bg-dark-700 rounded-lg relative">
+            <button className="relative p-2 rounded-lg hover:bg-dark-700">
               <Bell size={20} className="text-dark-300" />
-              <div className="absolute top-1 right-1 w-2 h-2 bg-primary-600 rounded-full" />
+              <div className="absolute w-2 h-2 rounded-full top-1 right-1 bg-primary-600" />
             </button>
 
             <div className="flex items-center gap-3 pl-4 border-l border-dark-700">
@@ -173,7 +173,7 @@ export default function DashboardLayout({
                 </p>
                 <p className="text-xs text-dark-400">{user.role}</p>
               </div>
-              <div className="w-8 h-8 bg-primary-600 rounded-full flex items-center justify-center text-white text-sm font-bold">
+              <div className="flex items-center justify-center w-8 h-8 text-sm font-bold text-white rounded-full bg-primary-600">
                 {user.firstName.charAt(0)}
               </div>
             </div>
@@ -184,10 +184,10 @@ export default function DashboardLayout({
         <main className="flex-1 overflow-auto">
           {/* Trial Warning */}
           {isTrialing && trialDaysLeft <= 7 && trialDaysLeft > 0 && (
-            <div className="bg-dark-800 border-b border-dark-700 p-4">
+            <div className="p-4 border-b bg-dark-800 border-dark-700">
               <Alert variant="warning" title="Trial Ending Soon">
                 Your free trial ends in {trialDaysLeft} days.{' '}
-                <Link href="/billing" className="text-primary-400 hover:text-primary-300 font-semibold">
+                <Link href="/billing" className="font-semibold text-primary-400 hover:text-primary-300">
                   Upgrade now
                 </Link>
                 {' '}to continue using Panoramate.

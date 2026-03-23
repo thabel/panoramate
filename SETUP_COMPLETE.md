@@ -18,7 +18,7 @@ Your complete SaaS virtual tour application is ready to use. All 60+ production-
 
 ### 🌐 360° Tour Management
 - Upload equirectangular images
-- Interactive editor with Marzipano viewer
+- Interactive editor with Pannellum viewer
 - Hotspot creation (links, info, URLs, videos)
 - Drag-and-drop image uploader
 
@@ -96,7 +96,7 @@ panoramate/
 ✅ Dashboard with statistics
 ✅ Tour creation and management
 ✅ Image upload (equirectangular)
-✅ 360° viewer with Marzipano
+✅ 360° viewer with Pannellum
 ✅ Hotspot management
 ✅ Tour sharing (public links)
 ✅ Plan-based limits

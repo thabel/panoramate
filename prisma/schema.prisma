@@ -199,7 +199,7 @@ model TourImage {
   order        Int             @default(0)
   title        String?
 
-  // Marzipano view params saved when editor is used
+  // Pannellum view params saved when editor is used
   initialYaw   Float           @default(0)
   initialPitch Float           @default(0)
   initialFov   Float           @default(1.5707963)  // 90 degrees in radians
