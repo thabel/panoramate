@@ -1,0 +1,219 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { getAuthUser } from '@/lib/auth';
+import { db } from '@/lib/db';
+import { saveUploadedFile, deleteFile } from '@/lib/storage';
+import { PLAN_LIMITS } from '@/lib/stripe';
+
+export async function POST(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const authPayload = await getAuthUser(request);
+    if (!authPayload) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Check tour exists and is owned by user's org
+    const tour = await db.tour.findUnique({
+      where: { id: params.id },
+      include: { images: true },
+    });
+
+    if (!tour) {
+      return NextResponse.json(
+        { error: 'Tour not found' },
+        { status: 404 }
+      );
+    }
+
+    if (tour.organizationId !== authPayload.organizationId) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 403 }
+      );
+    }
+
+    // Get organization to check plan limits
+    const org = await db.organization.findUnique({
+      where: { id: authPayload.organizationId },
+    });
+
+    if (!org) {
+      return NextResponse.json(
+        { error: 'Organization not found' },
+        { status: 404 }
+      );
+    }
+
+    const limits = PLAN_LIMITS[org.plan as keyof typeof PLAN_LIMITS];
+
+    // Check image count
+    if (limits.maxImages !== -1 && tour.images.length >= limits.maxImages) {
+      return NextResponse.json(
+        { error: `Plan limit reached: maximum ${limits.maxImages} images per tour` },
+        { status: 403 }
+      );
+    }
+
+    // Parse multipart form data
+    const formData = await request.formData();
+    const files = formData.getAll('files') as File[];
+
+    if (!files || files.length === 0) {
+      return NextResponse.json(
+        { error: 'No files provided' },
+        { status: 400 }
+      );
+    }
+
+    const createdImages = [];
+
+    for (const file of files) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        continue;
+      }
+
+      const buffer = await file.arrayBuffer();
+      const uint8Array = new Uint8Array(buffer);
+
+      try {
+        const { filename, width, height, sizeMb } = await saveUploadedFile(
+          Buffer.from(uint8Array),
+          org.id,
+          tour.id,
+          file.name
+        );
+
+        // Check storage limit
+        const newTotalStorage = org.usedStorageMb + sizeMb;
+        if (newTotalStorage > org.totalStorageMb) {
+          return NextResponse.json(
+            { error: 'Storage quota exceeded' },
+            { status: 403 }
+          );
+        }
+
+        const order = tour.images.length + createdImages.length;
+
+        const image = await db.tourImage.create({
+          data: {
+            tourId: tour.id,
+            filename,
+            originalName: file.name,
+            mimeType: file.type,
+            sizeMb,
+            width,
+            height,
+            order,
+            title: file.name.split('.')[0],
+          },
+        });
+
+        // Update organization storage
+        await db.organization.update({
+          where: { id: org.id },
+          data: {
+            usedStorageMb: org.usedStorageMb + sizeMb,
+          },
+        });
+
+        createdImages.push(image);
+      } catch (error) {
+        console.error('Error saving file:', error);
+      }
+    }
+
+    if (createdImages.length === 0) {
+      return NextResponse.json(
+        { error: 'No images were successfully uploaded' },
+        { status: 400 }
+      );
+    }
+
+    return NextResponse.json(
+      {
+        success: true,
+        data: createdImages,
+      },
+      { status: 201 }
+    );
+  } catch (error) {
+    console.error('Upload images error:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const authPayload = await getAuthUser(request);
+    if (!authPayload) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const body = await request.json();
+    const { imageId } = body;
+
+    if (!imageId) {
+      return NextResponse.json(
+        { error: 'imageId is required' },
+        { status: 400 }
+      );
+    }
+
+    const image = await db.tourImage.findUnique({
+      where: { id: imageId },
+      include: { tour: true },
+    });
+
+    if (!image) {
+      return NextResponse.json(
+        { error: 'Image not found' },
+        { status: 404 }
+      );
+    }
+
+    if (image.tour.organizationId !== authPayload.organizationId) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 403 }
+      );
+    }
+
+    // Delete file
+    await deleteFile(image.filename);
+
+    // Update organization storage
+    await db.organization.update({
+      where: { id: image.tour.organizationId },
+      data: {
+        usedStorageMb: {
+          decrement: image.sizeMb,
+        },
+      },
+    });
+
+    // Delete image (cascade will delete hotspots)
+    await db.tourImage.delete({
+      where: { id: imageId },
+    });
+
+    return NextResponse.json(
+      { success: true, message: 'Image deleted' },
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error('Delete image error:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}

@@ -1,0 +1,291 @@
+// Panoramate - MySQL Database Schema
+// Stack: Next.js 14 + Prisma + MySQL
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────
+// ENUMS
+// ─────────────────────────────────────────
+
+enum UserRole {
+  OWNER      // Organization owner
+  ADMIN      // Can manage everything except billing
+  MEMBER     // Can create/edit tours
+  VIEWER     // Read-only access
+}
+
+enum PlanType {
+  FREE_TRIAL    // 14 days, 1 tour, 10 images max
+  STARTER       // 5 tours, 50 images/tour
+  PROFESSIONAL  // 20 tours, 200 images/tour
+  ENTERPRISE    // Unlimited
+}
+
+enum SubscriptionStatus {
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  INCOMPLETE
+}
+
+enum TourStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum HotspotType {
+  LINK       // Navigate to another scene
+  INFO       // Show text/info popup
+  URL        // Open external link
+  VIDEO      // Embed video
+}
+
+enum InvoiceStatus {
+  DRAFT
+  OPEN
+  PAID
+  VOID
+  UNCOLLECTIBLE
+}
+
+// ─────────────────────────────────────────
+// ORGANIZATION (Société / équipe)
+// ─────────────────────────────────────────
+
+model Organization {
+  id                   String             @id @default(uuid())
+  name                 String
+  slug                 String             @unique
+  logoUrl              String?            @db.Text
+  plan                 PlanType           @default(FREE_TRIAL)
+  subscriptionStatus   SubscriptionStatus @default(TRIALING)
+  stripeCustomerId     String?            @unique
+  stripeSubscriptionId String?            @unique
+  stripePriceId        String?
+  trialEndsAt          DateTime
+  currentPeriodEnd     DateTime?
+  maxTours             Int                @default(1)
+  maxImagesPerTour     Int                @default(10)
+  totalStorageMb       Int                @default(500)
+  usedStorageMb        Int                @default(0)
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+
+  users                User[]
+  tours                Tour[]
+  invitations          Invitation[]
+  invoices             Invoice[]
+
+  @@map("organizations")
+}
+
+// ─────────────────────────────────────────
+// USER
+// ─────────────────────────────────────────
+
+model User {
+  id             String   @id @default(uuid())
+  email          String   @unique
+  password       String
+  firstName      String
+  lastName       String
+  avatarUrl      String?  @db.Text
+  role           UserRole @default(MEMBER)
+  isVerified     Boolean  @default(false)
+  lastLoginAt    DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  tours          Tour[]
+  sessions       Session[]
+  invitationsSent Invitation[] @relation("InvitedBy")
+
+  @@map("users")
+}
+
+// ─────────────────────────────────────────
+// SESSION (JWT token store / refresh tokens)
+// ─────────────────────────────────────────
+
+model Session {
+  id        String   @id @default(uuid())
+  userId    String
+  token     String   @unique @db.VarChar(512)
+  expiresAt DateTime
+  ipAddress String?
+  userAgent String?  @db.Text
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+// ─────────────────────────────────────────
+// INVITATION (inviter des membres dans l'org)
+// ─────────────────────────────────────────
+
+model Invitation {
+  id             String   @id @default(uuid())
+  email          String
+  role           UserRole @default(MEMBER)
+  token          String   @unique
+  expiresAt      DateTime
+  acceptedAt     DateTime?
+  createdAt      DateTime @default(now())
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  invitedById    String
+  invitedBy      User     @relation("InvitedBy", fields: [invitedById], references: [id])
+
+  @@map("invitations")
+}
+
+// ─────────────────────────────────────────
+// TOUR
+// ─────────────────────────────────────────
+
+model Tour {
+  id             String     @id @default(uuid())
+  title          String
+  description    String?    @db.Text
+  coverImageUrl  String?    @db.Text
+  status         TourStatus @default(DRAFT)
+  shareToken     String     @unique @default(uuid())
+  isPublic       Boolean    @default(false)
+  viewCount      Int        @default(0)
+  settings       Json       // { autorotate, mouseViewMode, showControls, ... }
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdById    String
+  createdBy      User       @relation(fields: [createdById], references: [id])
+
+  images         TourImage[]
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  @@map("tours")
+}
+
+// ─────────────────────────────────────────
+// TOUR IMAGE (each 360° panorama scene)
+// ─────────────────────────────────────────
+
+model TourImage {
+  id           String   @id @default(uuid())
+  tourId       String
+  tour         Tour     @relation(fields: [tourId], references: [id], onDelete: Cascade)
+
+  filename     String          // stored filename on disk
+  originalName String          // original upload name
+  mimeType     String          @default("image/jpeg")
+  sizeMb       Float
+  width        Int
+  height       Int
+  order        Int             @default(0)
+  title        String?
+
+  // Marzipano view params saved when editor is used
+  initialYaw   Float           @default(0)
+  initialPitch Float           @default(0)
+  initialFov   Float           @default(1.5707963)  // 90 degrees in radians
+
+  hotspots     Hotspot[]
+  createdAt    DateTime        @default(now())
+
+  @@map("tour_images")
+}
+
+// ─────────────────────────────────────────
+// HOTSPOT
+// ─────────────────────────────────────────
+
+model Hotspot {
+  id            String      @id @default(uuid())
+  imageId       String
+  image         TourImage   @relation(fields: [imageId], references: [id], onDelete: Cascade)
+
+  type          HotspotType @default(LINK)
+  yaw           Float
+  pitch         Float
+  rotation      Float       @default(0)
+
+  // For LINK hotspots
+  targetImageId String?
+
+  // For INFO hotspots
+  title         String?
+  content       String?     @db.Text
+
+  // For URL hotspots
+  url           String?     @db.Text
+
+  // For VIDEO hotspots
+  videoUrl      String?     @db.Text
+
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@map("hotspots")
+}
+
+// ─────────────────────────────────────────
+// SUBSCRIPTION PLANS (reference)
+// ─────────────────────────────────────────
+
+model Plan {
+  id              String   @id @default(uuid())
+  name            String
+  planType        PlanType @unique
+  priceMonthly    Float
+  priceYearly     Float
+  stripePriceMonthlyId String?
+  stripePriceYearlyId  String?
+  maxTours        Int
+  maxImagesPerTour Int
+  maxStorageMb    Int
+  features        Json     // Array of feature strings
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+
+  @@map("plans")
+}
+
+// ─────────────────────────────────────────
+// INVOICE
+// ─────────────────────────────────────────
+
+model Invoice {
+  id              String        @id @default(uuid())
+  organizationId  String
+  organization    Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  stripeInvoiceId String        @unique
+  invoiceNumber   String?
+  amount          Float         // in smallest currency unit (cents)
+  currency        String        @default("usd")
+  status          InvoiceStatus @default(OPEN)
+  description     String?
+  pdfUrl          String?       @db.Text
+  hostedUrl       String?       @db.Text
+  periodStart     DateTime?
+  periodEnd       DateTime?
+  paidAt          DateTime?
+  createdAt       DateTime      @default(now())
+
+  @@map("invoices")
+}
