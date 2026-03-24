@@ -64,7 +64,7 @@ export default function TourDetailPage({
 
   if (!tour) {
     return (
-      <div className="bg-dark-800 border border-dark-700 rounded-lg p-12 text-center">
+      <div className="p-12 text-center border rounded-lg bg-dark-800 border-dark-700">
         <p className="text-dark-400">Tour not found</p>
       </div>
     );
@@ -105,23 +105,23 @@ export default function TourDetailPage({
       </div>
 
       {/* Stats */}
-      <div className="grid md:grid-cols-3 gap-4">
-        <div className="bg-dark-800 border border-dark-700 rounded-lg p-4">
-          <p className="text-dark-400 text-sm mb-1">Scenes</p>
-          <p className="text-2xl font-bold text-white flex items-center gap-2">
+      <div className="grid gap-4 md:grid-cols-3">
+        <div className="p-4 border rounded-lg bg-dark-800 border-dark-700">
+          <p className="mb-1 text-sm text-dark-400">Scenes</p>
+          <p className="flex items-center gap-2 text-2xl font-bold text-white">
             <ImageIcon size={20} />
             {tour.images.length}
           </p>
         </div>
-        <div className="bg-dark-800 border border-dark-700 rounded-lg p-4">
-          <p className="text-dark-400 text-sm mb-1">Views</p>
-          <p className="text-2xl font-bold text-white flex items-center gap-2">
+        <div className="p-4 border rounded-lg bg-dark-800 border-dark-700">
+          <p className="mb-1 text-sm text-dark-400">Views</p>
+          <p className="flex items-center gap-2 text-2xl font-bold text-white">
             <Eye size={20} />
             {tour.viewCount}
           </p>
         </div>
-        <div className="bg-dark-800 border border-dark-700 rounded-lg p-4">
-          <p className="text-dark-400 text-sm mb-1">Status</p>
+        <div className="p-4 border rounded-lg bg-dark-800 border-dark-700">
+          <p className="mb-1 text-sm text-dark-400">Status</p>
           <p className="text-2xl font-bold text-white">
             {tour.isPublic ? '🌐 Public' : '🔒 Private'}
           </p>
@@ -130,30 +130,30 @@ export default function TourDetailPage({
 
       {/* Upload Section */}
       <div>
-        <h2 className="text-2xl font-bold text-white mb-4">Scenes</h2>
+        <h2 className="mb-4 text-2xl font-bold text-white">Scenes</h2>
         <UploadZone tourId={tour.id} onUploadComplete={handleUploadComplete} />
       </div>
 
       {/* Images Grid */}
       {tour.images.length > 0 && (
         <div>
-          <h2 className="text-2xl font-bold text-white mb-4">
+          <h2 className="mb-4 text-2xl font-bold text-white">
             Uploaded Scenes ({tour.images.length})
           </h2>
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             {tour.images.map((image) => (
               <Link
                 key={image.id}
                 href={`/tours/${tour.id}/editor?scene=${image.id}`}
               >
-                <div className="relative group cursor-pointer rounded-lg overflow-hidden bg-dark-700">
+                <div className="relative overflow-hidden rounded-lg cursor-pointer group bg-dark-700">
                   <img
                     src={`/api/uploads/${image.filename}`}
                     alt={image.title}
-                    className="w-full h-32 object-cover group-hover:scale-110 transition-transform"
+                    className="object-cover w-full h-32 transition-transform group-hover:scale-110"
                   />
-                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                    <span className="text-white font-medium">
+                  <div className="absolute inset-0 flex items-center justify-center transition-opacity opacity-0 bg-black/50 group-hover:opacity-100">
+                    <span className="font-medium text-white">
                       {image.title}
                     </span>
                   </div>
@@ -163,7 +163,7 @@ export default function TourDetailPage({
           </div>
         </div>
       )}
-
+ <h1>Iam here</h1>
       {/* Share Modal */}
       <ShareModal
         isOpen={isShareModalOpen}

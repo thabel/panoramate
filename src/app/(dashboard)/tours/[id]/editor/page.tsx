@@ -8,8 +8,9 @@ import { Button } from '@/components/ui/Button';
 import { UploadZone } from '@/components/dashboard/UploadZone';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { Badge } from '@/components/ui/Badge';
-import { Save, ChevronLeft, ChevronRight, Image as ImageIcon, Plus, Trash2, X, MapPin } from 'lucide-react';
+import { Save, ChevronLeft, ChevronRight, Image as ImageIcon, Plus, Trash2, X, MapPin, Share2 } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
+import { ShareModal } from '@/components/dashboard/ShareModal';
 import toast from 'react-hot-toast';
 
 export default function TourEditorPage({
@@ -25,6 +26,7 @@ export default function TourEditorPage({
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [addHotspotMode, setAddHotspotMode] = useState(false);
   const [isHotspotModalOpen, setIsHotspotModalOpen] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [newHotspotCoords, setNewHotspotCoords] = useState<{ yaw: number; pitch: number } | null>(null);
   const [hotspotForm, setHotspotForm] = useState({
     type: 'LINK',
@@ -332,7 +334,7 @@ export default function TourEditorPage({
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-dark-900">
       {/* Header */}
-      <div className="flex items-center justify-between flex-shrink-0 h-16 px-6 py-4 border-b bg-dark-800 border-dark-700">
+      <div className="flex items-center justify-between flex-shrink-0 h-16 px-6 py-4 border-b bg-dark-800 border-dark-700 z-20">
         <div className="flex items-center gap-4">
           <div className="text-xl font-bold text-transparent bg-gradient-to-r from-primary-400 to-primary-600 bg-clip-text">
             Panoramate
@@ -346,12 +348,12 @@ export default function TourEditorPage({
 
         <div className="flex gap-3">
           <Button
-            variant={addHotspotMode ? 'primary' : 'secondary'}
-            onClick={() => setAddHotspotMode(!addHotspotMode)}
-            className={`flex items-center gap-2 ${addHotspotMode ? 'ring-2 ring-primary-500' : ''}`}
+            variant="secondary"
+            onClick={() => setIsShareModalOpen(true)}
+            className="flex items-center gap-2"
           >
-            <MapPin size={18} />
-            {addHotspotMode ? 'Click on Map' : 'Add Hotspot'}
+            <Share2 size={18} />
+            Share
           </Button>
           <Button
             variant="secondary"
@@ -373,79 +375,115 @@ export default function TourEditorPage({
         </div>
       </div>
 
-      {/* Main Editor */}
+      {/* Main Editor Area */}
       <div className="flex flex-1 overflow-hidden relative">
-        <div className="absolute inset-0 pb-24 overflow-hidden">
-          <MarzipanoViewer
-            scenes={tour.images}
-            initialSceneId={currentScene.id}
-            editorMode={true}
-            addHotspotMode={addHotspotMode}
-            onPanoramaClick={handlePanoramaClick}
-            onHotspotClick={handleDeleteHotspot}
-            onHotspotMove={handleHotspotMove}
-            hotspots={tour.images.flatMap(img => (img as any).hotspots || [])}
-          />
-        </div>
-
-        {/* Scene Navigation */}
-        <div className="absolute bottom-0 left-0 right-0 z-10 flex items-center h-24 gap-6 px-6 py-2 border-t bg-dark-900/80 backdrop-blur-md border-dark-700">
+        {/* Left Action Sidebar */}
+        <aside className="w-20 bg-dark-800 border-r border-dark-700 flex flex-col items-center py-6 gap-6 z-20">
           <button
-            onClick={() => setCurrentSceneIndex(Math.max(0, currentSceneIndex - 1))}
-            disabled={currentSceneIndex === 0}
-            className="flex-shrink-0 p-2.5 transition-all rounded-full bg-dark-800 hover:bg-dark-700 border border-dark-700 disabled:opacity-30 shadow-lg"
+            onClick={() => setAddHotspotMode(!addHotspotMode)}
+            title={addHotspotMode ? 'Cancel Add Hotspot' : 'Add Hotspot'}
+            className={`p-3 rounded-xl transition-all duration-200 ${
+              addHotspotMode 
+                ? 'bg-primary-600 text-white shadow-[0_0_15px_rgba(99,102,241,0.4)]' 
+                : 'text-dark-400 hover:text-white hover:bg-dark-700'
+            }`}
           >
-            <ChevronLeft size={24} />
+            <MapPin size={24} />
+          </button>
+          
+          <button
+            onClick={() => setIsUploadModalOpen(true)}
+            title="Add New Scene"
+            className="p-3 rounded-xl text-dark-400 hover:text-white hover:bg-dark-700 transition-all duration-200"
+          >
+            <Plus size={24} />
           </button>
 
-          <div className="flex items-center flex-1 gap-4 py-1 overflow-x-auto no-scrollbar scroll-smooth">
-            {tour.images.map((image, index) => (
-              <div key={image.id} className="relative flex-shrink-0 group">
-                <button
-                  onClick={() => setCurrentSceneIndex(index)}
-                  className={`relative w-28 h-16 rounded-xl overflow-hidden border-2 transition-all duration-300 ${
-                    index === currentSceneIndex
-                      ? 'border-primary-500 scale-105 shadow-[0_0_15px_rgba(99,102,241,0.4)]'
-                      : 'border-transparent hover:border-dark-500 opacity-60 hover:opacity-100'
-                  }`}
-                >
-                  <img
-                    src={`/api/uploads/${image.filename}`}
-                    alt={`Scene ${index + 1}`}
-                    className="object-cover w-full h-full"
-                  />
-                </button>
-                <button
-                  onClick={(e) => handleDeleteScene(e, image.id)}
-                  className="absolute z-20 p-1.5 text-white transition-all bg-red-500 rounded-full opacity-0 -top-2 -right-2 group-hover:opacity-100 shadow-xl hover:bg-red-600 hover:scale-110"
-                >
-                  <X size={14} />
-                </button>
-              </div>
-            ))}
+          <div className="w-8 h-px bg-dark-700 my-2" />
 
-            <button
-              onClick={() => setIsUploadModalOpen(true)}
-              className="flex flex-col items-center justify-center flex-shrink-0 w-28 h-16 gap-1.5 transition-all border-2 border-dashed rounded-xl border-dark-600 hover:border-primary-500 hover:bg-dark-800/50 text-dark-400 hover:text-primary-400 group"
-            >
-              <div className="p-1 transition-colors rounded-full bg-dark-700 group-hover:bg-primary-500/20">
-                <Plus size={18} />
-              </div>
-              <span className="text-[11px] font-semibold uppercase tracking-wider">Add Scene</span>
-            </button>
+          <button
+            onClick={handleSave}
+            title="Save Tour"
+            className="p-3 rounded-xl text-dark-400 hover:text-white hover:bg-dark-700 transition-all duration-200"
+          >
+            <Save size={24} />
+          </button>
+        </aside>
+
+        {/* Viewer Area */}
+        <div className="flex-1 relative overflow-hidden">
+          <div className="absolute inset-0 pb-24">
+            <MarzipanoViewer
+              scenes={tour.images}
+              initialSceneId={currentScene.id}
+              editorMode={true}
+              addHotspotMode={addHotspotMode}
+              onPanoramaClick={handlePanoramaClick}
+              onHotspotClick={handleDeleteHotspot}
+              onHotspotMove={handleHotspotMove}
+              hotspots={tour.images.flatMap(img => (img as any).hotspots || [])}
+            />
           </div>
 
-          <button
-            onClick={() =>
-              setCurrentSceneIndex(
-                Math.min(tour.images.length - 1, currentSceneIndex + 1)
-              )
-            }
-            disabled={currentSceneIndex === tour.images.length - 1}
-            className="flex-shrink-0 p-2.5 transition-all rounded-full bg-dark-800 hover:bg-dark-700 border border-dark-700 disabled:opacity-30 shadow-lg"
-          >
-            <ChevronRight size={24} />
-          </button>
+          {/* Scene Navigation (Bottom) */}
+          <div className="absolute bottom-0 left-0 right-0 z-10 flex items-center h-24 gap-6 px-6 py-2 border-t bg-dark-900/80 backdrop-blur-md border-dark-700">
+            <button
+              onClick={() => setCurrentSceneIndex(Math.max(0, currentSceneIndex - 1))}
+              disabled={currentSceneIndex === 0}
+              className="flex-shrink-0 p-2.5 transition-all rounded-full bg-dark-800 hover:bg-dark-700 border border-dark-700 disabled:opacity-30 shadow-lg text-white"
+            >
+              <ChevronLeft size={24} />
+            </button>
+
+            <div className="flex items-center flex-1 gap-4 py-1 overflow-x-auto no-scrollbar scroll-smooth">
+              {tour.images.map((image, index) => (
+                <div key={image.id} className="relative flex-shrink-0 group">
+                  <button
+                    onClick={() => setCurrentSceneIndex(index)}
+                    className={`relative w-28 h-16 rounded-xl overflow-hidden border-2 transition-all duration-300 ${
+                      index === currentSceneIndex
+                        ? 'border-primary-500 scale-105 shadow-[0_0_15px_rgba(99,102,241,0.4)]'
+                        : 'border-transparent hover:border-dark-500 opacity-60 hover:opacity-100'
+                    }`}
+                  >
+                    <img
+                      src={`/api/uploads/${image.filename}`}
+                      alt={`Scene ${index + 1}`}
+                      className="object-cover w-full h-full"
+                    />
+                  </button>
+                  <button
+                    onClick={(e) => handleDeleteScene(e, image.id)}
+                    className="absolute z-20 p-1.5 text-white transition-all bg-red-500 rounded-full opacity-0 -top-2 -right-2 group-hover:opacity-100 shadow-xl hover:bg-red-600 hover:scale-110"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              ))}
+
+              <button
+                onClick={() => setIsUploadModalOpen(true)}
+                className="flex flex-col items-center justify-center flex-shrink-0 w-28 h-16 gap-1.5 transition-all border-2 border-dashed rounded-xl border-dark-600 hover:border-primary-500 hover:bg-dark-800/50 text-dark-400 hover:text-primary-400 group"
+              >
+                <div className="p-1 transition-colors rounded-full bg-dark-700 group-hover:bg-primary-500/20">
+                  <Plus size={18} />
+                </div>
+                <span className="text-[11px] font-semibold uppercase tracking-wider">Add Scene</span>
+              </button>
+            </div>
+
+            <button
+              onClick={() =>
+                setCurrentSceneIndex(
+                  Math.min(tour.images.length - 1, currentSceneIndex + 1)
+                )
+              }
+              disabled={currentSceneIndex === tour.images.length - 1}
+              className="flex-shrink-0 p-2.5 transition-all rounded-full bg-dark-800 hover:bg-dark-700 border border-dark-700 disabled:opacity-30 shadow-lg text-white"
+            >
+              <ChevronRight size={24} />
+            </button>
+          </div>
         </div>
       </div>
 

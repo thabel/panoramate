@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Copy, Check } from 'lucide-react';
+import { Copy, Check, ExternalLink } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import toast from 'react-hot-toast';
@@ -87,7 +87,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({
   };
 
   const iframeCode = shareData?.shareLink
-    ? `<iframe src="${shareData.shareLink}" width="100%" height="600" frameborder="0" style="border-radius: 8px;"></iframe>`
+    ? `<iframe src="${shareData.shareLink}?embed=true" width="100%" height="600" frameborder="0" allowfullscreen style="border-radius: 8px;"></iframe>`
     : '';
 
   return (
@@ -132,6 +132,14 @@ export const ShareModal: React.FC<ShareModalProps> = ({
                   readOnly
                   className="flex-1 px-4 py-2 bg-dark-700 border border-dark-600 rounded-lg text-dark-300 text-sm"
                 />
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => window.open(shareData?.shareLink, '_blank')}
+                  title="Open link"
+                >
+                  <ExternalLink size={16} />
+                </Button>
                 <Button
                   size="sm"
                   variant="secondary"

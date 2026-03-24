@@ -15,6 +15,8 @@ import {
   X,
   Bell,
   AlertCircle,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/Badge';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
@@ -28,6 +30,7 @@ export default function DashboardLayout({
   const router = useRouter();
   const { user, organization, isLoading, logout } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -95,15 +98,30 @@ export default function DashboardLayout({
 
       {/* Sidebar */}
       <aside
-        className={`fixed lg:static top-0 left-0 h-full w-64 bg-dark-800 border-r border-dark-700 z-50 transition-transform duration-200 ${
+        className={`fixed lg:static top-0 left-0 h-full bg-dark-800 border-r border-dark-700 z-50 transition-all duration-300 ${
+          isCollapsed ? 'w-20' : 'w-64'
+        } ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         }`}
       >
-        <div className="p-4 border-b border-dark-700">
-          <div className="text-2xl font-bold text-transparent bg-gradient-to-r from-primary-400 to-primary-600 bg-clip-text">
-            Panoramate
-          </div>
-          <p className="mt-1 text-sm text-dark-400">{organization.name}</p>
+        <div className={`p-4 border-b border-dark-700 flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'}`}>
+          {!isCollapsed && (
+            <div>
+              <div className="text-2xl font-bold text-transparent bg-gradient-to-r from-primary-400 to-primary-600 bg-clip-text">
+                Panoramate
+              </div>
+              <p className="mt-1 text-xs text-dark-400 truncate max-w-[140px]">{organization.name}</p>
+            </div>
+          )}
+          {isCollapsed && (
+            <div className="text-2xl font-bold text-primary-500">P</div>
+          )}
+          <button 
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            className="hidden lg:block p-1.5 rounded-lg hover:bg-dark-700 text-dark-400 hover:text-white"
+          >
+            {isCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
+          </button>
         </div>
 
         <nav className="flex-1 p-4 space-y-2">
@@ -114,35 +132,39 @@ export default function DashboardLayout({
                 key={item.href}
                 href={item.href}
                 onClick={() => setSidebarOpen(false)}
-                className="flex items-center gap-3 px-4 py-2 transition-colors rounded-lg text-dark-300 hover:text-white hover:bg-dark-700"
+                title={isCollapsed ? item.label : ''}
+                className={`flex items-center gap-3 px-4 py-2.5 transition-all rounded-lg text-dark-300 hover:text-white hover:bg-dark-700 group ${isCollapsed ? 'justify-center' : ''}`}
               >
-                <Icon size={20} />
-                <span>{item.label}</span>
+                <Icon size={22} className="flex-shrink-0" />
+                {!isCollapsed && <span className="font-medium">{item.label}</span>}
               </Link>
             );
           })}
         </nav>
 
         <div className="p-4 space-y-3 border-t border-dark-700">
-          <div className="p-3 rounded-lg bg-dark-700">
-            <Badge variant="plan" className="block mb-2 text-center">
-              {organization.plan === 'FREE_TRIAL'
-                ? 'Free Trial'
-                : organization.plan}
-            </Badge>
-            {isTrialing && (
-              <p className="text-xs text-dark-400">
-                {trialDaysLeft} days left
-              </p>
-            )}
-          </div>
+          {!isCollapsed && (
+            <div className="p-3 rounded-lg bg-dark-700">
+              <Badge variant="plan" className="block mb-2 text-center text-[10px] uppercase tracking-wider">
+                {organization.plan === 'FREE_TRIAL'
+                  ? 'Free Trial'
+                  : organization.plan}
+              </Badge>
+              {isTrialing && (
+                <p className="text-[10px] text-dark-400 text-center">
+                  {trialDaysLeft} days left
+                </p>
+              )}
+            </div>
+          )}
 
           <button
             onClick={logout}
-            className="flex items-center w-full gap-2 px-4 py-2 text-sm transition-colors rounded-lg text-dark-300 hover:text-white hover:bg-dark-700"
+            title={isCollapsed ? 'Sign Out' : ''}
+            className={`flex items-center w-full gap-2 px-4 py-2 text-sm transition-colors rounded-lg text-dark-300 hover:text-white hover:bg-dark-700 ${isCollapsed ? 'justify-center' : ''}`}
           >
-            <LogOut size={18} />
-            Sign Out
+            <LogOut size={20} className="flex-shrink-0" />
+            {!isCollapsed && <span className="font-medium">Sign Out</span>}
           </button>
         </div>
       </aside>

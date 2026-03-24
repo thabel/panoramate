@@ -23,17 +23,17 @@ export const TourCard: React.FC<TourCardProps> = ({
   const coverImage = tour.images[0];
 
   return (
-    <div className="rounded-lg bg-dark-800 border border-dark-700 overflow-hidden hover:border-primary-500 transition-colors group">
+    <div className="overflow-hidden transition-colors border rounded-lg bg-dark-800 border-dark-700 hover:border-primary-500 group">
       {/* Cover Image */}
-      <div className="relative h-48 bg-dark-700 overflow-hidden">
+      <div className="relative h-48 overflow-hidden bg-dark-700">
         {coverImage ? (
           <img
             src={`/api/uploads/${coverImage.filename}`}
             alt={tour.title}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+            className="object-cover w-full h-full transition-transform group-hover:scale-105"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-dark-500">
+          <div className="flex items-center justify-center w-full h-full text-dark-500">
             <Image size={40} />
           </div>
         )}
@@ -53,7 +53,7 @@ export const TourCard: React.FC<TourCardProps> = ({
         {/* Public Badge */}
         {tour.isPublic && (
           <div className="absolute bottom-3 right-3">
-            <div className="bg-primary-600 text-white px-2 py-1 rounded text-xs font-medium flex items-center gap-1">
+            <div className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-white rounded bg-primary-600">
               <Globe size={12} />
               Public
             </div>
@@ -66,7 +66,7 @@ export const TourCard: React.FC<TourCardProps> = ({
         <h3 className="text-lg font-semibold text-white truncate">{tour.title}</h3>
 
         {tour.description && (
-          <p className="text-dark-400 text-sm mt-1 line-clamp-2">
+          <p className="mt-1 text-sm text-dark-400 line-clamp-2">
             {tour.description}
           </p>
         )}
@@ -87,26 +87,26 @@ export const TourCard: React.FC<TourCardProps> = ({
         <div className="flex gap-2 mt-4">
           <Link
             href={`/tours/${tour.id}/editor`}
-            className="flex-1 px-3 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-1"
+            className="flex items-center justify-center flex-1 gap-1 px-3 py-2 text-sm font-medium text-white transition-colors rounded-lg bg-primary-600 hover:bg-primary-700"
           >
             <Edit size={14} />
-            Edit
+            
           </Link>
 
           <button
             onClick={() => setShowMenu(!showMenu)}
-            className="px-3 py-2 hover:bg-dark-700 rounded-lg transition-colors relative"
+            className="relative px-3 py-2 transition-colors rounded-lg hover:bg-dark-700"
           >
             <MoreVertical size={16} className="text-dark-400" />
 
             {showMenu && (
-              <div className="absolute top-full right-0 mt-1 bg-dark-900 border border-dark-700 rounded-lg shadow-lg z-10 min-w-max">
+              <div className="absolute right-0 z-10 mt-1 border rounded-lg shadow-lg top-full bg-dark-900 border-dark-700 min-w-max">
                 <button
                   onClick={() => {
                     onShare?.(tour.id);
                     setShowMenu(false);
                   }}
-                  className="w-full px-4 py-2 text-left text-dark-200 hover:bg-dark-800 flex items-center gap-2 text-sm"
+                  className="flex items-center w-full gap-2 px-4 py-2 text-sm text-left text-dark-200 hover:bg-dark-800"
                 >
                   <Share2 size={14} />
                   Share
@@ -116,7 +116,7 @@ export const TourCard: React.FC<TourCardProps> = ({
                     onDelete?.(tour.id);
                     setShowMenu(false);
                   }}
-                  className="w-full px-4 py-2 text-left text-red-400 hover:bg-dark-800 flex items-center gap-2 text-sm border-t border-dark-700"
+                  className="flex items-center w-full gap-2 px-4 py-2 text-sm text-left text-red-400 border-t hover:bg-dark-800 border-dark-700"
                 >
                   <Trash2 size={14} />
                   Delete
