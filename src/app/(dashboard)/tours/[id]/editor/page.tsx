@@ -7,7 +7,8 @@ import { PannellumViewer } from '@/components/viewer/PannellumViewer';
 import { Button } from '@/components/ui/Button';
 import { UploadZone } from '@/components/dashboard/UploadZone';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import { Save, ChevronLeft, ChevronRight, Image as ImageIcon, Plus, Trash2, X } from 'lucide-react';
+import { Badge } from '@/components/ui/Badge';
+import { Save, ChevronLeft, ChevronRight, Image as ImageIcon, Plus, Trash2, X, MapPin } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import toast from 'react-hot-toast';
 
@@ -22,6 +23,14 @@ export default function TourEditorPage({
   const [currentSceneIndex, setCurrentSceneIndex] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [addHotspotMode, setAddHotspotMode] = useState(false);
+  const [isHotspotModalOpen, setIsHotspotModalOpen] = useState(false);
+  const [newHotspotCoords, setNewHotspotCoords] = useState<{ yaw: number; pitch: number } | null>(null);
+  const [hotspotForm, setHotspotForm] = useState({
+    type: 'LINK',
+    title: '',
+    targetImageId: '',
+  });
 
   useEffect(() => {
     fetchTour();
@@ -91,16 +100,16 @@ export default function TourEditorPage({
       });
 
       if (response.ok) {
+        const updatedImages = tour!.images.filter((img) => img.id !== imageId);
         setTour({
           ...tour!,
-          images: tour!.images.filter((img) => img.id !== imageId),
+          images: updatedImages,
         });
         
-        // Adjust current scene index if needed
         if (tour!.images[currentSceneIndex].id === imageId) {
           setCurrentSceneIndex(0);
-        } else if (currentSceneIndex >= tour!.images.length - 1) {
-          setCurrentSceneIndex(Math.max(0, tour!.images.length - 2));
+        } else if (currentSceneIndex >= updatedImages.length) {
+          setCurrentSceneIndex(Math.max(0, updatedImages.length - 1));
         }
         
         toast.success('Scene deleted');
@@ -110,6 +119,133 @@ export default function TourEditorPage({
       }
     } catch (error) {
       toast.error('Error deleting scene');
+    }
+  };
+
+  const handlePanoramaClick = (yaw: number, pitch: number) => {
+    if (addHotspotMode) {
+      setNewHotspotCoords({ yaw, pitch });
+      setHotspotForm({
+        ...hotspotForm,
+        targetImageId: tour?.images.find(img => img.id !== tour.images[currentSceneIndex].id)?.id || '',
+      });
+      setIsHotspotModalOpen(true);
+      setAddHotspotMode(false);
+    }
+  };
+
+  const handleCreateHotspot = async () => {
+    if (!newHotspotCoords || !tour) return;
+
+    try {
+      const currentImageId = tour.images[currentSceneIndex].id;
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/tours/${params.id}/images/${currentImageId}/hotspots`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token || ''}`,
+        },
+        body: JSON.stringify({
+          ...newHotspotCoords,
+          ...hotspotForm,
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const newHotspot = data.data;
+        
+        setTour({
+          ...tour,
+          images: tour.images.map(img => 
+            img.id === currentImageId 
+              ? { ...img, hotspots: [...((img as any).hotspots || []), newHotspot] }
+              : img
+          )
+        });
+        
+        setIsHotspotModalOpen(false);
+        setNewHotspotCoords(null);
+        toast.success('Hotspot created');
+      } else {
+        toast.error('Failed to create hotspot');
+      }
+    } catch (error) {
+      toast.error('Error creating hotspot');
+    }
+  };
+
+  const handleDeleteHotspot = async (hotspot: any) => {
+    if (!confirm('Are you sure you want to delete this hotspot?')) return;
+
+    try {
+      const currentImageId = tour!.images[currentSceneIndex].id;
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/tours/${params.id}/images/${currentImageId}/hotspots`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token || ''}`,
+        },
+        body: JSON.stringify({ hotspotId: hotspot.id }),
+      });
+
+      if (response.ok) {
+        setTour({
+          ...tour!,
+          images: tour!.images.map(img => 
+            img.id === currentImageId 
+              ? { ...img, hotspots: (img as any).hotspots.filter((h: any) => h.id !== hotspot.id) }
+              : img
+          )
+        });
+        toast.success('Hotspot deleted');
+      } else {
+        toast.error('Failed to delete hotspot');
+      }
+    } catch (error) {
+      toast.error('Error deleting hotspot');
+    }
+  };
+
+  const handleHotspotMove = async (hotspot: any, newYaw: number, newPitch: number) => {
+    try {
+      const currentImageId = tour!.images[currentSceneIndex].id;
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/tours/${params.id}/images/${currentImageId}/hotspots`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token || ''}`,
+        },
+        body: JSON.stringify({
+          hotspotId: hotspot.id,
+          yaw: newYaw,
+          pitch: newPitch,
+        }),
+      });
+
+      if (response.ok) {
+        setTour({
+          ...tour!,
+          images: tour!.images.map(img => 
+            img.id === currentImageId 
+              ? { 
+                  ...img, 
+                  hotspots: (img as any).hotspots.map((h: any) => 
+                    h.id === hotspot.id ? { ...h, yaw: newYaw, pitch: newPitch } : h
+                  ) 
+                }
+              : img
+          )
+        });
+        toast.success('Hotspot moved');
+      } else {
+        toast.error('Failed to move hotspot');
+      }
+    } catch (error) {
+      toast.error('Error moving hotspot');
     }
   };
 
@@ -155,7 +291,6 @@ export default function TourEditorPage({
   if (!tour || tour.images.length === 0) {
     return (
       <div className="flex flex-col h-screen bg-dark-900">
-        {/* Header */}
         <div className="flex items-center justify-between px-4 py-4 border-b bg-dark-800 border-dark-700">
           <div>
             <h1 className="text-xl font-bold text-white">{tour?.title || 'Tour'} - Editor</h1>
@@ -171,7 +306,6 @@ export default function TourEditorPage({
           </Button>
         </div>
 
-        {/* Upload Zone Container */}
         <div className="flex items-center justify-center flex-1 p-8">
           <div className="w-full max-w-xl space-y-8">
             <div className="text-center">
@@ -187,12 +321,6 @@ export default function TourEditorPage({
             <div className="p-8 border shadow-2xl bg-dark-800 border-dark-700 rounded-xl">
               <UploadZone tourId={params.id} onUploadComplete={handleUploadComplete} />
             </div>
-            
-            <div className="text-center">
-              <p className="text-sm text-dark-500">
-                After uploading, the editor will unlock and you'll be able to add hotspots and connect scenes.
-              </p>
-            </div>
           </div>
         </div>
       </div>
@@ -202,17 +330,29 @@ export default function TourEditorPage({
   const currentScene = tour.images[currentSceneIndex];
 
   return (
-    <div className="flex flex-col h-screen bg-dark-900">
+    <div className="flex flex-col h-screen overflow-hidden bg-dark-900">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-4 border-b bg-dark-800 border-dark-700">
-        <div>
-          <h1 className="text-xl font-bold text-white">{tour.title} - Editor</h1>
-          <p className="text-sm text-dark-400">
-            Scene {currentSceneIndex + 1} of {tour.images.length}
-          </p>
+      <div className="flex items-center justify-between flex-shrink-0 h-16 px-6 py-4 border-b bg-dark-800 border-dark-700">
+        <div className="flex items-center gap-4">
+          <div className="text-xl font-bold text-transparent bg-gradient-to-r from-primary-400 to-primary-600 bg-clip-text">
+            Panoramate
+          </div>
+          <div className="w-px h-6 bg-dark-700" />
+          <h1 className="text-lg font-semibold text-white truncate max-w-[300px]">{tour.title}</h1>
+          <Badge variant="secondary" className="ml-2">
+            Scene {currentSceneIndex + 1} / {tour.images.length}
+          </Badge>
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex gap-3">
+          <Button
+            variant={addHotspotMode ? 'primary' : 'secondary'}
+            onClick={() => setAddHotspotMode(!addHotspotMode)}
+            className={`flex items-center gap-2 ${addHotspotMode ? 'ring-2 ring-primary-500' : ''}`}
+          >
+            <MapPin size={18} />
+            {addHotspotMode ? 'Click on Map' : 'Add Hotspot'}
+          </Button>
           <Button
             variant="secondary"
             onClick={() => window.history.back()}
@@ -225,7 +365,7 @@ export default function TourEditorPage({
             variant="primary"
             onClick={handleSave}
             isLoading={isSaving}
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 px-6"
           >
             <Save size={18} />
             Save
@@ -234,79 +374,81 @@ export default function TourEditorPage({
       </div>
 
       {/* Main Editor */}
-      <div className="flex flex-1 overflow-hidden">
-        {/* Viewer */}
-        <div className="flex flex-col flex-1 overflow-hidden">
-          <div className="relative flex-1 bg-black overflow-hidden">
-            <PannellumViewer
-              scenes={tour.images}
-              initialSceneId={currentScene.id}
-              editorMode={true}
-              hotspots={tour.images.flatMap(img => (img as any).hotspots || [])}
-            />
-          </div>
+      <div className="flex flex-1 overflow-hidden relative">
+        <div className="absolute inset-0 pb-24 overflow-hidden">
+          <PannellumViewer
+            scenes={tour.images}
+            initialSceneId={currentScene.id}
+            editorMode={true}
+            addHotspotMode={addHotspotMode}
+            onPanoramaClick={handlePanoramaClick}
+            onHotspotClick={handleDeleteHotspot}
+            onHotspotMove={handleHotspotMove}
+            hotspots={tour.images.flatMap(img => (img as any).hotspots || [])}
+          />
+        </div>
 
-          {/* Scene Navigation */}
-          <div className="flex items-center flex-shrink-0 h-24 gap-4 px-4 py-2 border-t bg-dark-800 border-dark-700 z-10">
-            <button
-              onClick={() => setCurrentSceneIndex(Math.max(0, currentSceneIndex - 1))}
-              disabled={currentSceneIndex === 0}
-              className="flex-shrink-0 p-2 transition-colors rounded-lg hover:bg-dark-700 disabled:opacity-50"
-            >
-              <ChevronLeft size={20} />
-            </button>
+        {/* Scene Navigation */}
+        <div className="absolute bottom-0 left-0 right-0 z-10 flex items-center h-24 gap-6 px-6 py-2 border-t bg-dark-900/80 backdrop-blur-md border-dark-700">
+          <button
+            onClick={() => setCurrentSceneIndex(Math.max(0, currentSceneIndex - 1))}
+            disabled={currentSceneIndex === 0}
+            className="flex-shrink-0 p-2.5 transition-all rounded-full bg-dark-800 hover:bg-dark-700 border border-dark-700 disabled:opacity-30 shadow-lg"
+          >
+            <ChevronLeft size={24} />
+          </button>
 
-            <div className="flex items-center flex-1 gap-3 py-1 overflow-x-auto custom-scrollbar">
-              {tour.images.map((image, index) => (
-                <div key={image.id} className="relative group">
-                  <button
-                    onClick={() => setCurrentSceneIndex(index)}
-                    className={`flex-shrink-0 w-24 h-16 rounded-lg overflow-hidden border-2 transition-all ${
-                      index === currentSceneIndex
-                        ? 'border-primary-500 scale-105 shadow-lg shadow-primary-500/20'
-                        : 'border-dark-600 hover:border-primary-400 opacity-70 hover:opacity-100'
-                    }`}
-                  >
-                    <img
-                      src={`/api/uploads/${image.filename}`}
-                      alt={`Scene ${index + 1}`}
-                      className="object-cover w-full h-full"
-                    />
-                  </button>
-                  <button
-                    onClick={(e) => handleDeleteScene(e, image.id)}
-                    className="absolute z-20 p-1 text-white transition-opacity bg-red-500 rounded-full opacity-0 -top-1 -right-1 group-hover:opacity-100 shadow-lg hover:bg-red-600"
-                  >
-                    <X size={12} />
-                  </button>
-                </div>
-              ))}
-
-              <button
-                onClick={() => setIsUploadModalOpen(true)}
-                className="flex flex-col items-center justify-center flex-shrink-0 w-24 h-16 gap-1 transition-all border-2 border-dashed rounded-lg border-dark-600 hover:border-primary-400 hover:bg-dark-700 text-dark-400 hover:text-primary-400"
-              >
-                <Plus size={20} />
-                <span className="text-[10px] font-medium">Add Scene</span>
-              </button>
-            </div>
+          <div className="flex items-center flex-1 gap-4 py-1 overflow-x-auto no-scrollbar scroll-smooth">
+            {tour.images.map((image, index) => (
+              <div key={image.id} className="relative flex-shrink-0 group">
+                <button
+                  onClick={() => setCurrentSceneIndex(index)}
+                  className={`relative w-28 h-16 rounded-xl overflow-hidden border-2 transition-all duration-300 ${
+                    index === currentSceneIndex
+                      ? 'border-primary-500 scale-105 shadow-[0_0_15px_rgba(99,102,241,0.4)]'
+                      : 'border-transparent hover:border-dark-500 opacity-60 hover:opacity-100'
+                  }`}
+                >
+                  <img
+                    src={`/api/uploads/${image.filename}`}
+                    alt={`Scene ${index + 1}`}
+                    className="object-cover w-full h-full"
+                  />
+                </button>
+                <button
+                  onClick={(e) => handleDeleteScene(e, image.id)}
+                  className="absolute z-20 p-1.5 text-white transition-all bg-red-500 rounded-full opacity-0 -top-2 -right-2 group-hover:opacity-100 shadow-xl hover:bg-red-600 hover:scale-110"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            ))}
 
             <button
-              onClick={() =>
-                setCurrentSceneIndex(
-                  Math.min(tour.images.length - 1, currentSceneIndex + 1)
-                )
-              }
-              disabled={currentSceneIndex === tour.images.length - 1}
-              className="flex-shrink-0 p-2 transition-colors rounded-lg hover:bg-dark-700 disabled:opacity-50"
+              onClick={() => setIsUploadModalOpen(true)}
+              className="flex flex-col items-center justify-center flex-shrink-0 w-28 h-16 gap-1.5 transition-all border-2 border-dashed rounded-xl border-dark-600 hover:border-primary-500 hover:bg-dark-800/50 text-dark-400 hover:text-primary-400 group"
             >
-              <ChevronRight size={20} />
+              <div className="p-1 transition-colors rounded-full bg-dark-700 group-hover:bg-primary-500/20">
+                <Plus size={18} />
+              </div>
+              <span className="text-[11px] font-semibold uppercase tracking-wider">Add Scene</span>
             </button>
           </div>
+
+          <button
+            onClick={() =>
+              setCurrentSceneIndex(
+                Math.min(tour.images.length - 1, currentSceneIndex + 1)
+              )
+            }
+            disabled={currentSceneIndex === tour.images.length - 1}
+            className="flex-shrink-0 p-2.5 transition-all rounded-full bg-dark-800 hover:bg-dark-700 border border-dark-700 disabled:opacity-30 shadow-lg"
+          >
+            <ChevronRight size={24} />
+          </button>
         </div>
       </div>
 
-      {/* Upload Modal */}
       <Modal
         isOpen={isUploadModalOpen}
         onClose={() => setIsUploadModalOpen(false)}
@@ -314,6 +456,84 @@ export default function TourEditorPage({
       >
         <div className="p-4">
           <UploadZone tourId={params.id} onUploadComplete={handleUploadComplete} />
+        </div>
+      </Modal>
+
+      <Modal
+        isOpen={isHotspotModalOpen}
+        onClose={() => {
+          setIsHotspotModalOpen(false);
+          setAddHotspotMode(false);
+          setNewHotspotCoords(null);
+        }}
+        title="Configure Hotspot"
+      >
+        <div className="p-6 space-y-4">
+          <div>
+            <label className="block mb-1 text-sm font-medium text-dark-300">Type</label>
+            <select
+              value={hotspotForm.type}
+              onChange={(e) => setHotspotForm({ ...hotspotForm, type: e.target.value })}
+              className="w-full px-3 py-2 text-white border rounded-lg outline-none bg-dark-700 border-dark-600 focus:border-primary-500"
+            >
+              <option value="LINK">Link to Scene</option>
+              <option value="INFO">Information Box</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block mb-1 text-sm font-medium text-dark-300">Title</label>
+            <input
+              type="text"
+              value={hotspotForm.title}
+              onChange={(e) => setHotspotForm({ ...hotspotForm, title: e.target.value })}
+              placeholder="Hotspot title"
+              className="w-full px-3 py-2 text-white border rounded-lg outline-none bg-dark-700 border-dark-600 focus:border-primary-500"
+            />
+          </div>
+
+          {hotspotForm.type === 'LINK' && (
+            <div>
+              <label className="block mb-1 text-sm font-medium text-dark-300">Target Scene</label>
+              <select
+                value={hotspotForm.targetImageId}
+                onChange={(e) => setHotspotForm({ ...hotspotForm, targetImageId: e.target.value })}
+                className="w-full px-3 py-2 text-white border rounded-lg outline-none bg-dark-700 border-dark-600 focus:border-primary-500"
+              >
+                <option value="">Select a scene</option>
+                {tour.images
+                  .filter(img => img.id !== tour.images[currentSceneIndex].id)
+                  .map(img => (
+                    <option key={img.id} value={img.id}>
+                      {img.title || `Scene ${img.order + 1}`}
+                    </option>
+                  ))
+                }
+              </select>
+            </div>
+          )}
+
+          <div className="flex gap-3 pt-4">
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setIsHotspotModalOpen(false);
+                setAddHotspotMode(false);
+                setNewHotspotCoords(null);
+              }}
+              className="flex-1"
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              onClick={handleCreateHotspot}
+              className="flex-1"
+              disabled={hotspotForm.type === 'LINK' && !hotspotForm.targetImageId}
+            >
+              Create Hotspot
+            </Button>
+          </div>
         </div>
       </Modal>
     </div>
