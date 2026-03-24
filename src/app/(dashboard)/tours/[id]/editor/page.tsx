@@ -26,6 +26,8 @@ export default function TourEditorPage({
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [addHotspotMode, setAddHotspotMode] = useState(false);
   const [isHotspotModalOpen, setIsHotspotModalOpen] = useState(false);
+  const [isManageHotspotModalOpen, setIsManageHotspotModalOpen] = useState(false);
+  const [selectedHotspot, setSelectedHotspot] = useState<any>(null);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [newHotspotCoords, setNewHotspotCoords] = useState<{ yaw: number; pitch: number } | null>(null);
   const [hotspotForm, setHotspotForm] = useState({
@@ -127,10 +129,16 @@ export default function TourEditorPage({
   const handlePanoramaClick = (yaw: number, pitch: number) => {
     if (addHotspotMode) {
       setNewHotspotCoords({ yaw, pitch });
+      
+      const potentialTargets = tour?.images.filter(img => img.id !== tour.images[currentSceneIndex].id) || [];
+      const firstTarget = potentialTargets[0];
+      
       setHotspotForm({
-        ...hotspotForm,
-        targetImageId: tour?.images.find(img => img.id !== tour.images[currentSceneIndex].id)?.id || '',
+        type: 'LINK',
+        title: firstTarget ? `To ${firstTarget.title || 'Next Scene'}` : 'New Hotspot',
+        targetImageId: firstTarget?.id || '',
       });
+      
       setIsHotspotModalOpen(true);
       setAddHotspotMode(false);
     }
@@ -178,11 +186,16 @@ export default function TourEditorPage({
     }
   };
 
-  const handleDeleteHotspot = async (hotspot: any) => {
-    if (!confirm('Are you sure you want to delete this hotspot?')) return;
+  const handleHotspotClick = (hotspot: any) => {
+    setSelectedHotspot(hotspot);
+    setIsManageHotspotModalOpen(true);
+  };
+
+  const confirmDeleteHotspot = async () => {
+    if (!selectedHotspot || !tour) return;
 
     try {
-      const currentImageId = tour!.images[currentSceneIndex].id;
+      const currentImageId = tour.images[currentSceneIndex].id;
       const token = localStorage.getItem('token');
       const response = await fetch(`/api/tours/${params.id}/images/${currentImageId}/hotspots`, {
         method: 'DELETE',
@@ -190,24 +203,41 @@ export default function TourEditorPage({
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token || ''}`,
         },
-        body: JSON.stringify({ hotspotId: hotspot.id }),
+        body: JSON.stringify({ hotspotId: selectedHotspot.id }),
       });
 
       if (response.ok) {
         setTour({
-          ...tour!,
-          images: tour!.images.map(img => 
+          ...tour,
+          images: tour.images.map(img => 
             img.id === currentImageId 
-              ? { ...img, hotspots: (img as any).hotspots.filter((h: any) => h.id !== hotspot.id) }
+              ? { ...img, hotspots: (img as any).hotspots.filter((h: any) => h.id !== selectedHotspot.id) }
               : img
           )
         });
+        setIsManageHotspotModalOpen(false);
+        setSelectedHotspot(null);
         toast.success('Hotspot deleted');
       } else {
         toast.error('Failed to delete hotspot');
       }
     } catch (error) {
       toast.error('Error deleting hotspot');
+    }
+  };
+
+  const navigateToHotspotTarget = () => {
+    if (!selectedHotspot || !tour) return;
+    
+    if (selectedHotspot.type === 'LINK' && selectedHotspot.targetImageId) {
+      const targetIndex = tour.images.findIndex(img => img.id === selectedHotspot.targetImageId);
+      if (targetIndex !== -1) {
+        setCurrentSceneIndex(targetIndex);
+        setIsManageHotspotModalOpen(false);
+        setSelectedHotspot(null);
+      }
+    } else {
+      toast.error('This hotspot has no target scene');
     }
   };
 
@@ -419,7 +449,7 @@ export default function TourEditorPage({
               editorMode={true}
               addHotspotMode={addHotspotMode}
               onPanoramaClick={handlePanoramaClick}
-              onHotspotClick={handleDeleteHotspot}
+              onHotspotClick={handleHotspotClick}
               onHotspotMove={handleHotspotMove}
               hotspots={tour.images.flatMap(img => (img as any).hotspots || [])}
             />
@@ -572,6 +602,58 @@ export default function TourEditorPage({
               Create Hotspot
             </Button>
           </div>
+        </div>
+      </Modal>
+
+      <Modal
+        isOpen={isManageHotspotModalOpen}
+        onClose={() => {
+          setIsManageHotspotModalOpen(false);
+          setSelectedHotspot(null);
+        }}
+        title="Manage Hotspot"
+      >
+        <div className="p-6 space-y-4">
+          <div className="flex items-center gap-4 p-4 border rounded-lg bg-dark-700 border-dark-600">
+            <div className="p-3 rounded-full bg-primary-500/20 text-primary-400">
+              <MapPin size={24} />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-dark-300">Hotspot Title</p>
+              <p className="text-lg font-bold text-white">{selectedHotspot?.title || 'Unnamed Hotspot'}</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <Button
+              variant="secondary"
+              onClick={navigateToHotspotTarget}
+              className="flex items-center justify-center gap-2 py-6"
+            >
+              <ChevronRight size={20} />
+              Go to Scene
+            </Button>
+            
+            <Button
+              variant="secondary"
+              onClick={confirmDeleteHotspot}
+              className="flex items-center justify-center gap-2 py-6 text-red-400 hover:text-red-300 hover:bg-red-500/10"
+            >
+              <Trash2 size={20} />
+              Delete
+            </Button>
+          </div>
+
+          <Button
+            variant="secondary"
+            onClick={() => {
+              setIsManageHotspotModalOpen(false);
+              setSelectedHotspot(null);
+            }}
+            className="w-full"
+          >
+            Cancel
+          </Button>
         </div>
       </Modal>
     </div>

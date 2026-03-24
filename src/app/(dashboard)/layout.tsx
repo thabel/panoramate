@@ -172,7 +172,7 @@ export default function DashboardLayout({
       {/* Main Content */}
       <div className="flex flex-col flex-1 overflow-hidden">
         {/* Header */}
-        <header className="flex items-center justify-between px-4 py-4 border-b bg-dark-800 border-dark-700">
+        <header className="flex items-center justify-between p-4 border-b bg-dark-800 border-dark-700">
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
             className="p-2 rounded-lg lg:hidden hover:bg-dark-700"

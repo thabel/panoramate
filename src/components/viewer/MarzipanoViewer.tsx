@@ -58,70 +58,45 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
 
     const initViewer = () => {
       const Marzipano = window.Marzipano;
-      if (!Marzipano) {
-        console.log('Marzipano not yet loaded, retrying...');
-        return false;
-      }
-
-      console.log('Initializing Marzipano with', scenes.length, 'scenes');
+      if (!Marzipano) return false;
 
       try {
-        // Clear previous viewer if it exists
         if (viewerRef.current) {
           viewerRef.current.destroy();
-          viewerRef.current = null;
         }
 
         const viewerOpts = {
-          controls: {
-            mouseViewMode: 'drag'
-          }
+          controls: { mouseViewMode: 'drag' }
         };
 
         viewer = new Marzipano.Viewer(containerRef.current, viewerOpts);
         viewerRef.current = viewer;
 
-        // Create Scenes
         const marzipanoScenes: { [key: string]: any } = {};
         scenes.forEach((sceneData) => {
-          const imageUrl = `/api/uploads/${sceneData.filename}`;
-          console.log('Creating scene for', imageUrl);
-          const source = Marzipano.ImageUrlSource.fromString(imageUrl);
+          const source = Marzipano.ImageUrlSource.fromString(`/api/uploads/${sceneData.filename}`);
           const geometry = new Marzipano.EquirectGeometry([{ width: 4000 }]);
-          
           const limiter = Marzipano.RectilinearView.limit.traditional(
             1024, 
-            (120 * Math.PI) / 180, // max vertical fov
-            (120 * Math.PI) / 180  // max horizontal fov
+            (120 * Math.PI) / 180,
+            (120 * Math.PI) / 180
           );
-          
           const view = new Marzipano.RectilinearView({
             yaw: sceneData.initialYaw || 0,
             pitch: sceneData.initialPitch || 0,
             fov: sceneData.initialFov || (110 * Math.PI) / 180
           }, limiter);
 
-          const scene = viewer.createScene({
-            source: source,
-            geometry: geometry,
-            view: view,
-            pinFirstLevel: true
+          marzipanoScenes[sceneData.id] = viewer.createScene({
+            source, geometry, view, pinFirstLevel: true
           });
-
-          marzipanoScenes[sceneData.id] = scene;
         });
 
         scenesRef.current = marzipanoScenes;
-
-        // Set initial scene
-        const initialSceneIdToUse = initialSceneId || scenes[0].id;
-        const initialScene = marzipanoScenes[initialSceneIdToUse];
+        const initialScene = marzipanoScenes[initialSceneId || scenes[0].id];
         if (initialScene) {
-          console.log('Switching to initial scene:', initialSceneIdToUse);
           initialScene.switchTo();
-          setCurrentSceneId(initialSceneIdToUse);
-        } else {
-          console.warn('Initial scene not found:', initialSceneIdToUse);
+          setCurrentSceneId(initialSceneId || scenes[0].id);
         }
 
         return true;
@@ -133,25 +108,32 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
 
     if (!initViewer()) {
       retryInterval = setInterval(() => {
-        if (initViewer()) {
-          clearInterval(retryInterval);
-        }
+        if (initViewer()) clearInterval(retryInterval);
       }, 500);
     }
 
-    // Global click handler for adding hotspots
+    return () => {
+      if (retryInterval) clearInterval(retryInterval);
+      if (viewerRef.current) {
+        viewerRef.current.destroy();
+        viewerRef.current = null;
+      }
+    };
+  }, [scenes]); // Removed addHotspotMode from dependencies
+
+  // Separate Hotspot Click Handler
+  useEffect(() => {
     const handleContainerClick = (e: MouseEvent) => {
-      if (!addHotspotMode || !viewerRef.current) return;
+      if (!addHotspotMode || !viewerRef.current || !containerRef.current) return;
       
       const scene = viewerRef.current.scene();
       if (!scene) return;
       
       const view = scene.view();
-      const point = { x: e.clientX, y: e.clientY };
-      const rect = containerRef.current!.getBoundingClientRect();
+      const rect = containerRef.current.getBoundingClientRect();
       const localPoint = {
-        x: point.x - rect.left,
-        y: point.y - rect.top
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top
       };
       
       const coords = view.screenToCoordinates(localPoint);
@@ -160,19 +142,17 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
       }
     };
 
-    containerRef.current.addEventListener('click', handleContainerClick);
+    const container = containerRef.current;
+    if (container) {
+      container.addEventListener('click', handleContainerClick);
+    }
 
     return () => {
-      if (retryInterval) clearInterval(retryInterval);
-      if (containerRef.current) {
-        containerRef.current.removeEventListener('click', handleContainerClick);
-      }
-      if (viewerRef.current) {
-        viewerRef.current.destroy();
-        viewerRef.current = null;
+      if (container) {
+        container.removeEventListener('click', handleContainerClick);
       }
     };
-  }, [scenes, addHotspotMode]);
+  }, [addHotspotMode, onPanoramaClick]);
 
   // Handle scene switching
   useEffect(() => {
@@ -208,130 +188,62 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
       if (!scene) return;
 
       const element = document.createElement('div');
-      element.className = `marzipano-hotspot custom-hotspot-${hotspot.id} ${editorMode ? 'cursor-move' : 'cursor-pointer'}`;
+      element.className = `marzipano-hotspot custom-hotspot-${hotspot.id} cursor-pointer`;
       
-      // Basic styling for hotspot
-      element.style.width = '32px';
-      element.style.height = '32px';
-      element.style.borderRadius = '50%';
-      element.style.backgroundColor = hotspot.type === 'LINK' ? 'rgba(99, 102, 241, 0.8)' : 'rgba(255, 255, 255, 0.8)';
-      element.style.border = '2px solid white';
-      element.style.boxShadow = '0 2px 4px rgba(0,0,0,0.3)';
+      // Styling for hotspot using link.png
+      element.style.width = '42px';
+      element.style.height = '42px';
       element.style.display = 'flex';
       element.style.alignItems = 'center';
       element.style.justifyContent = 'center';
       
-      // Icon or Text
       if (hotspot.type === 'LINK') {
-        element.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>';
+        element.innerHTML = `<img src="/icons/link.png" style="width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));" alt="Link" />`;
       } else {
-        element.innerHTML = '<span style="color: #374151; font-weight: bold;">i</span>';
+        // Info hotspot styling (fallback if needed)
+        element.style.borderRadius = '50%';
+        element.style.backgroundColor = 'rgba(255, 255, 255, 0.9)';
+        element.style.border = '2px solid #6366f1';
+        element.innerHTML = '<span style="color: #6366f1; font-weight: bold; font-size: 18px;">i</span>';
+        element.style.width = '32px';
+        element.style.height = '32px';
       }
 
-      // Drag logic
-      if (editorMode) {
-        let isDragging = false;
-        let startX = 0;
-        let startY = 0;
-
-        element.onmousedown = (e) => {
-          e.stopPropagation();
-          isDragging = true;
-          startX = e.clientX;
-          startY = e.clientY;
-          draggingRef.current = { hotspotId: hotspot.id, isDragging: true, moved: false };
-          
-          const onMouseMove = (moveEvent: MouseEvent) => {
-            if (!isDragging) return;
-            
-            const dx = moveEvent.clientX - startX;
-            const dy = moveEvent.clientY - startY;
-            if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
-              draggingRef.current!.moved = true;
-            }
-
-            const rect = containerRef.current!.getBoundingClientRect();
-            const localPoint = {
-              x: moveEvent.clientX - rect.left,
-              y: moveEvent.clientY - rect.top
-            };
-            
-            const scene = viewerRef.current.scene();
-            const view = scene.view();
-            const coords = view.screenToCoordinates(localPoint);
-            
-            if (coords) {
-              // We can't easily update hotspot position in Marzipano without destroying/recreating 
-              // or accessing private properties. For now, we'll just move the element visually 
-              // or let it be updated on mouseup.
-              // Actually, Marzipano hotspots have a `setPosition` but it might not be public.
-              // Let's try to update the hotspot's position in the container.
-              const container = scene.hotspotContainer();
-              if (container && typeof container.listHotspots === 'function') {
-                const marzipanoHotspot = container.listHotspots().find((h: any) => h.domElement() === element);
-                if (marzipanoHotspot && typeof marzipanoHotspot.setPosition === 'function') {
-                  marzipanoHotspot.setPosition({ yaw: coords.yaw, pitch: coords.pitch });
-                }
-              }
-            }
-          };
-
-          const onMouseUp = (upEvent: MouseEvent) => {
-            if (!isDragging) return;
-            isDragging = false;
-            
-            window.removeEventListener('mousemove', onMouseMove);
-            window.removeEventListener('mouseup', onMouseUp);
-
-            if (draggingRef.current?.moved) {
-              const rect = containerRef.current!.getBoundingClientRect();
-              const localPoint = {
-                x: upEvent.clientX - rect.left,
-                y: upEvent.clientY - rect.top
-              };
-              const scene = viewerRef.current.scene();
-              const view = scene.view();
-              const coords = view.screenToCoordinates(localPoint);
-              
-              if (coords && onHotspotMove) {
-                onHotspotMove(hotspot, coords.yaw, coords.pitch);
-              }
-            } else {
-              if (onHotspotClick) onHotspotClick(hotspot);
-            }
-            
-            setTimeout(() => {
-              draggingRef.current = null;
-            }, 100);
-          };
-
-          window.addEventListener('mousemove', onMouseMove);
-          window.addEventListener('mouseup', onMouseUp);
-        };
-      } else {
-        element.onclick = (e) => {
-          e.stopPropagation();
-          if (onHotspotClick) onHotspotClick(hotspot);
-        };
-      }
+      element.onclick = (e) => {
+        e.stopPropagation();
+        if (onHotspotClick) onHotspotClick(hotspot);
+      };
 
       scene.hotspotContainer().createHotspot(element, { yaw: hotspot.yaw, pitch: hotspot.pitch });
     });
-  }, [hotspots, editorMode, onHotspotClick, onHotspotMove]);
+  }, [hotspots, onHotspotClick]); // Removed editorMode and onHotspotMove from dependencies
+
+  // Debug logs for hotspot mode
+  useEffect(() => {
+    console.log('DEBUG: addHotspotMode changed to:', addHotspotMode);
+    if (containerRef.current) {
+      console.log('DEBUG: Container classes:', containerRef.current.parentElement?.className);
+    }
+  }, [addHotspotMode]);
 
   return (
-    <div className={`w-full h-full min-h-[400px] bg-black relative ${addHotspotMode ? 'cursor-crosshair' : ''}`}>
+    <div className={`w-full h-full min-h-[400px] bg-black relative ${addHotspotMode ? 'hotspot-cursor' : ''}`}>
       <div
         ref={containerRef}
         className="w-full h-full"
       />
       <style jsx global>{`
         .marzipano-hotspot {
-          transition: transform 0.2s ease;
           z-index: 10;
         }
         .marzipano-hotspot:hover {
           transform: scale(1.1);
+        }
+        .hotspot-cursor, 
+        .hotspot-cursor *,
+        .hotspot-cursor canvas,
+        .hotspot-cursor .marzipano-container {
+          cursor: url('/icons/link.png') 16 16, crosshair !important;
         }
       `}</style>
     </div>
