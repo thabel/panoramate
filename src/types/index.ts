@@ -58,6 +58,7 @@ export interface TourWithImages {
   viewCount: number;
   settings: any;
   organizationId: string;
+  organization?: Organization;
   createdById: string;
   images: TourImage[];
   createdAt: Date;

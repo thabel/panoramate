@@ -67,7 +67,7 @@ export async function POST(
       );
     }
 
-    const createdImages = [];
+    const createdImages: any[] = [];
 
     for (const file of files) {
       // Validate file type

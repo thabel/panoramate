@@ -26,9 +26,7 @@
     "moduleResolution": "node",
     "isolatedModules": true,
     "types": [
-      "node",
-      "jest",
-      "@testing-library/jest-dom"
+      "node"
     ],
     "baseUrl": ".",
     "paths": {

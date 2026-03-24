@@ -69,7 +69,7 @@
 ✅ **src/app/(dashboard)/tours/page.tsx** - Tours list page with search
 ✅ **src/app/(dashboard)/tours/new/page.tsx** - Create new tour form
 ✅ **src/app/(dashboard)/tours/[id]/page.tsx** - Tour details and upload
-✅ **src/app/(dashboard)/tours/[id]/editor/page.tsx** - Tour editor with Pannellum viewer
+✅ **src/app/(dashboard)/tours/[id]/editor/page.tsx** - Tour editor with Marzipano viewer
 ✅ **src/app/(dashboard)/billing/page.tsx** - Billing and plan management
 ✅ **src/app/(dashboard)/team/page.tsx** - Team member management
 ✅ **src/app/(dashboard)/settings/page.tsx** - Account and organization settings
@@ -98,7 +98,7 @@
 
 ## Viewer Components
 
-✅ **src/components/viewer/PannellumViewer.tsx** - 360° panorama viewer component
+✅ **src/components/viewer/MarzipanoViewer.tsx** - 360° panorama viewer component
 
 ## Custom Hooks
 

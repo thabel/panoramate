@@ -21,13 +21,21 @@ export default function RootLayout({
       <body className="bg-dark-900 text-dark-50">
         {children}
         <Toaster position="top-right" />
-        <link
-          rel="stylesheet"
-          href="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.css"
+        <Script 
+          src="https://www.marzipano.net/demos/common/es5-shim.js" 
+          strategy="afterInteractive" 
         />
         <Script 
-          src="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.js" 
-          strategy="beforeInteractive" 
+          src="https://www.marzipano.net/demos/common/eventShim.js" 
+          strategy="afterInteractive" 
+        />
+        <Script 
+          src="https://www.marzipano.net/demos/common/requestAnimationFrameShim.js" 
+          strategy="afterInteractive" 
+        />
+        <Script 
+          src="https://cdn.jsdelivr.net/npm/marzipano@0.10.2/dist/marzipano.min.js" 
+          strategy="afterInteractive" 
         />
       </body>
     </html>

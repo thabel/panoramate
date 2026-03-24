@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { TourWithImages } from '@/types';
-import { PannellumViewer } from '@/components/viewer/PannellumViewer';
+import { MarzipanoViewer } from '@/components/viewer/MarzipanoViewer';
 import { Button } from '@/components/ui/Button';
 import { UploadZone } from '@/components/dashboard/UploadZone';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
@@ -339,7 +339,7 @@ export default function TourEditorPage({
           </div>
           <div className="w-px h-6 bg-dark-700" />
           <h1 className="text-lg font-semibold text-white truncate max-w-[300px]">{tour.title}</h1>
-          <Badge variant="secondary" className="ml-2">
+          <Badge variant="default" className="ml-2">
             Scene {currentSceneIndex + 1} / {tour.images.length}
           </Badge>
         </div>
@@ -376,7 +376,7 @@ export default function TourEditorPage({
       {/* Main Editor */}
       <div className="flex flex-1 overflow-hidden relative">
         <div className="absolute inset-0 pb-24 overflow-hidden">
-          <PannellumViewer
+          <MarzipanoViewer
             scenes={tour.images}
             initialSceneId={currentScene.id}
             editorMode={true}

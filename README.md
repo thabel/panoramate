@@ -10,7 +10,7 @@ A complete SaaS platform for creating and sharing stunning 360° virtual tours. 
 - **Public Sharing**: Generate shareable links and embed code for your tours
 - **Subscription Plans**: Free trial (14 days), Starter ($29/mo), Professional ($79/mo), Enterprise ($199/mo)
 - **Storage Management**: Track and manage storage usage with plan-based limits
-- **Pannellum Integration**: High-performance 360° viewer
+- **Marzipano Integration**: High-performance 360° viewer
 - **Dark Theme UI**: Modern dark interface with Tailwind CSS
 
 ## Tech Stack
@@ -220,13 +220,12 @@ uploads/                   # User-uploaded files
 - `DELETE /api/team/:memberId` - Remove member
 - `POST /api/team/accept-invite` - Accept invitation
 
-## Pannellum Integration
+## Marzipano Integration
 
-The Pannellum viewer is loaded from a CDN.
+The Marzipano viewer is loaded from a CDN.
 
 ```html
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.css"/>
-<script src="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/marzipano@0.10.2/dist/marzipano.min.js"></script>
 ```
 
 ## Deployment

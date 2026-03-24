@@ -1,7 +1,7 @@
 {
   "name": "panoramate",
   "version": "1.0.0",
-  "description": "SaaS platform for creating and sharing 360° virtual tours powered by Pannellum",
+  "description": "SaaS platform for creating and sharing 360° virtual tours powered by Marzipano",
   "private": true,
   "scripts": {
     "dev": "next dev",
