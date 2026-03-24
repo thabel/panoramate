@@ -163,7 +163,7 @@ export default function TourDetailPage({
           </div>
         </div>
       )}
- <h1>Iam here</h1>
+
       {/* Share Modal */}
       <ShareModal
         isOpen={isShareModalOpen}

@@ -110,7 +110,7 @@ export default function DashboardLayout({
               <div className="text-2xl font-bold text-transparent bg-gradient-to-r from-primary-400 to-primary-600 bg-clip-text">
                 Panoramate
               </div>
-              <p className="mt-1 text-xs text-dark-400 truncate max-w-[140px]">{organization.name}</p>
+              {/* <p className="mt-1 text-xs text-dark-400 truncate max-w-[140px]">{organization.name}</p> */}
             </div>
           )}
           {isCollapsed && (
