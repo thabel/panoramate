@@ -152,7 +152,14 @@ export async function DELETE(
     });
 
     return NextResponse.json(
-      { success: true, message: 'Tour share link revoked' },
+      {
+        success: true,
+        data: {
+          isPublic: updatedTour.isPublic,
+          shareToken: updatedTour.shareToken,
+          shareLink: null,
+        },
+      },
       { status: 200 }
     );
   } catch (error) {

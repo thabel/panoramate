@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -26,9 +27,9 @@ export default function TourEditorPage({
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [addHotspotMode, setAddHotspotMode] = useState(false);
   const [isHotspotModalOpen, setIsHotspotModalOpen] = useState(false);
-  const [isManageHotspotModalOpen, setIsManageHotspotModalOpen] = useState(false);
-  const [selectedHotspot, setSelectedHotspot] = useState<any>(null);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [selectedHotspot, setSelectedHotspot] = useState<any | null>(null);
+  const [isHotspotActionModalOpen, setIsHotspotActionModalOpen] = useState(false);
   const [newHotspotCoords, setNewHotspotCoords] = useState<{ yaw: number; pitch: number } | null>(null);
   const [hotspotForm, setHotspotForm] = useState({
     type: 'LINK',
@@ -129,16 +130,10 @@ export default function TourEditorPage({
   const handlePanoramaClick = (yaw: number, pitch: number) => {
     if (addHotspotMode) {
       setNewHotspotCoords({ yaw, pitch });
-      
-      const potentialTargets = tour?.images.filter(img => img.id !== tour.images[currentSceneIndex].id) || [];
-      const firstTarget = potentialTargets[0];
-      
       setHotspotForm({
-        type: 'LINK',
-        title: firstTarget ? `To ${firstTarget.title || 'Next Scene'}` : 'New Hotspot',
-        targetImageId: firstTarget?.id || '',
+        ...hotspotForm,
+        targetImageId: tour?.images.find(img => img.id !== tour.images[currentSceneIndex].id)?.id || '',
       });
-      
       setIsHotspotModalOpen(true);
       setAddHotspotMode(false);
     }
@@ -188,11 +183,12 @@ export default function TourEditorPage({
 
   const handleHotspotClick = (hotspot: any) => {
     setSelectedHotspot(hotspot);
-    setIsManageHotspotModalOpen(true);
+    setIsHotspotActionModalOpen(true);
   };
 
   const confirmDeleteHotspot = async () => {
     if (!selectedHotspot || !tour) return;
+    if (!confirm('Are you sure you want to delete this hotspot?')) return;
 
     try {
       const currentImageId = tour.images[currentSceneIndex].id;
@@ -215,7 +211,7 @@ export default function TourEditorPage({
               : img
           )
         });
-        setIsManageHotspotModalOpen(false);
+        setIsHotspotActionModalOpen(false);
         setSelectedHotspot(null);
         toast.success('Hotspot deleted');
       } else {
@@ -226,18 +222,16 @@ export default function TourEditorPage({
     }
   };
 
-  const navigateToHotspotTarget = () => {
-    if (!selectedHotspot || !tour) return;
+  const goToTargetScene = () => {
+    if (!selectedHotspot || selectedHotspot.type !== 'LINK' || !selectedHotspot.targetImageId) return;
     
-    if (selectedHotspot.type === 'LINK' && selectedHotspot.targetImageId) {
-      const targetIndex = tour.images.findIndex(img => img.id === selectedHotspot.targetImageId);
-      if (targetIndex !== -1) {
-        setCurrentSceneIndex(targetIndex);
-        setIsManageHotspotModalOpen(false);
-        setSelectedHotspot(null);
-      }
+    const index = tour!.images.findIndex(img => img.id === selectedHotspot.targetImageId);
+    if (index !== -1) {
+      setCurrentSceneIndex(index);
+      setIsHotspotActionModalOpen(false);
+      setSelectedHotspot(null);
     } else {
-      toast.error('This hotspot has no target scene');
+      toast.error('Target scene not found');
     }
   };
 
@@ -364,7 +358,7 @@ export default function TourEditorPage({
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-dark-900">
       {/* Header */}
-      <div className="flex items-center justify-between flex-shrink-0 h-16 px-6 py-4 border-b bg-dark-800 border-dark-700 z-20">
+      <div className="z-20 flex items-center justify-between flex-shrink-0 h-16 px-6 py-4 border-b bg-dark-800 border-dark-700">
         <div className="flex items-center gap-4">
           <div className="text-xl font-bold text-transparent bg-gradient-to-r from-primary-400 to-primary-600 bg-clip-text">
             Panoramate
@@ -406,11 +400,14 @@ export default function TourEditorPage({
       </div>
 
       {/* Main Editor Area */}
-      <div className="flex flex-1 overflow-hidden relative">
+      <div className="relative flex flex-1 overflow-hidden">
         {/* Left Action Sidebar */}
-        <aside className="w-20 bg-dark-800 border-r border-dark-700 flex flex-col items-center py-6 gap-6 z-20">
+        <aside className="z-20 flex flex-col items-center w-20 gap-6 py-6 border-r bg-dark-800 border-dark-700">
           <button
-            onClick={() => setAddHotspotMode(!addHotspotMode)}
+            onClick={() =>{
+              console.log('Add Hotspot Mode:', !addHotspotMode);
+              setAddHotspotMode(!addHotspotMode);
+            }}
             title={addHotspotMode ? 'Cancel Add Hotspot' : 'Add Hotspot'}
             className={`p-3 rounded-xl transition-all duration-200 ${
               addHotspotMode 
@@ -424,24 +421,24 @@ export default function TourEditorPage({
           <button
             onClick={() => setIsUploadModalOpen(true)}
             title="Add New Scene"
-            className="p-3 rounded-xl text-dark-400 hover:text-white hover:bg-dark-700 transition-all duration-200"
+            className="p-3 transition-all duration-200 rounded-xl text-dark-400 hover:text-white hover:bg-dark-700"
           >
             <Plus size={24} />
           </button>
 
-          <div className="w-8 h-px bg-dark-700 my-2" />
+          <div className="w-8 h-px my-2 bg-dark-700" />
 
           <button
             onClick={handleSave}
             title="Save Tour"
-            className="p-3 rounded-xl text-dark-400 hover:text-white hover:bg-dark-700 transition-all duration-200"
+            className="p-3 transition-all duration-200 rounded-xl text-dark-400 hover:text-white hover:bg-dark-700"
           >
             <Save size={24} />
           </button>
         </aside>
 
         {/* Viewer Area */}
-        <div className="flex-1 relative overflow-hidden">
+        <div className="relative flex-1 overflow-hidden">
           <div className="absolute inset-0 pb-24">
             <MarzipanoViewer
               scenes={tour.images}
@@ -606,56 +603,65 @@ export default function TourEditorPage({
       </Modal>
 
       <Modal
-        isOpen={isManageHotspotModalOpen}
+        isOpen={isHotspotActionModalOpen}
         onClose={() => {
-          setIsManageHotspotModalOpen(false);
+          setIsHotspotActionModalOpen(false);
           setSelectedHotspot(null);
         }}
-        title="Manage Hotspot"
+        title="Hotspot Actions"
       >
         <div className="p-6 space-y-4">
-          <div className="flex items-center gap-4 p-4 border rounded-lg bg-dark-700 border-dark-600">
-            <div className="p-3 rounded-full bg-primary-500/20 text-primary-400">
-              <MapPin size={24} />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-dark-300">Hotspot Title</p>
-              <p className="text-lg font-bold text-white">{selectedHotspot?.title || 'Unnamed Hotspot'}</p>
-            </div>
+          <div className="text-center mb-6">
+            <h3 className="text-lg font-semibold text-white">
+              {selectedHotspot?.title || 'Unnamed Hotspot'}
+            </h3>
+            <p className="text-sm text-dark-400 mt-1">
+              Type: {selectedHotspot?.type === 'LINK' ? 'Scene Link' : 'Information'}
+            </p>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <Button
-              variant="secondary"
-              onClick={navigateToHotspotTarget}
-              className="flex items-center justify-center gap-2 py-6"
-            >
-              <ChevronRight size={20} />
-              Go to Scene
-            </Button>
+          <div className="flex flex-col gap-3">
+            {selectedHotspot?.type === 'LINK' && (
+              <Button
+                variant="primary"
+                onClick={goToTargetScene}
+                className="w-full flex items-center justify-center gap-2"
+              >
+                <ChevronRight size={18} />
+                Go to Target Scene
+              </Button>
+            )}
             
             <Button
               variant="secondary"
               onClick={confirmDeleteHotspot}
-              className="flex items-center justify-center gap-2 py-6 text-red-400 hover:text-red-300 hover:bg-red-500/10"
+              className="w-full flex items-center justify-center gap-2 text-red-400 hover:text-red-300 border-red-900/50 hover:bg-red-900/20"
             >
-              <Trash2 size={20} />
-              Delete
+              <Trash2 size={18} />
+              Delete Hotspot
+            </Button>
+            
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setIsHotspotActionModalOpen(false);
+                setSelectedHotspot(null);
+              }}
+              className="w-full"
+            >
+              Cancel
             </Button>
           </div>
-
-          <Button
-            variant="secondary"
-            onClick={() => {
-              setIsManageHotspotModalOpen(false);
-              setSelectedHotspot(null);
-            }}
-            className="w-full"
-          >
-            Cancel
-          </Button>
         </div>
       </Modal>
+
+      <ShareModal
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
+        tourId={params.id}
+        tourTitle={tour.title}
+        isPublic={tour.isPublic}
+      />
     </div>
   );
 }

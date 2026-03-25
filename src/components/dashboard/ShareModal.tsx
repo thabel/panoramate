@@ -44,6 +44,9 @@ export const ShareModal: React.FC<ShareModalProps> = ({
       if (response.ok) {
         const data = await response.json();
         setShareData(data.data);
+      } else {
+        const errorData = await response.json();
+        console.error('Fetch share data error:', errorData.error);
       }
     } catch (error) {
       console.error('Fetch share data error:', error);
@@ -70,6 +73,9 @@ export const ShareModal: React.FC<ShareModalProps> = ({
         toast.success(
           data.data.isPublic ? 'Tour is now public' : 'Tour is now private'
         );
+      } else {
+        const errorData = await response.json();
+        toast.error(errorData.error || 'Failed to update share status');
       }
     } catch (error) {
       toast.error('Failed to update share status');
