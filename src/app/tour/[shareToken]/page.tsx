@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { MarzipanoViewer } from '@/components/viewer/MarzipanoViewer';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { Button } from '@/components/ui/Button';
-import { Maximize, Minimize } from 'lucide-react';
+import { Maximize, Minimize, ChevronUp, ChevronDown, Layers } from 'lucide-react';
 import { TourWithImages } from '@/types';
 
 export default function PublicTourPage({
@@ -20,6 +20,7 @@ export default function PublicTourPage({
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isFullScreen, setIsFullScreen] = useState(false);
+  const [isSwitcherOpen, setIsSwitcherOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -139,6 +140,59 @@ export default function PublicTourPage({
             >
               {isFullScreen ? <Minimize size={20} /> : <Maximize size={20} />}
             </button>
+
+            {/* Scene Switcher */}
+            <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-30 flex flex-col items-center max-w-[95vw]">
+              <button
+                onClick={() => setIsSwitcherOpen(!isSwitcherOpen)}
+                className={`flex items-center gap-2 bg-dark-900/80 hover:bg-dark-800 text-white px-4 py-2 rounded-full backdrop-blur-md border border-dark-700/50 transition-all shadow-lg mb-3 active:scale-95 ${
+                  isSwitcherOpen ? 'ring-2 ring-primary-500/50' : ''
+                }`}
+              >
+                <Layers size={18} className="text-primary-400" />
+                <span className="text-sm font-medium">Browse scenes</span>
+                {isSwitcherOpen ? <ChevronDown size={18} /> : <ChevronUp size={18} />}
+              </button>
+              
+              {isSwitcherOpen && (
+                <div className="bg-dark-900/80 backdrop-blur-md border border-dark-700/50 rounded-2xl p-3 w-full overflow-x-auto flex gap-3 scrollbar-hide shadow-2xl animate-fade-in">
+                  {tour.images.map((image) => (
+                    <button
+                      key={image.id}
+                      onClick={() => setCurrentSceneId(image.id)}
+                      className={`relative flex-shrink-0 w-28 h-20 rounded-xl overflow-hidden border-2 transition-all group ${
+                        currentSceneId === image.id 
+                          ? 'border-primary-500 ring-2 ring-primary-500/20 shadow-[0_0_15px_rgba(99,102,241,0.5)]' 
+                          : 'border-transparent hover:border-dark-500'
+                      }`}
+                    >
+                      <img
+                        src={`/api/uploads/${image.filename}`}
+                        alt={image.title || image.originalName}
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+                      <div className="absolute bottom-0 left-0 right-0 p-2 text-[10px] font-medium text-white truncate text-center">
+                        {image.title || image.originalName}
+                      </div>
+                      {currentSceneId === image.id && (
+                        <div className="absolute top-1 right-1 w-2 h-2 bg-primary-500 rounded-full shadow-[0_0_8px_rgba(99,102,241,0.8)]" />
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <style jsx global>{`
+              .scrollbar-hide::-webkit-scrollbar {
+                display: none;
+              }
+              .scrollbar-hide {
+                -ms-overflow-style: none;
+                scrollbar-width: none;
+              }
+            `}</style>
           </>
         ) : (
           <div className="h-full flex items-center justify-center text-dark-400">

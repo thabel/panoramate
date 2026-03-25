@@ -9,9 +9,11 @@ export async function middleware(request: NextRequest) {
     '/api/auth/register',
     '/api/auth/login',
     '/api/auth/logout',
-    '/api/tours',
     '/api/billing/webhook',
+    '/api/tours-public',
     '/tour/',
+    '/login',
+    '/register',
   ];
 
   // Check if this is a public route
@@ -33,12 +35,19 @@ export async function middleware(request: NextRequest) {
   }
 
   if (!tokenToVerify) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    // Redirect to login if it's a page request, otherwise return JSON
+    if (pathname.startsWith('/api/')) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    return NextResponse.redirect(new URL('/login', request.url));
   }
 
   const payload = await verifyJWT(tokenToVerify);
   if (!payload) {
-    return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+    if (pathname.startsWith('/api/')) {
+      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+    }
+    return NextResponse.redirect(new URL('/login', request.url));
   }
 
   // Token is valid, continue
