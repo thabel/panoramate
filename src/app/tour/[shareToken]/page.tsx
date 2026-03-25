@@ -16,6 +16,7 @@ export default function PublicTourPage({
   const searchParams = useSearchParams();
   const isEmbed = searchParams.get('embed') === 'true';
   const [tour, setTour] = useState<TourWithImages | null>(null);
+  const [currentSceneId, setCurrentSceneId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isFullScreen, setIsFullScreen] = useState(false);
@@ -48,6 +49,9 @@ export default function PublicTourPage({
 
       if (data.success) {
         setTour(data.data);
+        if (data.data.images && data.data.images.length > 0) {
+          setCurrentSceneId(data.data.images[0].id);
+        }
       } else {
         setError('Failed to load tour');
       }
@@ -56,6 +60,17 @@ export default function PublicTourPage({
       console.error('Fetch tour error:', err);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleHotspotClick = (hotspot: any) => {
+    if (hotspot.type === 'LINK' && hotspot.targetImageId) {
+      setCurrentSceneId(hotspot.targetImageId);
+    } else if (hotspot.type === 'INFO') {
+      // Potentially show info content if we want
+      if (hotspot.title || hotspot.content) {
+        alert(`${hotspot.title || ''}\n\n${hotspot.content || ''}`);
+      }
     }
   };
 
@@ -112,6 +127,8 @@ export default function PublicTourPage({
             <MarzipanoViewer
               scenes={tour.images}
               hotspots={tour.images.flatMap(img => (img as any).hotspots || [])}
+              initialSceneId={currentSceneId || undefined}
+              onHotspotClick={handleHotspotClick}
               editorMode={false}
             />
             {/* Full screen button toggle */}
