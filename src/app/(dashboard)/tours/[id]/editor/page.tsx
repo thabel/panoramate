@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/Button';
 import { UploadZone } from '@/components/dashboard/UploadZone';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { Badge } from '@/components/ui/Badge';
-import { Save, ChevronLeft, ChevronRight, Image as ImageIcon, Plus, Trash2, X, MapPin, Share2 } from 'lucide-react';
+import { Save, ChevronLeft, ChevronRight, Image as ImageIcon, Plus, Trash2, X, MapPin, Share2, Edit2, Search } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import { ShareModal } from '@/components/dashboard/ShareModal';
 import toast from 'react-hot-toast';
@@ -28,9 +28,13 @@ export default function TourEditorPage({
   const [addHotspotMode, setAddHotspotMode] = useState(false);
   const [isHotspotModalOpen, setIsHotspotModalOpen] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [isRenameModalOpen, setIsRenameModalOpen] = useState(false);
+  const [newSceneTitle, setNewSceneTitle] = useState('');
   const [selectedHotspot, setSelectedHotspot] = useState<any | null>(null);
   const [isHotspotActionModalOpen, setIsHotspotActionModalOpen] = useState(false);
   const [newHotspotCoords, setNewHotspotCoords] = useState<{ yaw: number; pitch: number } | null>(null);
+  const [sceneSearchQuery, setSceneSearchQuery] = useState('');
+  const [selectionMode, setSelectionMode] = useState<'name' | 'image'>('name');
   const [hotspotForm, setHotspotForm] = useState({
     type: 'LINK',
     title: '',
@@ -135,7 +139,7 @@ export default function TourEditorPage({
         targetImageId: tour?.images.find(img => img.id !== tour.images[currentSceneIndex].id)?.id || '',
       });
       setIsHotspotModalOpen(true);
-      setAddHotspotMode(false);
+      // We keep addHotspotMode true until it's actually created or cancelled
     }
   };
 
@@ -171,7 +175,9 @@ export default function TourEditorPage({
         });
         
         setIsHotspotModalOpen(false);
+        setAddHotspotMode(false);
         setNewHotspotCoords(null);
+        setSceneSearchQuery('');
         toast.success('Hotspot created');
       } else {
         toast.error('Failed to create hotspot');
@@ -275,6 +281,41 @@ export default function TourEditorPage({
     }
   };
 
+  const handleRenameScene = async () => {
+    if (!tour || !newSceneTitle.trim()) return;
+
+    try {
+      const currentImageId = tour.images[currentSceneIndex].id;
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/tours/${params.id}/images`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token || ''}`,
+        },
+        body: JSON.stringify({
+          imageId: currentImageId,
+          title: newSceneTitle.trim(),
+        }),
+      });
+
+      if (response.ok) {
+        setTour({
+          ...tour,
+          images: tour.images.map((img, idx) =>
+            idx === currentSceneIndex ? { ...img, title: newSceneTitle.trim() } : img
+          ),
+        });
+        setIsRenameModalOpen(false);
+        toast.success('Scene renamed');
+      } else {
+        toast.error('Failed to rename scene');
+      }
+    } catch (error) {
+      toast.error('Error renaming scene');
+    }
+  };
+
   const handleSave = async () => {
     if (!tour) return;
 
@@ -364,13 +405,25 @@ export default function TourEditorPage({
             Panoramate
           </div>
           <div className="w-px h-6 bg-dark-700" />
-          <h1 className="text-lg font-semibold text-white truncate max-w-[300px]">{tour.title}</h1>
-          <Badge variant="default" className="ml-2">
-            Scene {currentSceneIndex + 1} / {tour.images.length}
-          </Badge>
+          <h1 className="text-lg font-semibold text-white truncate max-w-[200px]">{tour.title}</h1>
+          <div className="w-px h-6 bg-dark-700" />
+          <div className="flex items-center gap-2">
+         
+            <Badge variant="default" className="ml-2">
+              {currentSceneIndex + 1} / {tour.images.length}
+            </Badge>
+          </div>
         </div>
 
         <div className="flex gap-3">
+          <Button
+            variant="secondary"
+            onClick={() => setIsUploadModalOpen(true)}
+            className="flex items-center gap-2"
+          >
+            <Plus size={18} />
+            Add Scene
+          </Button>
           <Button
             variant="secondary"
             onClick={() => setIsShareModalOpen(true)}
@@ -402,28 +455,38 @@ export default function TourEditorPage({
       {/* Main Editor Area */}
       <div className="relative flex flex-1 overflow-hidden">
         {/* Left Action Sidebar */}
-        <aside className="z-20 flex flex-col items-center w-20 gap-6 py-6 border-r bg-dark-800 border-dark-700">
+        <aside className="z-30 flex flex-col items-center w-20 gap-6 py-6 border-r bg-dark-800 border-dark-700">
           <button
             onClick={() =>{
-              console.log('Add Hotspot Mode:', !addHotspotMode);
-              setAddHotspotMode(!addHotspotMode);
+              const nextMode = !addHotspotMode;
+              setAddHotspotMode(nextMode);
+              if (!nextMode) {
+                setIsHotspotModalOpen(false);
+                setNewHotspotCoords(null);
+                setSceneSearchQuery('');
+              }
             }}
             title={addHotspotMode ? 'Cancel Add Hotspot' : 'Add Hotspot'}
-            className={`p-3 rounded-xl transition-all duration-200 ${
+            className={`flex flex-col items-center gap-1 p-2 w-16 rounded-xl transition-all duration-200 ${
               addHotspotMode 
                 ? 'bg-primary-600 text-white shadow-[0_0_15px_rgba(99,102,241,0.4)]' 
                 : 'text-dark-400 hover:text-white hover:bg-dark-700'
             }`}
           >
-            <MapPin size={24} />
+            <MapPin size={22} />
+            <span className="text-[10px] font-medium">Hotspot</span>
           </button>
           
           <button
-            onClick={() => setIsUploadModalOpen(true)}
-            title="Add New Scene"
-            className="p-3 transition-all duration-200 rounded-xl text-dark-400 hover:text-white hover:bg-dark-700"
+            onClick={() => {
+              setNewSceneTitle(currentScene.title || `Scene ${currentSceneIndex + 1}`);
+              setIsRenameModalOpen(true);
+            }}
+            title="Rename Scene"
+            className="flex flex-col items-center w-16 gap-1 p-2 transition-all duration-200 rounded-xl text-dark-400 hover:text-white hover:bg-dark-700"
           >
-            <Plus size={24} />
+            <Edit2 size={22} />
+            <span className="text-[10px] font-medium">Rename</span>
           </button>
 
           <div className="w-8 h-px my-2 bg-dark-700" />
@@ -431,9 +494,10 @@ export default function TourEditorPage({
           <button
             onClick={handleSave}
             title="Save Tour"
-            className="p-3 transition-all duration-200 rounded-xl text-dark-400 hover:text-white hover:bg-dark-700"
+            className="flex flex-col items-center w-16 gap-1 p-2 transition-all duration-200 rounded-xl text-dark-400 hover:text-white hover:bg-dark-700"
           >
-            <Save size={24} />
+            <Save size={22} />
+            <span className="text-[10px] font-medium">Save</span>
           </button>
         </aside>
 
@@ -475,9 +539,12 @@ export default function TourEditorPage({
                   >
                     <img
                       src={`/api/uploads/${image.filename}`}
-                      alt={`Scene ${index + 1}`}
-                      className="object-cover w-full h-full"
+                      alt={image.title || `Scene ${index + 1}`}
+                      className="object-cover w-full h-full transition-transform duration-500 group-hover:scale-110"
                     />
+                    <div className="absolute inset-x-0 bottom-0 p-1 text-[8px] font-bold text-center text-white truncate bg-black/40 backdrop-blur-[2px]">
+                      {image.title || `Scene ${index + 1}`}
+                    </div>
                   </button>
                   <button
                     onClick={(e) => handleDeleteScene(e, image.id)}
@@ -512,6 +579,162 @@ export default function TourEditorPage({
             </button>
           </div>
         </div>
+
+        {/* Hotspot Configuration Panel (Right Side Drawer) */}
+        {isHotspotModalOpen && (
+          <div className="z-20 w-80 flex flex-col h-full bg-dark-800 border-l border-dark-700 animate-in slide-in-from-right duration-300 overflow-hidden shadow-2xl">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-dark-700 bg-dark-900/50">
+              <h2 className="text-lg font-semibold text-white">Configure Hotspot</h2>
+              <button
+                onClick={() => {
+                  setIsHotspotModalOpen(false);
+                  setNewHotspotCoords(null);
+                  setSceneSearchQuery('');
+                }}
+                className="p-1 hover:bg-dark-700 rounded-lg transition-colors text-dark-400"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto p-6 space-y-6 scrollbar-hide">
+              <div className="space-y-4">
+                <div>
+                  <label className="block mb-2 text-sm font-medium text-dark-300">Type</label>
+                  <select
+                    value={hotspotForm.type}
+                    onChange={(e) => setHotspotForm({ ...hotspotForm, type: e.target.value })}
+                    className="w-full px-3 py-2 text-sm text-white border rounded-lg outline-none bg-dark-700 border-dark-600 focus:border-primary-500 transition-all"
+                  >
+                    <option value="LINK">Link to Scene</option>
+                    <option value="INFO">Information Box</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block mb-2 text-sm font-medium text-dark-300">Tooltip Title</label>
+                  <input
+                    type="text"
+                    value={hotspotForm.title}
+                    onChange={(e) => setHotspotForm({ ...hotspotForm, title: e.target.value })}
+                    placeholder="e.g. Living Room"
+                    className="w-full px-3 py-2 text-sm text-white border rounded-lg outline-none bg-dark-700 border-dark-600 focus:border-primary-500 transition-all"
+                  />
+                </div>
+              </div>
+
+              {hotspotForm.type === 'LINK' && (
+                <div className="space-y-4 pt-4 border-t border-dark-700">
+                  <div className="flex flex-col gap-3">
+                    <label className="text-sm font-semibold text-white">Target Scene</label>
+                    <div className="flex bg-dark-900 p-1 rounded-lg border border-dark-700 w-full">
+                      <button
+                        onClick={() => setSelectionMode('name')}
+                        className={`flex-1 py-1.5 text-xs font-medium rounded-md transition-all ${
+                          selectionMode === 'name' ? 'bg-primary-600 text-white shadow-sm' : 'text-dark-400 hover:text-white'
+                        }`}
+                      >
+                        By name
+                      </button>
+                      <button
+                        onClick={() => setSelectionMode('image')}
+                        className={`flex-1 py-1.5 text-xs font-medium rounded-md transition-all ${
+                          selectionMode === 'image' ? 'bg-primary-600 text-white shadow-sm' : 'text-dark-400 hover:text-white'
+                        }`}
+                      >
+                        By image
+                      </button>
+                    </div>
+                  </div>
+
+                  {selectionMode === 'name' ? (
+                    <div className="space-y-3">
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-dark-400" size={16} />
+                        <input
+                          type="text"
+                          placeholder="Search scene..."
+                          value={sceneSearchQuery}
+                          onChange={(e) => setSceneSearchQuery(e.target.value)}
+                          className="w-full pl-10 pr-4 py-2 text-xs text-white border rounded-lg outline-none bg-dark-900 border-dark-700 focus:border-primary-500"
+                        />
+                      </div>
+                      <div className="max-h-64 overflow-y-auto space-y-1 pr-1 scrollbar-thin scrollbar-thumb-dark-600">
+                        {tour.images
+                          .filter(img => 
+                            img.id !== tour.images[currentSceneIndex].id &&
+                            (img.title || `Scene ${img.order + 1}`).toLowerCase().includes(sceneSearchQuery.toLowerCase())
+                          )
+                          .map(img => (
+                            <button
+                              key={img.id}
+                              onClick={() => setHotspotForm({ ...hotspotForm, targetImageId: img.id })}
+                              className={`w-full text-left px-3 py-2.5 rounded-lg text-xs transition-all border ${
+                                hotspotForm.targetImageId === img.id
+                                  ? 'bg-primary-600/20 border-primary-500 text-white'
+                                  : 'bg-dark-900/40 border-transparent text-dark-300 hover:bg-dark-700 hover:text-white'
+                              }`}
+                            >
+                              {img.title || `Scene ${img.order + 1}`}
+                            </button>
+                          ))
+                        }
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-2 max-h-80 overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-dark-600">
+                      {tour.images
+                        .filter(img => img.id !== tour.images[currentSceneIndex].id)
+                        .map(img => (
+                          <button
+                            key={img.id}
+                            onClick={() => setHotspotForm({ ...hotspotForm, targetImageId: img.id })}
+                            className={`relative group rounded-lg overflow-hidden border-2 transition-all ${
+                              hotspotForm.targetImageId === img.id
+                                ? 'border-primary-500 ring-2 ring-primary-500/20'
+                                : 'border-transparent hover:border-dark-600'
+                            }`}
+                          >
+                            <img
+                              src={`/api/uploads/${img.filename}`}
+                              alt={img.title || 'Scene'}
+                              className="w-full h-20 object-cover"
+                            />
+                            <div className="absolute inset-x-0 bottom-0 p-1 bg-black/60 backdrop-blur-[1px] text-[9px] text-white truncate text-center font-medium">
+                              {img.title || `Scene ${img.order + 1}`}
+                            </div>
+                          </button>
+                        ))
+                      }
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div className="p-6 border-t border-dark-700 bg-dark-900/50 flex gap-3">
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  setIsHotspotModalOpen(false);
+                  setNewHotspotCoords(null);
+                  setSceneSearchQuery('');
+                }}
+                className="flex-1 text-xs"
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                onClick={handleCreateHotspot}
+                className="flex-1 text-xs"
+                disabled={hotspotForm.type === 'LINK' && !hotspotForm.targetImageId}
+              >
+                Create
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
 
       <Modal
@@ -525,84 +748,6 @@ export default function TourEditorPage({
       </Modal>
 
       <Modal
-        isOpen={isHotspotModalOpen}
-        onClose={() => {
-          setIsHotspotModalOpen(false);
-          setAddHotspotMode(false);
-          setNewHotspotCoords(null);
-        }}
-        title="Configure Hotspot"
-      >
-        <div className="p-6 space-y-4">
-          <div>
-            <label className="block mb-1 text-sm font-medium text-dark-300">Type</label>
-            <select
-              value={hotspotForm.type}
-              onChange={(e) => setHotspotForm({ ...hotspotForm, type: e.target.value })}
-              className="w-full px-3 py-2 text-white border rounded-lg outline-none bg-dark-700 border-dark-600 focus:border-primary-500"
-            >
-              <option value="LINK">Link to Scene</option>
-              <option value="INFO">Information Box</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="block mb-1 text-sm font-medium text-dark-300">Title</label>
-            <input
-              type="text"
-              value={hotspotForm.title}
-              onChange={(e) => setHotspotForm({ ...hotspotForm, title: e.target.value })}
-              placeholder="Hotspot title"
-              className="w-full px-3 py-2 text-white border rounded-lg outline-none bg-dark-700 border-dark-600 focus:border-primary-500"
-            />
-          </div>
-
-          {hotspotForm.type === 'LINK' && (
-            <div>
-              <label className="block mb-1 text-sm font-medium text-dark-300">Target Scene</label>
-              <select
-                value={hotspotForm.targetImageId}
-                onChange={(e) => setHotspotForm({ ...hotspotForm, targetImageId: e.target.value })}
-                className="w-full px-3 py-2 text-white border rounded-lg outline-none bg-dark-700 border-dark-600 focus:border-primary-500"
-              >
-                <option value="">Select a scene</option>
-                {tour.images
-                  .filter(img => img.id !== tour.images[currentSceneIndex].id)
-                  .map(img => (
-                    <option key={img.id} value={img.id}>
-                      {img.title || `Scene ${img.order + 1}`}
-                    </option>
-                  ))
-                }
-              </select>
-            </div>
-          )}
-
-          <div className="flex gap-3 pt-4">
-            <Button
-              variant="secondary"
-              onClick={() => {
-                setIsHotspotModalOpen(false);
-                setAddHotspotMode(false);
-                setNewHotspotCoords(null);
-              }}
-              className="flex-1"
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="primary"
-              onClick={handleCreateHotspot}
-              className="flex-1"
-              disabled={hotspotForm.type === 'LINK' && !hotspotForm.targetImageId}
-            >
-              Create Hotspot
-            </Button>
-          </div>
-        </div>
-      </Modal>
-
-      <Modal
         isOpen={isHotspotActionModalOpen}
         onClose={() => {
           setIsHotspotActionModalOpen(false);
@@ -611,11 +756,11 @@ export default function TourEditorPage({
         title="Hotspot Actions"
       >
         <div className="p-6 space-y-4">
-          <div className="text-center mb-6">
+          <div className="mb-6 text-center">
             <h3 className="text-lg font-semibold text-white">
               {selectedHotspot?.title || 'Unnamed Hotspot'}
             </h3>
-            <p className="text-sm text-dark-400 mt-1">
+            <p className="mt-1 text-sm text-dark-400">
               Type: {selectedHotspot?.type === 'LINK' ? 'Scene Link' : 'Information'}
             </p>
           </div>
@@ -625,7 +770,7 @@ export default function TourEditorPage({
               <Button
                 variant="primary"
                 onClick={goToTargetScene}
-                className="w-full flex items-center justify-center gap-2"
+                className="flex items-center justify-center w-full gap-2"
               >
                 <ChevronRight size={18} />
                 Go to Target Scene
@@ -635,7 +780,7 @@ export default function TourEditorPage({
             <Button
               variant="secondary"
               onClick={confirmDeleteHotspot}
-              className="w-full flex items-center justify-center gap-2 text-red-400 hover:text-red-300 border-red-900/50 hover:bg-red-900/20"
+              className="flex items-center justify-center w-full gap-2 text-red-400 hover:text-red-300 border-red-900/50 hover:bg-red-900/20"
             >
               <Trash2 size={18} />
               Delete Hotspot
@@ -650,6 +795,46 @@ export default function TourEditorPage({
               className="w-full"
             >
               Cancel
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal
+        isOpen={isRenameModalOpen}
+        onClose={() => setIsRenameModalOpen(false)}
+        title="Rename Scene"
+      >
+        <div className="p-6 space-y-4">
+          <div>
+            <label className="block mb-1 text-sm font-medium text-dark-300">Scene Title</label>
+            <input
+              type="text"
+              value={newSceneTitle}
+              onChange={(e) => setNewSceneTitle(e.target.value)}
+              placeholder="e.g. Living Room"
+              className="w-full px-3 py-2 text-white border rounded-lg outline-none bg-dark-700 border-dark-600 focus:border-primary-500"
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleRenameScene();
+              }}
+            />
+          </div>
+          <div className="flex gap-3 pt-4">
+            <Button
+              variant="secondary"
+              onClick={() => setIsRenameModalOpen(false)}
+              className="flex-1"
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              onClick={handleRenameScene}
+              className="flex-1"
+              disabled={!newSceneTitle.trim()}
+            >
+              Rename
             </Button>
           </div>
         </div>

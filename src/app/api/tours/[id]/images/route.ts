@@ -217,3 +217,68 @@ export async function DELETE(
     );
   }
 }
+
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const authPayload = await getAuthUser(request);
+    if (!authPayload) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const body = await request.json();
+    const { imageId, title, initialYaw, initialPitch, initialFov } = body;
+
+    if (!imageId) {
+      return NextResponse.json(
+        { error: 'imageId is required' },
+        { status: 400 }
+      );
+    }
+
+    const image = await db.tourImage.findUnique({
+      where: { id: imageId },
+      include: { tour: true },
+    });
+
+    if (!image) {
+      return NextResponse.json(
+        { error: 'Image not found' },
+        { status: 404 }
+      );
+    }
+
+    if (image.tour.organizationId !== authPayload.organizationId) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 403 }
+      );
+    }
+
+    const updatedImage = await db.tourImage.update({
+      where: { id: imageId },
+      data: {
+        title: title !== undefined ? title : undefined,
+        initialYaw: initialYaw !== undefined ? initialYaw : undefined,
+        initialPitch: initialPitch !== undefined ? initialPitch : undefined,
+        initialFov: initialFov !== undefined ? initialFov : undefined,
+      },
+    });
+
+    return NextResponse.json(
+      {
+        success: true,
+        data: updatedImage,
+      },
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error('Update image error:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
