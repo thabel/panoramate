@@ -31,7 +31,12 @@ export async function GET(
       );
     }
 
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    const host = request.headers.get('host');
+    const protocol = request.headers.get('x-forwarded-proto') || 'http';
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL && !process.env.NEXT_PUBLIC_APP_URL.includes('localhost')
+      ? process.env.NEXT_PUBLIC_APP_URL
+      : `${protocol}://${host}`;
+    
     const shareLink = `${baseUrl}/tour/${tour.shareToken}`;
 
     return NextResponse.json(
@@ -91,7 +96,12 @@ export async function POST(
       },
     });
 
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    const host = request.headers.get('host');
+    const protocol = request.headers.get('x-forwarded-proto') || 'http';
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL && !process.env.NEXT_PUBLIC_APP_URL.includes('localhost')
+      ? process.env.NEXT_PUBLIC_APP_URL
+      : `${protocol}://${host}`;
+    
     const shareLink = `${baseUrl}/tour/${updatedTour.shareToken}`;
 
     return NextResponse.json(
