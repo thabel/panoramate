@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthUser } from '@/lib/auth';
 import { db } from '@/lib/db';
+import { logger } from '@/lib/logger';
 
 export async function GET(
   request: NextRequest,
@@ -103,12 +104,14 @@ export async function POST(
       },
     });
 
+    logger.info({ hotspotId: hotspot.id, imageId: params.imageId, tourId: params.id }, 'Hotspot created in database');
+
     return NextResponse.json(
       { success: true, data: hotspot },
       { status: 201 }
     );
   } catch (error) {
-    console.error('Create hotspot error:', error);
+    logger.error({ error, tourId: params.id, imageId: params.imageId }, 'Create hotspot error');
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

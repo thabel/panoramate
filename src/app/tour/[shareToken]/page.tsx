@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { MarzipanoViewer } from '@/components/viewer/MarzipanoViewer';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { Button } from '@/components/ui/Button';
-import { Maximize, Minimize, ChevronUp, ChevronDown, Layers, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Maximize, Minimize, ChevronUp, ChevronDown, Layers, ChevronLeft, ChevronRight, Volume2, VolumeX, Play, Pause, Music } from 'lucide-react';
 import { TourWithImages } from '@/types';
 
 export default function PublicTourPage({
@@ -15,14 +15,18 @@ export default function PublicTourPage({
 }) {
   const searchParams = useSearchParams();
   const isEmbed = searchParams.get('embed') === 'true';
-  const [tour, setTour] = useState<TourWithImages | null>(null);
+  const [tour, setTour] = useState<any | null>(null);
   const [currentSceneId, setCurrentSceneId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [isSwitcherOpen, setIsSwitcherOpen] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
+  const [volume, setVolume] = useState(0.5);
   const containerRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
 
   useEffect(() => {
     fetchTour();
@@ -34,6 +38,35 @@ export default function PublicTourPage({
     document.addEventListener('fullscreenchange', handleFullScreenChange);
     return () => document.removeEventListener('fullscreenchange', handleFullScreenChange);
   }, []);
+
+  useEffect(() => {
+    if (tour?.backgroundAudioVolume !== undefined) {
+      setVolume(tour.backgroundAudioVolume);
+    }
+  }, [tour]);
+
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.volume = isMuted ? 0 : volume;
+    }
+  }, [volume, isMuted]);
+
+  const togglePlay = () => {
+    if (!audioRef.current) return;
+    
+    if (isPlaying) {
+      audioRef.current.pause();
+    } else {
+      audioRef.current.play().catch(err => {
+        console.error('Audio playback failed:', err);
+      });
+    }
+    setIsPlaying(!isPlaying);
+  };
+
+  const toggleMute = () => {
+    setIsMuted(!isMuted);
+  };
 
   const getNextSceneId = () => {
     if (!tour || !currentSceneId) return null;
@@ -114,7 +147,7 @@ export default function PublicTourPage({
 
   if (isLoading) {
     return (
-      <div className="h-screen flex items-center justify-center bg-dark-900">
+      <div className="flex items-center justify-center h-screen bg-dark-900">
         <LoadingSpinner size="lg" />
       </div>
     );
@@ -122,9 +155,9 @@ export default function PublicTourPage({
 
   if (error || !tour) {
     return (
-      <div className="h-screen flex items-center justify-center bg-dark-900">
+      <div className="flex items-center justify-center h-screen bg-dark-900">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-white mb-2">{error}</h1>
+          <h1 className="mb-2 text-2xl font-bold text-white">{error}</h1>
           <p className="text-dark-400">
             The tour you're looking for doesn't exist or is no longer public.
           </p>
@@ -134,12 +167,12 @@ export default function PublicTourPage({
   }
 
   return (
-    <div ref={containerRef} className="h-screen bg-black flex flex-col overflow-hidden">
+    <div ref={containerRef} className="flex flex-col h-screen overflow-hidden bg-black">
       {/* Header - Hidden in embed mode */}
       {!isEmbed && !isFullScreen && (
-        <div className="bg-dark-900 border-b border-dark-700 px-4 py-4 z-20">
+        <div className="z-20 px-4 py-4 border-b bg-dark-900 border-dark-700">
           <h1 className="text-xl font-bold text-white">{tour.title}</h1>
-          <p className="text-dark-400 text-sm">
+          <p className="text-sm text-dark-400">
             {tour.viewCount} views
             {tour.organization && ` • ${tour.organization.name}`}
           </p>
@@ -147,7 +180,7 @@ export default function PublicTourPage({
       )}
 
       {/* Viewer */}
-      <div className="flex-1 relative group/viewer">
+      <div className="relative flex-1 group/viewer">
         {tour.images.length > 0 ? (
           <>
             <MarzipanoViewer
@@ -158,6 +191,16 @@ export default function PublicTourPage({
               editorMode={false}
             />
 
+            {/* Custom Logo overlay */}
+           {tour.customLogoUrl && (
+  <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 max-w-[120px] max-h-[120px] pointer-events-none drop-shadow-2xl opacity-80">
+    <img
+      src={`/api/uploads/${tour.customLogoUrl}`}
+      alt="Logo"
+      className="w-full h-full object-contain filter drop-shadow-[0_4px_8px_rgba(0,0,0,0.6)]"
+    />
+  </div>
+)}
             {/* Main Carousel Navigation */}
             {tour.images.length > 1 && (
               <>
@@ -166,7 +209,7 @@ export default function PublicTourPage({
                     const id = getPrevSceneId();
                     if (id) setCurrentSceneId(id);
                   }}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 z-30 p-3 bg-dark-900/40 hover:bg-dark-900/80 text-white rounded-full backdrop-blur-md transition-all border border-dark-700/50 opacity-0 group-hover/viewer:opacity-100 active:scale-90"
+                  className="absolute z-30 p-3 text-white transition-all -translate-y-1/2 border rounded-full opacity-0 left-4 top-1/2 bg-dark-900/40 hover:bg-dark-900/80 backdrop-blur-md border-dark-700/50 group-hover/viewer:opacity-100 active:scale-90"
                   title="Previous Scene"
                 >
                   <ChevronLeft size={32} />
@@ -176,7 +219,7 @@ export default function PublicTourPage({
                     const id = getNextSceneId();
                     if (id) setCurrentSceneId(id);
                   }}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 z-30 p-3 bg-dark-900/40 hover:bg-dark-900/80 text-white rounded-full backdrop-blur-md transition-all border border-dark-700/50 opacity-0 group-hover/viewer:opacity-100 active:scale-90"
+                  className="absolute z-30 p-3 text-white transition-all -translate-y-1/2 border rounded-full opacity-0 right-4 top-1/2 bg-dark-900/40 hover:bg-dark-900/80 backdrop-blur-md border-dark-700/50 group-hover/viewer:opacity-100 active:scale-90"
                   title="Next Scene"
                 >
                   <ChevronRight size={32} />
@@ -187,11 +230,59 @@ export default function PublicTourPage({
             {/* Full screen button toggle */}
             <button
               onClick={toggleFullScreen}
-              className="absolute top-4 right-4 z-30 p-2 bg-dark-900/60 hover:bg-dark-800 text-white rounded-lg backdrop-blur-sm transition-all border border-dark-700/50"
+              className="absolute z-30 p-2 text-white transition-all border rounded-lg top-4 right-4 bg-dark-900/60 hover:bg-dark-800 backdrop-blur-sm border-dark-700/50"
               title={isFullScreen ? 'Exit Full Screen' : 'Full Screen'}
             >
               {isFullScreen ? <Minimize size={20} /> : <Maximize size={20} />}
             </button>
+
+            {/* Audio Controls */}
+            {tour.backgroundAudioUrl && (
+              <div className="absolute z-30 flex items-center gap-2 top-4 right-16">
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-dark-900/60 hover:bg-dark-800 backdrop-blur-sm border border-dark-700/50 rounded-lg transition-all group/audio">
+                  <button
+                    onClick={togglePlay}
+                    className="text-white hover:text-primary-400 transition-colors"
+                    title={isPlaying ? 'Pause' : 'Play'}
+                  >
+                    {isPlaying ? <Pause size={20} /> : <Play size={20} />}
+                  </button>
+                  
+                  <div className="w-px h-4 bg-dark-700/50 mx-1" />
+                  
+                  <button
+                    onClick={toggleMute}
+                    className="text-white hover:text-primary-400 transition-colors"
+                    title={isMuted ? 'Unmute' : 'Mute'}
+                  >
+                    {isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
+                  </button>
+
+                  <div className="w-0 group-hover/audio:w-20 overflow-hidden transition-all duration-300 flex items-center">
+                    <input
+                      type="range"
+                      min="0"
+                      max="1"
+                      step="0.01"
+                      value={volume}
+                      onChange={(e) => {
+                        setVolume(parseFloat(e.target.value));
+                        if (isMuted) setIsMuted(false);
+                      }}
+                      className="w-full h-1 bg-dark-700 rounded-lg appearance-none cursor-pointer accent-primary-500 ml-2"
+                    />
+                  </div>
+                </div>
+                
+                <audio
+                  ref={audioRef}
+                  src={`/api/uploads/${tour.backgroundAudioUrl}`}
+                  loop
+                  onPlay={() => setIsPlaying(true)}
+                  onPause={() => setIsPlaying(false)}
+                />
+              </div>
+            )}
 
             {/* Scene Switcher */}
             <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-30 flex flex-col items-center w-full max-w-[95vw]">
@@ -211,14 +302,14 @@ export default function PublicTourPage({
                   {/* Thumbnail Scroll Buttons */}
                   <button
                     onClick={() => scrollThumbnails('left')}
-                    className="absolute left-0 top-1/2 -translate-y-1/2 z-40 p-2 bg-dark-900/80 hover:bg-primary-600 text-white rounded-full shadow-xl border border-dark-700/50 transition-all active:scale-90 opacity-0 group-hover/switcher:opacity-100"
+                    className="absolute left-0 z-40 p-2 text-white transition-all -translate-y-1/2 border rounded-full shadow-xl opacity-0 top-1/2 bg-dark-900/80 hover:bg-primary-600 border-dark-700/50 active:scale-90 group-hover/switcher:opacity-100"
                   >
                     <ChevronLeft size={20} />
                   </button>
 
                   <div 
                     ref={scrollContainerRef}
-                    className="bg-dark-900/80 backdrop-blur-md border border-dark-700/50 rounded-2xl p-3 w-full overflow-x-auto flex gap-3 scrollbar-hide shadow-2xl animate-fade-in"
+                    className="flex w-full gap-3 p-3 overflow-x-auto border shadow-2xl bg-dark-900/80 backdrop-blur-md border-dark-700/50 rounded-2xl scrollbar-hide animate-fade-in"
                   >
                     {tour.images.map((image) => (
                       <button
@@ -233,7 +324,7 @@ export default function PublicTourPage({
                         <img
                           src={`/api/uploads/${image.filename}`}
                           alt={image.title || image.originalName}
-                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                          className="object-cover w-full h-full transition-transform duration-500 group-hover:scale-110"
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
                         <div className="absolute bottom-0 left-0 right-0 p-2 text-[10px] font-medium text-white truncate text-center">
@@ -248,7 +339,7 @@ export default function PublicTourPage({
 
                   <button
                     onClick={() => scrollThumbnails('right')}
-                    className="absolute right-0 top-1/2 -translate-y-1/2 z-40 p-2 bg-dark-900/80 hover:bg-primary-600 text-white rounded-full shadow-xl border border-dark-700/50 transition-all active:scale-90 opacity-0 group-hover/switcher:opacity-100"
+                    className="absolute right-0 z-40 p-2 text-white transition-all -translate-y-1/2 border rounded-full shadow-xl opacity-0 top-1/2 bg-dark-900/80 hover:bg-primary-600 border-dark-700/50 active:scale-90 group-hover/switcher:opacity-100"
                   >
                     <ChevronRight size={20} />
                   </button>
@@ -267,7 +358,7 @@ export default function PublicTourPage({
             `}</style>
           </>
         ) : (
-          <div className="h-full flex items-center justify-center text-dark-400">
+          <div className="flex items-center justify-center h-full text-dark-400">
             <p>No scenes in this tour</p>
           </div>
         )}
@@ -275,8 +366,8 @@ export default function PublicTourPage({
 
       {/* Footer - Hidden in embed mode */}
       {!isEmbed && !isFullScreen && (
-        <div className="bg-dark-900 border-t border-dark-700 px-4 py-3 text-center text-sm text-dark-400 z-20">
-          Powered by <span className="text-primary-400 font-semibold">Panoramate</span>
+        <div className="z-20 px-4 py-3 text-sm text-center border-t bg-dark-900 border-dark-700 text-dark-400">
+          Powered by <span className="font-semibold text-primary-400">Panoramate</span>
         </div>
       )}
     </div>

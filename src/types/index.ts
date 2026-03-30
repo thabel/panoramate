@@ -56,6 +56,9 @@ export interface TourWithImages {
   shareToken: string;
   isPublic: boolean;
   viewCount: number;
+  customLogoUrl?: string;
+  backgroundAudioUrl?: string;
+  backgroundAudioVolume?: number;
   settings: any;
   organizationId: string;
   organization?: Organization;

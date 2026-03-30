@@ -1,65 +1,13 @@
-// Panoramate - MySQL Database Schema
-// Stack: Next.js 14 + Prisma + MySQL
-
 generator client {
   provider = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
+
 }
 
 datasource db {
   provider = "mysql"
   url      = env("DATABASE_URL")
 }
-
-// ─────────────────────────────────────────
-// ENUMS
-// ─────────────────────────────────────────
-
-enum UserRole {
-  OWNER      // Organization owner
-  ADMIN      // Can manage everything except billing
-  MEMBER     // Can create/edit tours
-  VIEWER     // Read-only access
-}
-
-enum PlanType {
-  FREE_TRIAL    // 14 days, 1 tour, 10 images max
-  STARTER       // 5 tours, 50 images/tour
-  PROFESSIONAL  // 20 tours, 200 images/tour
-  ENTERPRISE    // Unlimited
-}
-
-enum SubscriptionStatus {
-  TRIALING
-  ACTIVE
-  PAST_DUE
-  CANCELED
-  INCOMPLETE
-}
-
-enum TourStatus {
-  DRAFT
-  PUBLISHED
-  ARCHIVED
-}
-
-enum HotspotType {
-  LINK       // Navigate to another scene
-  INFO       // Show text/info popup
-  URL        // Open external link
-  VIDEO      // Embed video
-}
-
-enum InvoiceStatus {
-  DRAFT
-  OPEN
-  PAID
-  VOID
-  UNCOLLECTIBLE
-}
-
-// ─────────────────────────────────────────
-// ORGANIZATION (Société / équipe)
-// ─────────────────────────────────────────
 
 model Organization {
   id                   String             @id @default(uuid())
@@ -79,45 +27,35 @@ model Organization {
   usedStorageMb        Int                @default(0)
   createdAt            DateTime           @default(now())
   updatedAt            DateTime           @updatedAt
-
-  users                User[]
-  tours                Tour[]
   invitations          Invitation[]
   invoices             Invoice[]
+  tours                Tour[]
+  users                User[]
 
   @@map("organizations")
 }
 
-// ─────────────────────────────────────────
-// USER
-// ─────────────────────────────────────────
-
 model User {
-  id             String   @id @default(uuid())
-  email          String   @unique
-  password       String
-  firstName      String
-  lastName       String
-  avatarUrl      String?  @db.Text
-  role           UserRole @default(MEMBER)
-  isVerified     Boolean  @default(false)
-  lastLoginAt    DateTime?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-
-  tours          Tour[]
-  sessions       Session[]
+  id              String       @id @default(uuid())
+  email           String       @unique
+  password        String
+  firstName       String
+  lastName        String
+  avatarUrl       String?      @db.Text
+  role            UserRole     @default(MEMBER)
+  isVerified      Boolean      @default(false)
+  lastLoginAt     DateTime?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  organizationId  String
   invitationsSent Invitation[] @relation("InvitedBy")
+  sessions        Session[]
+  tours           Tour[]
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
+  @@index([organizationId], map: "users_organizationId_fkey")
   @@map("users")
 }
-
-// ─────────────────────────────────────────
-// SESSION (JWT token store / refresh tokens)
-// ─────────────────────────────────────────
 
 model Session {
   id        String   @id @default(uuid())
@@ -127,156 +65,122 @@ model Session {
   ipAddress String?
   userAgent String?  @db.Text
   createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
+  @@index([userId], map: "sessions_userId_fkey")
   @@map("sessions")
 }
 
-// ─────────────────────────────────────────
-// INVITATION (inviter des membres dans l'org)
-// ─────────────────────────────────────────
-
 model Invitation {
-  id             String   @id @default(uuid())
+  id             String       @id @default(uuid())
   email          String
-  role           UserRole @default(MEMBER)
-  token          String   @unique
+  role           UserRole     @default(MEMBER)
+  token          String       @unique
   expiresAt      DateTime
   acceptedAt     DateTime?
-  createdAt      DateTime @default(now())
-
+  createdAt      DateTime     @default(now())
   organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   invitedById    String
-  invitedBy      User     @relation("InvitedBy", fields: [invitedById], references: [id])
+  invitedBy      User         @relation("InvitedBy", fields: [invitedById], references: [id])
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
+  @@index([invitedById], map: "invitations_invitedById_fkey")
+  @@index([organizationId], map: "invitations_organizationId_fkey")
   @@map("invitations")
 }
 
-// ─────────────────────────────────────────
-// TOUR
-// ─────────────────────────────────────────
-
 model Tour {
-  id             String     @id @default(uuid())
+  id             String       @id @default(uuid())
   title          String
-  description    String?    @db.Text
-  coverImageUrl  String?    @db.Text
-  status         TourStatus @default(DRAFT)
-  shareToken     String     @unique @default(uuid())
-  isPublic       Boolean    @default(false)
-  viewCount      Int        @default(0)
-  settings       Json       // { autorotate, mouseViewMode, showControls, ... }
-
+  description    String?      @db.Text
+  coverImageUrl  String?      @db.Text
+  status         TourStatus   @default(DRAFT)
+  shareToken     String       @unique @default(uuid())
+  isPublic       Boolean      @default(false)
+  viewCount      Int          @default(0)
+  settings       Json
   organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   createdById    String
-  createdBy      User       @relation(fields: [createdById], references: [id])
+  createdAt      DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+  customLogoUrl      String?      @db.Text
+  backgroundAudioUrl String?      @db.Text
+  backgroundAudioVolume Float    @default(0.5)
+  images             TourImage[]
+  createdBy      User         @relation(fields: [createdById], references: [id])
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
-  images         TourImage[]
-  createdAt      DateTime   @default(now())
-  updatedAt      DateTime   @updatedAt
-
+  @@index([createdById], map: "tours_createdById_fkey")
+  @@index([organizationId], map: "tours_organizationId_fkey")
   @@map("tours")
 }
 
-// ─────────────────────────────────────────
-// TOUR IMAGE (each 360° panorama scene)
-// ─────────────────────────────────────────
-
 model TourImage {
-  id           String   @id @default(uuid())
+  id           String    @id @default(uuid())
   tourId       String
-  tour         Tour     @relation(fields: [tourId], references: [id], onDelete: Cascade)
-
-  filename     String          // stored filename on disk
-  originalName String          // original upload name
-  mimeType     String          @default("image/jpeg")
+  filename     String
+  originalName String
+  mimeType     String    @default("image/jpeg")
   sizeMb       Float
   width        Int
   height       Int
-  order        Int             @default(0)
+  order        Int       @default(0)
   title        String?
-
-  // Marzipano view params saved when editor is used
-  initialYaw   Float           @default(0)
-  initialPitch Float           @default(0)
-  initialFov   Float           @default(1.5707963)  // 90 degrees in radians
-
+  initialYaw   Float     @default(0)
+  initialPitch Float     @default(0)
+  initialFov   Float     @default(1.5707963)
+  createdAt    DateTime  @default(now())
   hotspots     Hotspot[]
-  createdAt    DateTime        @default(now())
+  tour         Tour      @relation(fields: [tourId], references: [id], onDelete: Cascade)
 
+  @@index([tourId], map: "tour_images_tourId_fkey")
   @@map("tour_images")
 }
-
-// ─────────────────────────────────────────
-// HOTSPOT
-// ─────────────────────────────────────────
 
 model Hotspot {
   id            String      @id @default(uuid())
   imageId       String
-  image         TourImage   @relation(fields: [imageId], references: [id], onDelete: Cascade)
-
   type          HotspotType @default(LINK)
   yaw           Float
   pitch         Float
   rotation      Float       @default(0)
-
-  // For LINK hotspots
   targetImageId String?
-
-  // For INFO hotspots
   title         String?
   content       String?     @db.Text
-
-  // For URL hotspots
   url           String?     @db.Text
-
-  // For VIDEO hotspots
   videoUrl      String?     @db.Text
-
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
+  image         TourImage   @relation(fields: [imageId], references: [id], onDelete: Cascade)
 
+  @@index([imageId], map: "hotspots_imageId_fkey")
   @@map("hotspots")
 }
 
-// ─────────────────────────────────────────
-// SUBSCRIPTION PLANS (reference)
-// ─────────────────────────────────────────
-
 model Plan {
-  id              String   @id @default(uuid())
-  name            String
-  planType        PlanType @unique
-  priceMonthly    Float
-  priceYearly     Float
+  id                   String   @id @default(uuid())
+  name                 String
+  planType             PlanType @unique
+  priceMonthly         Float
+  priceYearly          Float
   stripePriceMonthlyId String?
   stripePriceYearlyId  String?
-  maxTours        Int
-  maxImagesPerTour Int
-  maxStorageMb    Int
-  features        Json     // Array of feature strings
-  isActive        Boolean  @default(true)
-  createdAt       DateTime @default(now())
+  maxTours             Int
+  maxImagesPerTour     Int
+  maxStorageMb         Int
+  features             Json
+  isActive             Boolean  @default(true)
+  createdAt            DateTime @default(now())
 
   @@map("plans")
 }
 
-// ─────────────────────────────────────────
-// INVOICE
-// ─────────────────────────────────────────
-
 model Invoice {
   id              String        @id @default(uuid())
   organizationId  String
-  organization    Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-
   stripeInvoiceId String        @unique
   invoiceNumber   String?
-  amount          Float         // in smallest currency unit (cents)
+  amount          Float
   currency        String        @default("usd")
   status          InvoiceStatus @default(OPEN)
   description     String?
@@ -286,6 +190,51 @@ model Invoice {
   periodEnd       DateTime?
   paidAt          DateTime?
   createdAt       DateTime      @default(now())
+  organization    Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
+  @@index([organizationId], map: "invoices_organizationId_fkey")
   @@map("invoices")
+}
+
+enum UserRole {
+  OWNER
+  ADMIN
+  MEMBER
+  VIEWER
+}
+
+enum PlanType {
+  FREE_TRIAL
+  STARTER
+  PROFESSIONAL
+  ENTERPRISE
+}
+
+enum SubscriptionStatus {
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  INCOMPLETE
+}
+
+enum TourStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum HotspotType {
+  LINK
+  INFO
+  URL
+  VIDEO
+}
+
+enum InvoiceStatus {
+  DRAFT
+  OPEN
+  PAID
+  VOID
+  UNCOLLECTIBLE
 }

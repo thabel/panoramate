@@ -9,9 +9,10 @@ import { Button } from '@/components/ui/Button';
 import { UploadZone } from '@/components/dashboard/UploadZone';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { Badge } from '@/components/ui/Badge';
-import { Save, ChevronLeft, ChevronRight, Image as ImageIcon, Plus, Trash2, X, MapPin, Share2, Edit2, Search } from 'lucide-react';
+import { Save, ChevronLeft, ChevronRight, Image as ImageIcon, Plus, Trash2, X, MapPin, Share2, Edit2, Search, Settings, Music, Volume2 } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import { ShareModal } from '@/components/dashboard/ShareModal';
+import { logger } from '@/lib/logger';
 import toast from 'react-hot-toast';
 
 export default function TourEditorPage({
@@ -20,11 +21,12 @@ export default function TourEditorPage({
   params: { id: string };
 }) {
   const searchParams = useSearchParams();
-  const [tour, setTour] = useState<TourWithImages | null>(null);
+  const [tour, setTour] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [currentSceneIndex, setCurrentSceneIndex] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [addHotspotMode, setAddHotspotMode] = useState(false);
   const [isHotspotModalOpen, setIsHotspotModalOpen] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
@@ -44,6 +46,87 @@ export default function TourEditorPage({
   useEffect(() => {
     fetchTour();
   }, []);
+
+  const handleAudioUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !tour) return;
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/tours/${tour.id}/audio`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token || ''}`,
+        },
+        body: formData,
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setTour({
+          ...tour,
+          backgroundAudioUrl: data.data.backgroundAudioUrl,
+        });
+        toast.success('Audio uploaded');
+      } else {
+        toast.error('Failed to upload audio');
+      }
+    } catch (error) {
+      toast.error('Error uploading audio');
+    }
+  };
+
+  const handleRemoveAudio = async () => {
+    if (!tour || !confirm('Are you sure you want to remove the background audio?')) return;
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/tours/${tour.id}/audio`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token || ''}`,
+        },
+      });
+
+      if (response.ok) {
+        setTour({
+          ...tour,
+          backgroundAudioUrl: undefined,
+        });
+        toast.success('Audio removed');
+      } else {
+        toast.error('Failed to remove audio');
+      }
+    } catch (error) {
+      toast.error('Error removing audio');
+    }
+  };
+
+  const handleVolumeChange = async (volume: number) => {
+    if (!tour) return;
+    
+    // Update local state first for responsiveness
+    setTour({ ...tour, backgroundAudioVolume: volume });
+
+    try {
+      const token = localStorage.getItem('token');
+      await fetch(`/api/tours/${tour.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token || ''}`,
+        },
+        body: JSON.stringify({
+          backgroundAudioVolume: volume,
+        }),
+      });
+    } catch (error) {
+      console.error('Error updating volume:', error);
+    }
+  };
 
   const fetchTour = async () => {
     try {
@@ -133,6 +216,7 @@ export default function TourEditorPage({
 
   const handlePanoramaClick = (yaw: number, pitch: number) => {
     if (addHotspotMode) {
+      logger.debug({ yaw, pitch, imageId: currentImageId }, 'Panorama clicked in hotspot mode, setting coordinates');
       setNewHotspotCoords({ yaw, pitch });
       setHotspotForm({
         ...hotspotForm,
@@ -164,6 +248,7 @@ export default function TourEditorPage({
       if (response.ok) {
         const data = await response.json();
         const newHotspot = data.data;
+        logger.info({ tourId: params.id, imageId: currentImageId, hotspotId: newHotspot.id }, 'Hotspot created successfully');
         
         setTour({
           ...tour,
@@ -316,6 +401,64 @@ export default function TourEditorPage({
     }
   };
 
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !tour) return;
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/tours/${tour.id}/logo`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token || ''}`,
+        },
+        body: formData,
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setTour({
+          ...tour,
+          customLogoUrl: data.data.customLogoUrl,
+        });
+        toast.success('Logo uploaded');
+      } else {
+        toast.error('Failed to upload logo');
+      }
+    } catch (error) {
+      toast.error('Error uploading logo');
+    }
+  };
+
+  const handleRemoveLogo = async () => {
+    if (!tour || !confirm('Are you sure you want to remove the logo?')) return;
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/tours/${tour.id}/logo`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token || ''}`,
+        },
+      });
+
+      if (response.ok) {
+        setTour({
+          ...tour,
+          customLogoUrl: undefined,
+        });
+        toast.success('Logo removed');
+      } else {
+        toast.error('Failed to remove logo');
+      }
+    } catch (error) {
+      toast.error('Error removing logo');
+    }
+  };
+
   const handleSave = async () => {
     if (!tour) return;
 
@@ -459,6 +602,7 @@ export default function TourEditorPage({
           <button
             onClick={() =>{
               const nextMode = !addHotspotMode;
+              logger.info({ tourId: params.id, addHotspotMode: nextMode }, 'Toggling hotspot addition mode');
               setAddHotspotMode(nextMode);
               if (!nextMode) {
                 setIsHotspotModalOpen(false);
@@ -487,6 +631,15 @@ export default function TourEditorPage({
           >
             <Edit2 size={22} />
             <span className="text-[10px] font-medium">Rename</span>
+          </button>
+
+          <button
+            onClick={() => setIsSettingsModalOpen(true)}
+            title="Tour Settings"
+            className="flex flex-col items-center w-16 gap-1 p-2 transition-all duration-200 rounded-xl text-dark-400 hover:text-white hover:bg-dark-700"
+          >
+            <Settings size={22} />
+            <span className="text-[10px] font-medium">Settings</span>
           </button>
 
           <div className="w-8 h-px my-2 bg-dark-700" />
@@ -847,6 +1000,146 @@ export default function TourEditorPage({
         tourTitle={tour.title}
         isPublic={tour.isPublic}
       />
+
+      <Modal
+        isOpen={isSettingsModalOpen}
+        onClose={() => setIsSettingsModalOpen(false)}
+        title="Tour Settings"
+      >
+        <div className="p-6 space-y-6">
+          <div>
+            <h3 className="text-sm font-medium text-dark-300 mb-4">Tour Logo</h3>
+            <div className="flex items-center gap-6">
+              <div className="relative w-24 h-24 bg-dark-700 rounded-lg flex items-center justify-center overflow-hidden border border-dark-600">
+                {tour.customLogoUrl ? (
+                  <>
+                    <img
+                      src={`/api/uploads/${tour.customLogoUrl}`}
+                      alt="Tour logo"
+                      className="w-full h-full object-contain p-2"
+                    />
+                    <button
+                      onClick={handleRemoveLogo}
+                      className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors shadow-lg"
+                      title="Remove logo"
+                    >
+                      <X size={12} />
+                    </button>
+                  </>
+                ) : (
+                  <ImageIcon className="text-dark-500" size={32} />
+                )}
+              </div>
+              
+              <div className="flex-1 space-y-3">
+                <p className="text-xs text-dark-400">
+                  Upload your brand logo to display it on the public tour viewer.
+                  Best results with PNG or SVG with transparent background.
+                </p>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => document.getElementById('logo-upload')?.click()}
+                    className="text-xs"
+                  >
+                    {tour.customLogoUrl ? 'Change Logo' : 'Upload Logo'}
+                  </Button>
+                  <input
+                    id="logo-upload"
+                    type="file"
+                    className="hidden"
+                    accept="image/*"
+                    onChange={handleLogoUpload}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="pt-6 border-t border-dark-700">
+            <h3 className="text-sm font-medium text-dark-300 mb-4">Background Audio</h3>
+            <div className="space-y-6">
+              <div className="flex items-center gap-6">
+                <div className="relative w-24 h-24 bg-dark-700 rounded-lg flex items-center justify-center overflow-hidden border border-dark-600">
+                  {tour.backgroundAudioUrl ? (
+                    <div className="flex flex-col items-center gap-1">
+                      <Music className="text-primary-400" size={32} />
+                      <span className="text-[10px] text-dark-400 px-2 truncate max-w-full text-center">
+                        {tour.backgroundAudioUrl.split('/').pop()}
+                      </span>
+                      <button
+                        onClick={handleRemoveAudio}
+                        className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors shadow-lg"
+                        title="Remove audio"
+                      >
+                        <X size={12} />
+                      </button>
+                    </div>
+                  ) : (
+                    <Music className="text-dark-500" size={32} />
+                  )}
+                </div>
+                
+                <div className="flex-1 space-y-3">
+                  <p className="text-xs text-dark-400">
+                    Add background music to your tour. It will play automatically when someone opens the public link.
+                    Supports MP3, WAV, or OGG.
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => document.getElementById('audio-upload')?.click()}
+                      className="text-xs"
+                    >
+                      {tour.backgroundAudioUrl ? 'Change Audio' : 'Upload Audio'}
+                    </Button>
+                    <input
+                      id="audio-upload"
+                      type="file"
+                      className="hidden"
+                      accept="audio/*"
+                      onChange={handleAudioUpload}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {tour.backgroundAudioUrl && (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between text-xs text-dark-300">
+                    <div className="flex items-center gap-2">
+                      <Volume2 size={14} />
+                      <span>Volume</span>
+                    </div>
+                    <span>{Math.round((tour.backgroundAudioVolume || 0.5) * 100)}%</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.01"
+                    value={tour.backgroundAudioVolume || 0.5}
+                    onChange={(e) => handleVolumeChange(parseFloat(e.target.value))}
+                    className="w-full h-1.5 bg-dark-700 rounded-lg appearance-none cursor-pointer accent-primary-500"
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="pt-6 border-t border-dark-700">
+            <Button
+              variant="primary"
+              onClick={() => setIsSettingsModalOpen(false)}
+              className="w-full"
+            >
+              Done
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

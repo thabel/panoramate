@@ -43,6 +43,37 @@ export async function saveUploadedFile(
   };
 }
 
+export async function saveGeneralFile(
+  buffer: Buffer,
+  organizationId: string,
+  tourId: string,
+  originalName: string
+): Promise<{ filename: string; sizeMb: number }> {
+  // Validate file size
+  const sizeMb = buffer.length / (1024 * 1024);
+  const MAX_FILE_SIZE_MB = parseInt(process.env.MAX_FILE_SIZE_MB || '100', 10);
+  if (sizeMb > MAX_FILE_SIZE_MB) {
+    throw new Error(`File size (${sizeMb.toFixed(2)}MB) exceeds maximum (${MAX_FILE_SIZE_MB}MB)`);
+  }
+
+  // Generate unique filename
+  const ext = originalName.split('.').pop() || 'mp3';
+  const filename = `${uuidv4()}.${ext}`;
+  const filepath = join(UPLOAD_DIR, organizationId, tourId, filename);
+
+  // Ensure directory exists
+  const dirPath = dirname(filepath);
+  await mkdir(dirPath, { recursive: true });
+
+  // Save file
+  await writeFile(filepath, buffer);
+
+  return {
+    filename: `${organizationId}/${tourId}/${filename}`,
+    sizeMb,
+  };
+}
+
 export async function deleteFile(filename: string): Promise<void> {
   const filepath = join(UPLOAD_DIR, filename);
   try {

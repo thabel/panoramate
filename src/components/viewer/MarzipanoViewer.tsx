@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { TourImage, Hotspot as HotspotType } from '@/types';
+import { logger } from '@/lib/logger';
 
 declare global {
   interface Window {
@@ -220,9 +221,10 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
 
   // Debug logs for hotspot mode
   useEffect(() => {
-    console.log('DEBUG: addHotspotMode changed to:', addHotspotMode);
+    logger.debug({ addHotspotMode }, 'addHotspotMode changed');
     if (containerRef.current) {
-      console.log('DEBUG: Container classes:', containerRef.current.parentElement?.className);
+      const parentClass = containerRef.current.parentElement?.className;
+      logger.debug({ parentClass }, 'Container cursor class update');
     }
   }, [addHotspotMode]);
 
