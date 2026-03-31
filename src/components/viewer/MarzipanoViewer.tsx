@@ -16,6 +16,7 @@ interface MarzipanoViewerProps {
   initialSceneId?: string;
   editorMode?: boolean;
   addHotspotMode?: boolean;
+  tempHotspot?: { yaw: number; pitch: number } | null;
   onHotspotClick?: (hotspot: HotspotType) => void;
   onPanoramaClick?: (yaw: number, pitch: number) => void;
   onHotspotMove?: (hotspot: HotspotType, newYaw: number, newPitch: number) => void;
@@ -27,13 +28,14 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
   initialSceneId,
   editorMode = false,
   addHotspotMode = false,
+  tempHotspot = null,
   onHotspotClick,
   onPanoramaClick,
   onHotspotMove,
 }) => {
 
   console.log('MarzipanoViewer props:', { scenes, hotspots, initialSceneId, editorMode, addHotspotMode });
-  
+
   const containerRef = useRef<HTMLDivElement>(null);
   const viewerRef = useRef<any>(null);
   const scenesRef = useRef<{ [key: string]: any }>({});
@@ -50,9 +52,18 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
     hotspotsRef.current = hotspots;
   }, [hotspots]);
 
+  const prevScenesIdsRef = useRef<string>('');
+
   // Main Viewer Initialization
   useEffect(() => {
     if (!containerRef.current || scenes.length === 0) return;
+
+    // Only re-initialize if the scene IDs or order changed
+    const currentScenesIds = scenes.map(s => s.id).join(',');
+    if (currentScenesIds === prevScenesIdsRef.current && viewerRef.current) {
+      return;
+    }
+    prevScenesIdsRef.current = currentScenesIds;
 
     let viewer: any = null;
     let retryInterval: NodeJS.Timeout;
@@ -78,7 +89,7 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
           const source = Marzipano.ImageUrlSource.fromString(`/api/uploads/${sceneData.filename}`);
           const geometry = new Marzipano.EquirectGeometry([{ width: 4000 }]);
           const limiter = Marzipano.RectilinearView.limit.traditional(
-            1024, 
+            1024,
             (120 * Math.PI) / 180,
             (120 * Math.PI) / 180
           );
@@ -126,19 +137,30 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
   useEffect(() => {
     const handleContainerClick = (e: MouseEvent) => {
       if (!addHotspotMode || !viewerRef.current || !containerRef.current) return;
-      
+
       const scene = viewerRef.current.scene();
       if (!scene) return;
-      
+
       const view = scene.view();
-      const rect = containerRef.current.getBoundingClientRect();
+
+      // ✅ Use the actual canvas element Marzipano renders into
+      const canvas = containerRef.current.querySelector('canvas');
+      const target = canvas || containerRef.current;
+      const rect = target.getBoundingClientRect();
+
       const localPoint = {
         x: e.clientX - rect.left,
         y: e.clientY - rect.top
       };
-      
+
       const coords = view.screenToCoordinates(localPoint);
       if (coords && onPanoramaClick) {
+        console.log('DEBUG: [1] Panorama click coordinates (x,y) -> (yaw,pitch):', { 
+          x: localPoint.x, 
+          y: localPoint.y, 
+          yaw: coords.yaw, 
+          pitch: coords.pitch 
+        });
         onPanoramaClick(coords.yaw, coords.pitch);
       }
     };
@@ -170,6 +192,69 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
     }
   }, [initialSceneId, currentSceneId]);
 
+  // Helper function to create consistent hotspot elements
+  const createHotspotElement = (type: 'LINK' | 'INFO' | 'TEMP', onClick?: () => void) => {
+    // 1. The Host element: Marzipano will manage this element's transform.
+    // It must be neutral to avoid any 3D projection conflicts.
+    const host = document.createElement('div');
+    host.className = 'marzipano-hotspot-host';
+    host.style.position = 'absolute';
+    host.style.width = '0px';
+    host.style.height = '0px';
+
+    // 2. The Visual element: This is where we put our styles, size and centering.
+    // Being a child, its transform won't conflict with Marzipano's parent transform.
+    const visual = document.createElement('div');
+    const size = type === 'TEMP' ? 32 : 42;
+    visual.className = `marzipano-hotspot-visual ${type === 'TEMP' ? 'temp-preview' : 'cursor-pointer'}`;
+    
+    visual.style.position = 'absolute';
+    visual.style.width = `${size}px`;
+    visual.style.height = `${size}px`;
+    visual.style.left = '0px';
+    visual.style.top = '0px';
+    // Perfect centering relative to the host point
+    visual.style.transform = 'translate(-50%, -50%)';
+    visual.style.transition = 'transform 0.2s ease-out';
+    visual.style.display = 'flex';
+    visual.style.alignItems = 'center';
+    visual.style.justifyContent = 'center';
+
+    if (type === 'TEMP') {
+      visual.className += ' text-white border-2 border-white rounded-full shadow-lg bg-primary-500 animate-pulse';
+      visual.innerHTML = `
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 5v14M5 12h14"></path>
+        </svg>
+      `;
+    } else if (type === 'LINK') {
+      visual.innerHTML = `<img src="/icons/link.png" style="width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));" alt="Link" />`;
+    } else {
+      visual.style.borderRadius = '50%';
+      visual.style.backgroundColor = 'rgba(255, 255, 255, 0.9)';
+      visual.style.border = '2px solid #6366f1';
+      visual.innerHTML = '<span style="color: #6366f1; font-weight: bold; font-size: 18px;">i</span>';
+    }
+
+    host.appendChild(visual);
+
+    if (onClick) {
+      visual.onclick = (e) => {
+        e.stopPropagation();
+        onClick();
+      };
+      
+      visual.onmouseover = () => {
+        visual.style.transform = 'translate(-50%, -50%) scale(1.1)';
+      };
+      visual.onmouseout = () => {
+        visual.style.transform = 'translate(-50%, -50%)';
+      };
+    }
+
+    return host;
+  };
+
   // Hotspot Synchronization
   useEffect(() => {
     if (!viewerRef.current) return;
@@ -187,46 +272,35 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
     hotspots.forEach(hotspot => {
       const scene = scenesRef.current[hotspot.imageId];
       if (!scene) return;
-
-      const element = document.createElement('div');
-      element.className = `marzipano-hotspot custom-hotspot-${hotspot.id} cursor-pointer`;
-      
-      // Styling for hotspot using link.png
-      element.style.width = '42px';
-      element.style.height = '42px';
-      element.style.display = 'flex';
-      element.style.alignItems = 'center';
-      element.style.justifyContent = 'center';
-      
-      if (hotspot.type === 'LINK') {
-        element.innerHTML = `<img src="/icons/link.png" style="width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));" alt="Link" />`;
-      } else {
-        // Info hotspot styling (fallback if needed)
-        element.style.borderRadius = '50%';
-        element.style.backgroundColor = 'rgba(255, 255, 255, 0.9)';
-        element.style.border = '2px solid #6366f1';
-        element.innerHTML = '<span style="color: #6366f1; font-weight: bold; font-size: 18px;">i</span>';
-        element.style.width = '32px';
-        element.style.height = '32px';
-      }
-
-      element.onclick = (e) => {
-        e.stopPropagation();
+      const element = createHotspotElement(hotspot.type as any, () => {
         if (onHotspotClick) onHotspotClick(hotspot);
-      };
-
+      });
       scene.hotspotContainer().createHotspot(element, { yaw: hotspot.yaw, pitch: hotspot.pitch });
     });
-  }, [hotspots, onHotspotClick]); // Removed editorMode and onHotspotMove from dependencies
 
-  // Debug logs for hotspot mode
-  useEffect(() => {
-    logger.debug({ addHotspotMode }, 'addHotspotMode changed');
-    if (containerRef.current) {
-      const parentClass = containerRef.current.parentElement?.className;
-      logger.debug({ parentClass }, 'Container cursor class update');
+    // Add temporary preview hotspot if it exists on the CURRENT scene
+    if (tempHotspot && currentSceneId) {
+      const scene = scenesRef.current[currentSceneId];
+      if (scene) {
+        console.log('DEBUG: [2] Creating temp hotspot at:', { 
+          yaw: tempHotspot.yaw, 
+          pitch: tempHotspot.pitch, 
+          scene: currentSceneId 
+        });
+        const element = createHotspotElement('TEMP');
+        scene.hotspotContainer().createHotspot(element, { yaw: tempHotspot.yaw, pitch: tempHotspot.pitch });
+      }
     }
-  }, [addHotspotMode]);
+  }, [hotspots, onHotspotClick, tempHotspot, currentSceneId]);
+// Debug logs for hotspot mode
+useEffect(() => {
+  logger.debug({ addHotspotMode }, 'addHotspotMode changed');
+
+  if (containerRef.current) {
+    const parentClass = containerRef.current.parentElement?.className;
+    logger.debug({ parentClass }, 'Container cursor class update');
+  }
+}, [addHotspotMode]);
 
   return (
     <div className={`w-full h-full min-h-[400px] bg-black relative ${addHotspotMode ? 'hotspot-cursor' : ''}`}>
@@ -238,8 +312,13 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
         .marzipano-hotspot {
           z-index: 10;
         }
-        .marzipano-hotspot:hover {
-          transform: scale(1.1);
+        @keyframes pulse {
+          0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.7); }
+          70% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(99, 102, 241, 0); }
+          100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(99, 102, 241, 0); }
+        }
+        .animate-pulse {
+          animation: pulse 2s infinite;
         }
         .hotspot-cursor, 
         .hotspot-cursor *,

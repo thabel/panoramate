@@ -2,9 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAuthUser } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { PLAN_LIMITS } from '@/lib/stripe';
+import { logger } from '@/lib/logger';
 
 export async function GET(request: NextRequest) {
   try {
+    logger.debug("Received GET /api/tours request");
     const authPayload = await getAuthUser(request);
     if (!authPayload) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

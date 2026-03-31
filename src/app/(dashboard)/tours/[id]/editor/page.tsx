@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { TourWithImages } from '@/types';
 import { MarzipanoViewer } from '@/components/viewer/MarzipanoViewer';
@@ -42,6 +42,12 @@ export default function TourEditorPage({
     title: '',
     targetImageId: '',
   });
+
+  // Memoize hotspots to prevent new array reference on every render
+  const allHotspots = useMemo(() => {
+    if (!tour) return [];
+    return tour.images.flatMap((img: any) => (img.hotspots || []).map((h: any) => ({ ...h, imageId: img.id })));
+  }, [tour]);
 
   useEffect(() => {
     fetchTour();
@@ -216,7 +222,8 @@ export default function TourEditorPage({
 
   const handlePanoramaClick = (yaw: number, pitch: number) => {
     if (addHotspotMode) {
-      logger.debug({ yaw, pitch, imageId: currentImageId }, 'Panorama clicked in hotspot mode, setting coordinates');
+      console.log("thabel/trying adding ahost stop", { yaw, pitch });
+      logger.debug({ yaw, pitch }, 'Panorama clicked in hotspot mode, setting coordinates');
       setNewHotspotCoords({ yaw, pitch });
       setHotspotForm({
         ...hotspotForm,
@@ -662,10 +669,11 @@ export default function TourEditorPage({
               initialSceneId={currentScene.id}
               editorMode={true}
               addHotspotMode={addHotspotMode}
+              tempHotspot={newHotspotCoords}
               onPanoramaClick={handlePanoramaClick}
               onHotspotClick={handleHotspotClick}
               onHotspotMove={handleHotspotMove}
-              hotspots={tour.images.flatMap(img => (img as any).hotspots || [])}
+              hotspots={allHotspots}
             />
           </div>
 
@@ -735,7 +743,7 @@ export default function TourEditorPage({
 
         {/* Hotspot Configuration Panel (Right Side Drawer) */}
         {isHotspotModalOpen && (
-          <div className="z-20 w-80 flex flex-col h-full bg-dark-800 border-l border-dark-700 animate-in slide-in-from-right duration-300 overflow-hidden shadow-2xl">
+          <div className="z-20 flex flex-col h-full overflow-hidden duration-300 border-l shadow-2xl w-80 bg-dark-800 border-dark-700 animate-in slide-in-from-right">
             <div className="flex items-center justify-between px-6 py-4 border-b border-dark-700 bg-dark-900/50">
               <h2 className="text-lg font-semibold text-white">Configure Hotspot</h2>
               <button
@@ -744,20 +752,20 @@ export default function TourEditorPage({
                   setNewHotspotCoords(null);
                   setSceneSearchQuery('');
                 }}
-                className="p-1 hover:bg-dark-700 rounded-lg transition-colors text-dark-400"
+                className="p-1 transition-colors rounded-lg hover:bg-dark-700 text-dark-400"
               >
                 <X size={20} />
               </button>
             </div>
             
-            <div className="flex-1 overflow-y-auto p-6 space-y-6 scrollbar-hide">
+            <div className="flex-1 p-6 space-y-6 overflow-y-auto scrollbar-hide">
               <div className="space-y-4">
                 <div>
                   <label className="block mb-2 text-sm font-medium text-dark-300">Type</label>
                   <select
                     value={hotspotForm.type}
                     onChange={(e) => setHotspotForm({ ...hotspotForm, type: e.target.value })}
-                    className="w-full px-3 py-2 text-sm text-white border rounded-lg outline-none bg-dark-700 border-dark-600 focus:border-primary-500 transition-all"
+                    className="w-full px-3 py-2 text-sm text-white transition-all border rounded-lg outline-none bg-dark-700 border-dark-600 focus:border-primary-500"
                   >
                     <option value="LINK">Link to Scene</option>
                     <option value="INFO">Information Box</option>
@@ -771,16 +779,16 @@ export default function TourEditorPage({
                     value={hotspotForm.title}
                     onChange={(e) => setHotspotForm({ ...hotspotForm, title: e.target.value })}
                     placeholder="e.g. Living Room"
-                    className="w-full px-3 py-2 text-sm text-white border rounded-lg outline-none bg-dark-700 border-dark-600 focus:border-primary-500 transition-all"
+                    className="w-full px-3 py-2 text-sm text-white transition-all border rounded-lg outline-none bg-dark-700 border-dark-600 focus:border-primary-500"
                   />
                 </div>
               </div>
 
               {hotspotForm.type === 'LINK' && (
-                <div className="space-y-4 pt-4 border-t border-dark-700">
+                <div className="pt-4 space-y-4 border-t border-dark-700">
                   <div className="flex flex-col gap-3">
                     <label className="text-sm font-semibold text-white">Target Scene</label>
-                    <div className="flex bg-dark-900 p-1 rounded-lg border border-dark-700 w-full">
+                    <div className="flex w-full p-1 border rounded-lg bg-dark-900 border-dark-700">
                       <button
                         onClick={() => setSelectionMode('name')}
                         className={`flex-1 py-1.5 text-xs font-medium rounded-md transition-all ${
@@ -803,16 +811,16 @@ export default function TourEditorPage({
                   {selectionMode === 'name' ? (
                     <div className="space-y-3">
                       <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-dark-400" size={16} />
+                        <Search className="absolute -translate-y-1/2 left-3 top-1/2 text-dark-400" size={16} />
                         <input
                           type="text"
                           placeholder="Search scene..."
                           value={sceneSearchQuery}
                           onChange={(e) => setSceneSearchQuery(e.target.value)}
-                          className="w-full pl-10 pr-4 py-2 text-xs text-white border rounded-lg outline-none bg-dark-900 border-dark-700 focus:border-primary-500"
+                          className="w-full py-2 pl-10 pr-4 text-xs text-white border rounded-lg outline-none bg-dark-900 border-dark-700 focus:border-primary-500"
                         />
                       </div>
-                      <div className="max-h-64 overflow-y-auto space-y-1 pr-1 scrollbar-thin scrollbar-thumb-dark-600">
+                      <div className="pr-1 space-y-1 overflow-y-auto max-h-64 scrollbar-thin scrollbar-thumb-dark-600">
                         {tour.images
                           .filter(img => 
                             img.id !== tour.images[currentSceneIndex].id &&
@@ -835,7 +843,7 @@ export default function TourEditorPage({
                       </div>
                     </div>
                   ) : (
-                    <div className="grid grid-cols-2 gap-2 max-h-80 overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-dark-600">
+                    <div className="grid grid-cols-2 gap-2 pr-1 overflow-y-auto max-h-80 scrollbar-thin scrollbar-thumb-dark-600">
                       {tour.images
                         .filter(img => img.id !== tour.images[currentSceneIndex].id)
                         .map(img => (
@@ -851,7 +859,7 @@ export default function TourEditorPage({
                             <img
                               src={`/api/uploads/${img.filename}`}
                               alt={img.title || 'Scene'}
-                              className="w-full h-20 object-cover"
+                              className="object-cover w-full h-20"
                             />
                             <div className="absolute inset-x-0 bottom-0 p-1 bg-black/60 backdrop-blur-[1px] text-[9px] text-white truncate text-center font-medium">
                               {img.title || `Scene ${img.order + 1}`}
@@ -865,7 +873,7 @@ export default function TourEditorPage({
               )}
             </div>
 
-            <div className="p-6 border-t border-dark-700 bg-dark-900/50 flex gap-3">
+            <div className="flex gap-3 p-6 border-t border-dark-700 bg-dark-900/50">
               <Button
                 variant="secondary"
                 onClick={() => {
@@ -1008,19 +1016,19 @@ export default function TourEditorPage({
       >
         <div className="p-6 space-y-6">
           <div>
-            <h3 className="text-sm font-medium text-dark-300 mb-4">Tour Logo</h3>
+            <h3 className="mb-4 text-sm font-medium text-dark-300">Tour Logo</h3>
             <div className="flex items-center gap-6">
-              <div className="relative w-24 h-24 bg-dark-700 rounded-lg flex items-center justify-center overflow-hidden border border-dark-600">
+              <div className="relative flex items-center justify-center w-24 h-24 overflow-hidden border rounded-lg bg-dark-700 border-dark-600">
                 {tour.customLogoUrl ? (
                   <>
                     <img
                       src={`/api/uploads/${tour.customLogoUrl}`}
                       alt="Tour logo"
-                      className="w-full h-full object-contain p-2"
+                      className="object-contain w-full h-full p-2"
                     />
                     <button
                       onClick={handleRemoveLogo}
-                      className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors shadow-lg"
+                      className="absolute p-1 text-white transition-colors bg-red-500 rounded-full shadow-lg top-1 right-1 hover:bg-red-600"
                       title="Remove logo"
                     >
                       <X size={12} />
@@ -1058,10 +1066,10 @@ export default function TourEditorPage({
           </div>
 
           <div className="pt-6 border-t border-dark-700">
-            <h3 className="text-sm font-medium text-dark-300 mb-4">Background Audio</h3>
+            <h3 className="mb-4 text-sm font-medium text-dark-300">Background Audio</h3>
             <div className="space-y-6">
               <div className="flex items-center gap-6">
-                <div className="relative w-24 h-24 bg-dark-700 rounded-lg flex items-center justify-center overflow-hidden border border-dark-600">
+                <div className="relative flex items-center justify-center w-24 h-24 overflow-hidden border rounded-lg bg-dark-700 border-dark-600">
                   {tour.backgroundAudioUrl ? (
                     <div className="flex flex-col items-center gap-1">
                       <Music className="text-primary-400" size={32} />
@@ -1070,7 +1078,7 @@ export default function TourEditorPage({
                       </span>
                       <button
                         onClick={handleRemoveAudio}
-                        className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors shadow-lg"
+                        className="absolute p-1 text-white transition-colors bg-red-500 rounded-full shadow-lg top-1 right-1 hover:bg-red-600"
                         title="Remove audio"
                       >
                         <X size={12} />

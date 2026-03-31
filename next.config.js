@@ -1,5 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // 1. Add this to handle Pino internals correctly in Next.js 14
+  experimental: {
+    serverComponentsExternalPackages: ['pino', 'pino-pretty'],
+  },
   images: {
     domains: ['localhost', 'lh3.googleusercontent.com'],
     unoptimized: true,
@@ -8,8 +12,8 @@ const nextConfig = {
     // Fix for Hot Reload in WSL2
     if (dev && !isServer) {
       config.watchOptions = {
-        poll: 1000, // Check for changes every second
-        aggregateTimeout: 300, // Delay rebuild after first change
+        poll: 1000, 
+        aggregateTimeout: 300, 
       };
     }
 
@@ -20,4 +24,4 @@ const nextConfig = {
   },
 }
 
-module.exports = nextConfig
+module.exports = nextConfig;
