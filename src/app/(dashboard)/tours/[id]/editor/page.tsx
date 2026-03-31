@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/Button';
 import { UploadZone } from '@/components/dashboard/UploadZone';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { Badge } from '@/components/ui/Badge';
-import { Save, ChevronLeft, ChevronRight, Image as ImageIcon, Plus, Trash2, X, MapPin, Share2, Edit2, Search, Settings, Music, Volume2 } from 'lucide-react';
+import { Save, ChevronLeft, ChevronRight, Image as ImageIcon, Plus, Trash2, X, MapPin, Share2, Edit2, Search, Settings, Music, Volume2, Link as LinkIcon, Info, ExternalLink, Video, FileText, ArrowRight, Zap } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import { ShareModal } from '@/components/dashboard/ShareModal';
 import { logger } from '@/lib/logger';
@@ -766,20 +766,34 @@ export default function TourEditorPage({
               <div className="space-y-4">
                 <div>
                   <label className="block mb-2 text-sm font-medium text-dark-300">Hotspot Type</label>
-                  <select
-                    value={hotspotForm.type}
-                    onChange={(e) => setHotspotForm({ ...hotspotForm, type: e.target.value })}
-                    className="w-full px-3 py-2 text-sm text-white transition-all border rounded-lg outline-none bg-dark-700 border-dark-600 focus:border-primary-500"
-                  >
-                    <option value="LINK">🔗 Link to Scene</option>
-                    <option value="INFO">ℹ️ Information Box</option>
-                    <option value="URL">🌐 External Link</option>
-                    <option value="VIDEO">🎥 Video</option>
-                  </select>
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      { value: 'LINK', label: 'Link to Scene', icon: LinkIcon, color: 'from-blue-500 to-blue-600' },
+                      { value: 'INFO', label: 'Information', icon: Info, color: 'from-indigo-500 to-indigo-600' },
+                      { value: 'URL', label: 'External Link', icon: ExternalLink, color: 'from-green-500 to-green-600' },
+                      { value: 'VIDEO', label: 'Video', icon: Video, color: 'from-red-500 to-red-600' },
+                    ].map(({ value, label, icon: IconComponent, color }) => (
+                      <button
+                        key={value}
+                        onClick={() => setHotspotForm({ ...hotspotForm, type: value })}
+                        className={`flex items-center gap-2 px-3 py-2.5 rounded-lg text-xs font-medium transition-all border ${
+                          hotspotForm.type === value
+                            ? `bg-gradient-to-r ${color} text-white border-transparent shadow-lg scale-105`
+                            : 'bg-dark-700 text-dark-300 border-dark-600 hover:border-dark-500 hover:text-white'
+                        }`}
+                      >
+                        <IconComponent size={16} />
+                        <span>{label}</span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
                 <div>
-                  <label className="block mb-2 text-sm font-medium text-dark-300">Tooltip Title</label>
+                  <label className="block mb-2 text-sm font-medium text-dark-300 flex items-center gap-2">
+                    <Zap size={16} className="text-primary-400" />
+                    Hotspot Title
+                  </label>
                   <input
                     type="text"
                     value={hotspotForm.title}
@@ -793,23 +807,35 @@ export default function TourEditorPage({
               {/* Link to Scene */}
               {hotspotForm.type === 'LINK' && (
                 <div className="pt-4 space-y-4 border-t border-dark-700">
+                  <div className="flex items-center gap-2 p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
+                    <LinkIcon size={18} className="text-blue-400 flex-shrink-0" />
+                    <div>
+                      <p className="text-xs font-semibold text-blue-400">Navigate to Another Scene</p>
+                      <p className="text-[11px] text-blue-300">Clicking this hotspot will switch to the selected scene</p>
+                    </div>
+                  </div>
                   <div className="flex flex-col gap-3">
-                    <label className="text-sm font-semibold text-white">Target Scene</label>
+                    <label className="text-sm font-semibold text-white flex items-center gap-2">
+                      <ArrowRight size={16} className="text-primary-400" />
+                      Target Scene
+                    </label>
                     <div className="flex w-full p-1 border rounded-lg bg-dark-900 border-dark-700">
                       <button
                         onClick={() => setSelectionMode('name')}
-                        className={`flex-1 py-1.5 text-xs font-medium rounded-md transition-all ${
+                        className={`flex-1 py-1.5 px-2 text-xs font-medium rounded-md transition-all flex items-center justify-center gap-1 ${
                           selectionMode === 'name' ? 'bg-primary-600 text-white shadow-sm' : 'text-dark-400 hover:text-white'
                         }`}
                       >
+                        <FileText size={14} />
                         By name
                       </button>
                       <button
                         onClick={() => setSelectionMode('image')}
-                        className={`flex-1 py-1.5 text-xs font-medium rounded-md transition-all ${
+                        className={`flex-1 py-1.5 px-2 text-xs font-medium rounded-md transition-all flex items-center justify-center gap-1 ${
                           selectionMode === 'image' ? 'bg-primary-600 text-white shadow-sm' : 'text-dark-400 hover:text-white'
                         }`}
                       >
+                        <ImageIcon size={14} />
                         By image
                       </button>
                     </div>
@@ -882,8 +908,18 @@ export default function TourEditorPage({
               {/* Information Box */}
               {hotspotForm.type === 'INFO' && (
                 <div className="pt-4 space-y-4 border-t border-dark-700">
+                  <div className="flex items-center gap-2 p-3 rounded-lg bg-indigo-500/10 border border-indigo-500/20">
+                    <Info size={18} className="text-indigo-400 flex-shrink-0" />
+                    <div>
+                      <p className="text-xs font-semibold text-indigo-400">Detailed Information</p>
+                      <p className="text-[11px] text-indigo-300">Display text with optional image when clicked</p>
+                    </div>
+                  </div>
                   <div>
-                    <label className="block mb-2 text-sm font-medium text-dark-300">Content Text</label>
+                    <label className="block mb-2 text-sm font-medium text-dark-300 flex items-center gap-2">
+                      <FileText size={16} className="text-indigo-400" />
+                      Content Text
+                    </label>
                     <textarea
                       value={hotspotForm.content}
                       onChange={(e) => setHotspotForm({ ...hotspotForm, content: e.target.value })}
@@ -893,7 +929,10 @@ export default function TourEditorPage({
                     />
                   </div>
                   <div>
-                    <label className="block mb-2 text-sm font-medium text-dark-300">Image URL (Optional)</label>
+                    <label className="block mb-2 text-sm font-medium text-dark-300 flex items-center gap-2">
+                      <ImageIcon size={16} className="text-indigo-400" />
+                      Image URL (Optional)
+                    </label>
                     <input
                       type="url"
                       value={hotspotForm.imageUrl}
@@ -908,8 +947,18 @@ export default function TourEditorPage({
               {/* External Link */}
               {hotspotForm.type === 'URL' && (
                 <div className="pt-4 space-y-4 border-t border-dark-700">
+                  <div className="flex items-center gap-2 p-3 rounded-lg bg-green-500/10 border border-green-500/20">
+                    <ExternalLink size={18} className="text-green-400 flex-shrink-0" />
+                    <div>
+                      <p className="text-xs font-semibold text-green-400">Open External Website</p>
+                      <p className="text-[11px] text-green-300">Opens URL in a new tab when clicked</p>
+                    </div>
+                  </div>
                   <div>
-                    <label className="block mb-2 text-sm font-medium text-dark-300">URL</label>
+                    <label className="block mb-2 text-sm font-medium text-dark-300 flex items-center gap-2">
+                      <Zap size={16} className="text-green-400" />
+                      Website URL
+                    </label>
                     <input
                       type="url"
                       value={hotspotForm.url}
@@ -924,16 +973,29 @@ export default function TourEditorPage({
               {/* Video */}
               {hotspotForm.type === 'VIDEO' && (
                 <div className="pt-4 space-y-4 border-t border-dark-700">
+                  <div className="flex items-center gap-2 p-3 rounded-lg bg-red-500/10 border border-red-500/20">
+                    <Video size={18} className="text-red-400 flex-shrink-0" />
+                    <div>
+                      <p className="text-xs font-semibold text-red-400">Embed Video</p>
+                      <p className="text-[11px] text-red-300">MP4, YouTube, or Vimeo videos</p>
+                    </div>
+                  </div>
                   <div>
-                    <label className="block mb-2 text-sm font-medium text-dark-300">Video URL</label>
+                    <label className="block mb-2 text-sm font-medium text-dark-300 flex items-center gap-2">
+                      <Video size={16} className="text-red-400" />
+                      Video URL
+                    </label>
                     <input
                       type="url"
                       value={hotspotForm.videoUrl}
                       onChange={(e) => setHotspotForm({ ...hotspotForm, videoUrl: e.target.value })}
-                      placeholder="https://example.com/video.mp4 or YouTube/Vimeo URL"
+                      placeholder="https://example.com/video.mp4"
                       className="w-full px-3 py-2 text-sm text-white transition-all border rounded-lg outline-none bg-dark-700 border-dark-600 focus:border-primary-500"
                     />
-                    <p className="mt-2 text-xs text-dark-400">Supports MP4 URLs, YouTube, and Vimeo links</p>
+                    <p className="mt-2 text-xs text-dark-400 flex items-center gap-1">
+                      <Zap size={12} className="text-yellow-400" />
+                      Supports MP4 URLs, YouTube, and Vimeo links
+                    </p>
                   </div>
                 </div>
               )}
@@ -947,14 +1009,15 @@ export default function TourEditorPage({
                   setNewHotspotCoords(null);
                   setSceneSearchQuery('');
                 }}
-                className="flex-1 text-xs"
+                className="flex-1 text-xs flex items-center justify-center gap-2"
               >
+                <X size={16} />
                 Cancel
               </Button>
               <Button
                 variant="primary"
                 onClick={handleCreateHotspot}
-                className="flex-1 text-xs"
+                className="flex-1 text-xs flex items-center justify-center gap-2"
                 disabled={
                   (hotspotForm.type === 'LINK' && !hotspotForm.targetImageId) ||
                   (hotspotForm.type === 'INFO' && !hotspotForm.content) ||
@@ -962,6 +1025,7 @@ export default function TourEditorPage({
                   (hotspotForm.type === 'VIDEO' && !hotspotForm.videoUrl)
                 }
               >
+                <Plus size={16} />
                 Create
               </Button>
             </div>
