@@ -106,6 +106,8 @@ model Tour {
   customLogoUrl      String?      @db.Text
   backgroundAudioUrl String?      @db.Text
   backgroundAudioVolume Float    @default(0.5)
+  showSceneMenu      Boolean      @default(true)
+  showHotspotTitles  Boolean      @default(true)
   images             TourImage[]
   createdBy      User         @relation(fields: [createdById], references: [id])
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)

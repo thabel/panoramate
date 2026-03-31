@@ -3,9 +3,10 @@
 import { useEffect, useState, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { MarzipanoViewer } from '@/components/viewer/MarzipanoViewer';
+import { SceneNavigation } from '@/components/viewer/SceneNavigation';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { Button } from '@/components/ui/Button';
-import { Maximize, Minimize, ChevronUp, ChevronDown, Layers, ChevronLeft, ChevronRight, Volume2, VolumeX, Play, Pause, Music } from 'lucide-react';
+import { Maximize, Minimize, ChevronUp, ChevronDown, Layers, ChevronLeft, ChevronRight, Volume2, VolumeX, Play, Pause, Music, Settings } from 'lucide-react';
 import { TourWithImages } from '@/types';
 
 export default function PublicTourPage({
@@ -24,6 +25,8 @@ export default function PublicTourPage({
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [volume, setVolume] = useState(0.5);
+  const [showHotspotTitles, setShowHotspotTitles] = useState(true);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -108,6 +111,7 @@ export default function PublicTourPage({
 
       if (data.success) {
         setTour(data.data);
+        setShowHotspotTitles(data.data.showHotspotTitles ?? true);
         if (data.data.images && data.data.images.length > 0) {
           setCurrentSceneId(data.data.images[0].id);
         }
@@ -189,6 +193,7 @@ export default function PublicTourPage({
               initialSceneId={currentSceneId || undefined}
               onHotspotClick={handleHotspotClick}
               editorMode={false}
+              showHotspotTitles={showHotspotTitles}
             />
 
             {/* Custom Logo overlay */}
@@ -284,68 +289,43 @@ export default function PublicTourPage({
               </div>
             )}
 
-            {/* Scene Switcher */}
-            <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-30 flex flex-col items-center w-full max-w-[95vw]">
-              <button
-                onClick={() => setIsSwitcherOpen(!isSwitcherOpen)}
-                className={`flex items-center gap-2 bg-dark-900/80 hover:bg-dark-800 text-white px-4 py-2 rounded-full backdrop-blur-md border border-dark-700/50 transition-all shadow-lg mb-3 active:scale-95 ${
-                  isSwitcherOpen ? 'ring-2 ring-primary-500/50' : ''
-                }`}
-              >
-                <Layers size={18} className="text-primary-400" />
-                <span className="text-sm font-medium">Browse scenes</span>
-                {isSwitcherOpen ? <ChevronDown size={18} /> : <ChevronUp size={18} />}
-              </button>
-              
-              {isSwitcherOpen && (
-                <div className="relative w-full max-w-4xl px-12 group/switcher">
-                  {/* Thumbnail Scroll Buttons */}
-                  <button
-                    onClick={() => scrollThumbnails('left')}
-                    className="absolute left-0 z-40 p-2 text-white transition-all -translate-y-1/2 border rounded-full shadow-xl opacity-0 top-1/2 bg-dark-900/80 hover:bg-primary-600 border-dark-700/50 active:scale-90 group-hover/switcher:opacity-100"
-                  >
-                    <ChevronLeft size={20} />
-                  </button>
+            {/* New Scene Navigation with Search */}
+            {tour.showSceneMenu !== false && (
+              <SceneNavigation
+                scenes={tour.images}
+                currentSceneId={currentSceneId}
+                onSceneSelect={setCurrentSceneId}
+                showMenu={true}
+              />
+            )}
 
-                  <div 
-                    ref={scrollContainerRef}
-                    className="flex w-full gap-3 p-3 overflow-x-auto border shadow-2xl bg-dark-900/80 backdrop-blur-md border-dark-700/50 rounded-2xl scrollbar-hide animate-fade-in"
-                  >
-                    {tour.images.map((image) => (
-                      <button
-                        key={image.id}
-                        onClick={() => setCurrentSceneId(image.id)}
-                        className={`relative flex-shrink-0 w-28 h-20 rounded-xl overflow-hidden border-2 transition-all group ${
-                          currentSceneId === image.id 
-                            ? 'border-primary-500 ring-2 ring-primary-500/20 shadow-[0_0_15px_rgba(99,102,241,0.5)]' 
-                            : 'border-transparent hover:border-dark-500'
-                        }`}
-                      >
-                        <img
-                          src={`/api/uploads/${image.filename}`}
-                          alt={image.title || image.originalName}
-                          className="object-cover w-full h-full transition-transform duration-500 group-hover:scale-110"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
-                        <div className="absolute bottom-0 left-0 right-0 p-2 text-[10px] font-medium text-white truncate text-center">
-                          {image.title || image.originalName}
-                        </div>
-                        {currentSceneId === image.id && (
-                          <div className="absolute top-1 right-1 w-2 h-2 bg-primary-500 rounded-full shadow-[0_0_8px_rgba(99,102,241,0.8)]" />
-                        )}
-                      </button>
-                    ))}
+            {/* Settings Panel */}
+            <button
+              onClick={() => setIsSettingsOpen(!isSettingsOpen)}
+              className="absolute z-30 p-2 text-white transition-all border rounded-lg top-16 right-4 bg-dark-900/60 hover:bg-dark-800 backdrop-blur-sm border-dark-700/50"
+              title="Viewer Settings"
+            >
+              <Settings size={20} />
+            </button>
+
+            {isSettingsOpen && (
+              <div className="absolute top-24 right-4 z-30 w-64 p-4 rounded-xl bg-dark-900/95 backdrop-blur-md border border-dark-700/50 shadow-2xl space-y-4 animate-fade-in">
+                <div>
+                  <h3 className="text-sm font-semibold text-white mb-3">Display Settings</h3>
+                  <div className="space-y-2">
+                    <label className="flex items-center gap-2 cursor-pointer hover:bg-dark-800 p-2 rounded transition-all">
+                      <input
+                        type="checkbox"
+                        checked={showHotspotTitles}
+                        onChange={(e) => setShowHotspotTitles(e.target.checked)}
+                        className="w-4 h-4 rounded accent-primary-500"
+                      />
+                      <span className="text-sm text-dark-300">Show hotspot titles</span>
+                    </label>
                   </div>
-
-                  <button
-                    onClick={() => scrollThumbnails('right')}
-                    className="absolute right-0 z-40 p-2 text-white transition-all -translate-y-1/2 border rounded-full shadow-xl opacity-0 top-1/2 bg-dark-900/80 hover:bg-primary-600 border-dark-700/50 active:scale-90 group-hover/switcher:opacity-100"
-                  >
-                    <ChevronRight size={20} />
-                  </button>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
 
             <style jsx global>{`
               .scrollbar-hide::-webkit-scrollbar {

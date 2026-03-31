@@ -89,7 +89,7 @@ export async function PATCH(
     }
 
     const body = await request.json();
-    const { title, description, status, settings, customLogoUrl, backgroundAudioUrl, backgroundAudioVolume } = body;
+    const { title, description, status, settings, customLogoUrl, backgroundAudioUrl, backgroundAudioVolume, showSceneMenu, showHotspotTitles } = body;
 
     const updatedTour = await db.tour.update({
       where: { id: params.id },
@@ -101,6 +101,8 @@ export async function PATCH(
         ...(customLogoUrl !== undefined && { customLogoUrl }),
         ...(backgroundAudioUrl !== undefined && { backgroundAudioUrl }),
         ...(backgroundAudioVolume !== undefined && { backgroundAudioVolume }),
+        ...(showSceneMenu !== undefined && { showSceneMenu }),
+        ...(showHotspotTitles !== undefined && { showHotspotTitles }),
       },
       include: {
         images: {

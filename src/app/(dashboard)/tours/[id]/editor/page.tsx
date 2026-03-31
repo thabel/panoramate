@@ -46,6 +46,8 @@ export default function TourEditorPage({
     videoUrl: '',
     imageUrl: '',
   });
+  const [showSceneMenu, setShowSceneMenu] = useState(true);
+  const [showHotspotTitles, setShowHotspotTitles] = useState(true);
 
   // Memoize hotspots to prevent new array reference on every render
   const allHotspots = useMemo(() => {
@@ -485,6 +487,8 @@ export default function TourEditorPage({
         },
         body: JSON.stringify({
           status: 'PUBLISHED',
+          showSceneMenu,
+          showHotspotTitles,
         }),
       });
 
@@ -1269,6 +1273,37 @@ export default function TourEditorPage({
                   />
                 </div>
               )}
+            </div>
+          </div>
+
+          <div className="pt-6 border-t border-dark-700 space-y-4">
+            <h3 className="text-sm font-medium text-dark-300">Viewer Settings</h3>
+            <div className="space-y-3">
+              <label className="flex items-center gap-3 p-3 rounded-lg cursor-pointer hover:bg-dark-800 transition-all">
+                <input
+                  type="checkbox"
+                  checked={showSceneMenu}
+                  onChange={(e) => setShowSceneMenu(e.target.checked)}
+                  className="w-4 h-4 rounded accent-primary-500"
+                />
+                <div className="flex-1">
+                  <p className="text-sm text-white font-medium">Show Scene Navigation Menu</p>
+                  <p className="text-xs text-dark-400">Allow viewers to search and browse scenes</p>
+                </div>
+              </label>
+
+              <label className="flex items-center gap-3 p-3 rounded-lg cursor-pointer hover:bg-dark-800 transition-all">
+                <input
+                  type="checkbox"
+                  checked={showHotspotTitles}
+                  onChange={(e) => setShowHotspotTitles(e.target.checked)}
+                  className="w-4 h-4 rounded accent-primary-500"
+                />
+                <div className="flex-1">
+                  <p className="text-sm text-white font-medium">Show Hotspot Titles</p>
+                  <p className="text-xs text-dark-400">Display labels when hovering over hotspots</p>
+                </div>
+              </label>
             </div>
           </div>
 

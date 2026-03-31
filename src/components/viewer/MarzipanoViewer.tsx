@@ -17,6 +17,7 @@ interface MarzipanoViewerProps {
   editorMode?: boolean;
   addHotspotMode?: boolean;
   tempHotspot?: { yaw: number; pitch: number } | null;
+  showHotspotTitles?: boolean;
   onHotspotClick?: (hotspot: HotspotType) => void;
   onPanoramaClick?: (yaw: number, pitch: number) => void;
   onHotspotMove?: (hotspot: HotspotType, newYaw: number, newPitch: number) => void;
@@ -29,6 +30,7 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
   editorMode = false,
   addHotspotMode = false,
   tempHotspot = null,
+  showHotspotTitles = true,
   onHotspotClick,
   onPanoramaClick,
   onHotspotMove,
@@ -197,7 +199,8 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
     type: 'LINK' | 'INFO' | 'TEMP',
     hotspotId?: string,
     onClick?: () => void,
-    onDragStart?: (e: MouseEvent) => void
+    onDragStart?: (e: MouseEvent) => void,
+    title?: string
   ) => {
     // 1. The Host element: Marzipano will manage this element's transform.
     const host = document.createElement('div');
@@ -222,21 +225,50 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
     visual.style.alignItems = 'center';
     visual.style.justifyContent = 'center';
     visual.style.willChange = 'transform';
+    visual.style.flexDirection = 'column';
+
+    // Icon container
+    const iconContainer = document.createElement('div');
+    iconContainer.style.display = 'flex';
+    iconContainer.style.alignItems = 'center';
+    iconContainer.style.justifyContent = 'center';
 
     if (type === 'TEMP') {
       visual.className += ' text-white border-2 border-white rounded-full shadow-lg bg-primary-500 animate-pulse';
-      visual.innerHTML = `
+      iconContainer.innerHTML = `
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M12 5v14M5 12h14"></path>
         </svg>
       `;
     } else if (type === 'LINK') {
-      visual.innerHTML = `<img src="/icons/link.png" style="width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));" alt="Link" />`;
+      iconContainer.innerHTML = `<img src="/icons/link.png" style="width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));" alt="Link" />`;
     } else {
       visual.style.borderRadius = '50%';
       visual.style.backgroundColor = 'rgba(255, 255, 255, 0.9)';
       visual.style.border = '2px solid #6366f1';
-      visual.innerHTML = '<span style="color: #6366f1; font-weight: bold; font-size: 18px;">i</span>';
+      iconContainer.innerHTML = '<span style="color: #6366f1; font-weight: bold; font-size: 18px;">i</span>';
+    }
+
+    visual.appendChild(iconContainer);
+
+    // Title label (only if showHotspotTitles and title exists)
+    if (showHotspotTitles && title && type !== 'TEMP') {
+      const titleLabel = document.createElement('div');
+      const size = type === 'TEMP' ? 32 : 42;
+      titleLabel.style.position = 'absolute';
+      titleLabel.style.top = `${size + 4}px`;
+      titleLabel.style.whiteSpace = 'nowrap';
+      titleLabel.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
+      titleLabel.style.color = 'white';
+      titleLabel.style.padding = '2px 8px';
+      titleLabel.style.borderRadius = '4px';
+      titleLabel.style.fontSize = '12px';
+      titleLabel.style.fontWeight = '500';
+      titleLabel.style.zIndex = '10';
+      titleLabel.style.pointerEvents = 'none';
+      titleLabel.style.border = '1px solid rgba(255, 255, 255, 0.2)';
+      titleLabel.textContent = title;
+      visual.appendChild(titleLabel);
     }
 
     // Store hotspot ID for drag operations
@@ -381,7 +413,8 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
         () => {
           if (onHotspotClick) onHotspotClick(hotspot);
         },
-        (e) => handleHotspotDragStart(hotspot.id, e)
+        (e) => handleHotspotDragStart(hotspot.id, e),
+        hotspot.title
       );
 
       const marzipanoHotspot = scene.hotspotContainer().createHotspot(element, {
@@ -403,7 +436,7 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
         });
       }
     }
-  }, [hotspots, onHotspotClick, tempHotspot, currentSceneId, editorMode, addHotspotMode]);
+  }, [hotspots, onHotspotClick, tempHotspot, currentSceneId, editorMode, addHotspotMode, showHotspotTitles]);
 // Debug logs for hotspot mode
 useEffect(() => {
   logger.debug({ addHotspotMode }, 'addHotspotMode changed');
