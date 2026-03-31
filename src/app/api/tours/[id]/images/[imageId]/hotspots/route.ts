@@ -61,7 +61,7 @@ export async function POST(
     }
 
     const body = await request.json();
-    const { type, yaw, pitch, rotation, targetImageId, title, content, url, videoUrl } = body;
+    const { type, yaw, pitch, rotation, targetImageId, title, content, url, videoUrl, imageUrl } = body;
 
     if (!type || yaw === undefined || pitch === undefined) {
       return NextResponse.json(
@@ -101,6 +101,7 @@ export async function POST(
         content: content || null,
         url: url || null,
         videoUrl: videoUrl || null,
+        imageUrl: imageUrl || null,
       },
     });
 
@@ -130,7 +131,7 @@ export async function PATCH(
     }
 
     const body = await request.json();
-    const { hotspotId, type, yaw, pitch, rotation, targetImageId, title, content, url, videoUrl } = body;
+    const { hotspotId, type, yaw, pitch, rotation, targetImageId, title, content, url, videoUrl, imageUrl } = body;
 
     if (!hotspotId) {
       return NextResponse.json(
@@ -174,6 +175,7 @@ export async function PATCH(
         ...(content !== undefined && { content }),
         ...(url !== undefined && { url }),
         ...(videoUrl !== undefined && { videoUrl }),
+        ...(imageUrl !== undefined && { imageUrl }),
       },
     });
 

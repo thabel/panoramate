@@ -39,6 +39,7 @@ export interface Hotspot {
   content?: string;
   url?: string;
   videoUrl?: string;
+  imageUrl?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -115,6 +116,7 @@ export interface CreateHotspotInput {
   content?: string;
   url?: string;
   videoUrl?: string;
+  imageUrl?: string;
 }
 
 export interface UpdateHotspotInput extends Partial<CreateHotspotInput> {

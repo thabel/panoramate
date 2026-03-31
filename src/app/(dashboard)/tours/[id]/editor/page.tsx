@@ -41,6 +41,10 @@ export default function TourEditorPage({
     type: 'LINK',
     title: '',
     targetImageId: '',
+    content: '',
+    url: '',
+    videoUrl: '',
+    imageUrl: '',
   });
 
   // Memoize hotspots to prevent new array reference on every render
@@ -761,14 +765,16 @@ export default function TourEditorPage({
             <div className="flex-1 p-6 space-y-6 overflow-y-auto scrollbar-hide">
               <div className="space-y-4">
                 <div>
-                  <label className="block mb-2 text-sm font-medium text-dark-300">Type</label>
+                  <label className="block mb-2 text-sm font-medium text-dark-300">Hotspot Type</label>
                   <select
                     value={hotspotForm.type}
                     onChange={(e) => setHotspotForm({ ...hotspotForm, type: e.target.value })}
                     className="w-full px-3 py-2 text-sm text-white transition-all border rounded-lg outline-none bg-dark-700 border-dark-600 focus:border-primary-500"
                   >
-                    <option value="LINK">Link to Scene</option>
-                    <option value="INFO">Information Box</option>
+                    <option value="LINK">🔗 Link to Scene</option>
+                    <option value="INFO">ℹ️ Information Box</option>
+                    <option value="URL">🌐 External Link</option>
+                    <option value="VIDEO">🎥 Video</option>
                   </select>
                 </div>
 
@@ -784,6 +790,7 @@ export default function TourEditorPage({
                 </div>
               </div>
 
+              {/* Link to Scene */}
               {hotspotForm.type === 'LINK' && (
                 <div className="pt-4 space-y-4 border-t border-dark-700">
                   <div className="flex flex-col gap-3">
@@ -822,7 +829,7 @@ export default function TourEditorPage({
                       </div>
                       <div className="pr-1 space-y-1 overflow-y-auto max-h-64 scrollbar-thin scrollbar-thumb-dark-600">
                         {tour.images
-                          .filter(img => 
+                          .filter(img =>
                             img.id !== tour.images[currentSceneIndex].id &&
                             (img.title || `Scene ${img.order + 1}`).toLowerCase().includes(sceneSearchQuery.toLowerCase())
                           )
@@ -871,6 +878,65 @@ export default function TourEditorPage({
                   )}
                 </div>
               )}
+
+              {/* Information Box */}
+              {hotspotForm.type === 'INFO' && (
+                <div className="pt-4 space-y-4 border-t border-dark-700">
+                  <div>
+                    <label className="block mb-2 text-sm font-medium text-dark-300">Content Text</label>
+                    <textarea
+                      value={hotspotForm.content}
+                      onChange={(e) => setHotspotForm({ ...hotspotForm, content: e.target.value })}
+                      placeholder="Enter information text..."
+                      rows={4}
+                      className="w-full px-3 py-2 text-sm text-white transition-all border rounded-lg outline-none resize-none bg-dark-700 border-dark-600 focus:border-primary-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block mb-2 text-sm font-medium text-dark-300">Image URL (Optional)</label>
+                    <input
+                      type="url"
+                      value={hotspotForm.imageUrl}
+                      onChange={(e) => setHotspotForm({ ...hotspotForm, imageUrl: e.target.value })}
+                      placeholder="https://example.com/image.jpg"
+                      className="w-full px-3 py-2 text-sm text-white transition-all border rounded-lg outline-none bg-dark-700 border-dark-600 focus:border-primary-500"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* External Link */}
+              {hotspotForm.type === 'URL' && (
+                <div className="pt-4 space-y-4 border-t border-dark-700">
+                  <div>
+                    <label className="block mb-2 text-sm font-medium text-dark-300">URL</label>
+                    <input
+                      type="url"
+                      value={hotspotForm.url}
+                      onChange={(e) => setHotspotForm({ ...hotspotForm, url: e.target.value })}
+                      placeholder="https://example.com"
+                      className="w-full px-3 py-2 text-sm text-white transition-all border rounded-lg outline-none bg-dark-700 border-dark-600 focus:border-primary-500"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Video */}
+              {hotspotForm.type === 'VIDEO' && (
+                <div className="pt-4 space-y-4 border-t border-dark-700">
+                  <div>
+                    <label className="block mb-2 text-sm font-medium text-dark-300">Video URL</label>
+                    <input
+                      type="url"
+                      value={hotspotForm.videoUrl}
+                      onChange={(e) => setHotspotForm({ ...hotspotForm, videoUrl: e.target.value })}
+                      placeholder="https://example.com/video.mp4 or YouTube/Vimeo URL"
+                      className="w-full px-3 py-2 text-sm text-white transition-all border rounded-lg outline-none bg-dark-700 border-dark-600 focus:border-primary-500"
+                    />
+                    <p className="mt-2 text-xs text-dark-400">Supports MP4 URLs, YouTube, and Vimeo links</p>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="flex gap-3 p-6 border-t border-dark-700 bg-dark-900/50">
@@ -889,7 +955,12 @@ export default function TourEditorPage({
                 variant="primary"
                 onClick={handleCreateHotspot}
                 className="flex-1 text-xs"
-                disabled={hotspotForm.type === 'LINK' && !hotspotForm.targetImageId}
+                disabled={
+                  (hotspotForm.type === 'LINK' && !hotspotForm.targetImageId) ||
+                  (hotspotForm.type === 'INFO' && !hotspotForm.content) ||
+                  (hotspotForm.type === 'URL' && !hotspotForm.url) ||
+                  (hotspotForm.type === 'VIDEO' && !hotspotForm.videoUrl)
+                }
               >
                 Create
               </Button>
