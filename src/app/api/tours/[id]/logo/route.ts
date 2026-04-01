@@ -21,10 +21,7 @@ export async function POST(
       return NextResponse.json({ error: 'Tour not found' }, { status: 404 });
     }
 
-    if (tour.organizationId !== authPayload.organizationId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
-    }
-
+    // RESTRICTION DISABLED: all authenticated users can upload logos
     const formData = await request.formData();
     const file = formData.get('file') as File;
 
@@ -86,10 +83,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Tour not found' }, { status: 404 });
     }
 
-    if (tour.organizationId !== authPayload.organizationId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
-    }
-
+    // RESTRICTION DISABLED: all authenticated users can delete logos
     if (tour.customLogoUrl) {
       await deleteFile(tour.customLogoUrl);
     }

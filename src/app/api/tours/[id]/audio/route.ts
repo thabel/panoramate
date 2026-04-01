@@ -21,10 +21,7 @@ export async function POST(
       return NextResponse.json({ error: 'Tour not found' }, { status: 404 });
     }
 
-    if (tour.organizationId !== authPayload.organizationId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
-    }
-
+    // RESTRICTION DISABLED: all authenticated users can upload audio
     const formData = await request.formData();
     const file = formData.get('file') as File;
 
@@ -86,10 +83,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Tour not found' }, { status: 404 });
     }
 
-    if (tour.organizationId !== authPayload.organizationId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
-    }
-
+    // RESTRICTION DISABLED: all authenticated users can delete audio
     if (tour.backgroundAudioUrl) {
       await deleteFile(tour.backgroundAudioUrl);
     }

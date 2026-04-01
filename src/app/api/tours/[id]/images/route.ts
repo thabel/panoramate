@@ -27,14 +27,7 @@ export async function POST(
       );
     }
 
-    if (tour.organizationId !== authPayload.organizationId) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 403 }
-      );
-    }
-
-    // Get organization to check plan limits
+    // RESTRICTION DISABLED: all authenticated users can upload images to any tour
     const org = await db.organization.findUnique({
       where: { id: authPayload.organizationId },
     });
@@ -46,15 +39,7 @@ export async function POST(
       );
     }
 
-    const limits = PLAN_LIMITS[org.plan as keyof typeof PLAN_LIMITS];
-
-    // Check image count
-    if (limits.maxImages !== -1 && tour.images.length >= limits.maxImages) {
-      return NextResponse.json(
-        { error: `Plan limit reached: maximum ${limits.maxImages} images per tour` },
-        { status: 403 }
-      );
-    }
+    // RESTRICTION DISABLED: image limits no longer enforced
 
     // Parse multipart form data
     const formData = await request.formData();
@@ -86,15 +71,7 @@ export async function POST(
           file.name
         );
 
-        // Check storage limit
-        const newTotalStorage = org.usedStorageMb + sizeMb;
-        if (newTotalStorage > org.totalStorageMb) {
-          return NextResponse.json(
-            { error: 'Storage quota exceeded' },
-            { status: 403 }
-          );
-        }
-
+        // RESTRICTION DISABLED: storage limits no longer enforced
         const order = tour.images.length + createdImages.length;
 
         const image = await db.tourImage.create({
@@ -180,13 +157,7 @@ export async function DELETE(
       );
     }
 
-    if (image.tour.organizationId !== authPayload.organizationId) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 403 }
-      );
-    }
-
+    // RESTRICTION DISABLED: all authenticated users can delete images
     // Delete file
     await deleteFile(image.filename);
 
@@ -250,13 +221,7 @@ export async function PATCH(
       );
     }
 
-    if (image.tour.organizationId !== authPayload.organizationId) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 403 }
-      );
-    }
-
+    // RESTRICTION DISABLED: all authenticated users can update images
     const updatedImage = await db.tourImage.update({
       where: { id: imageId },
       data: {

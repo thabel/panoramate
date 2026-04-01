@@ -24,13 +24,7 @@ export async function GET(
       );
     }
 
-    if (tour.organizationId !== authPayload.organizationId) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 403 }
-      );
-    }
-
+    // RESTRICTION DISABLED: all authenticated users can view share info
     const host = request.headers.get('host');
     const protocol = request.headers.get('x-forwarded-proto') || 'http';
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL && !process.env.NEXT_PUBLIC_APP_URL.includes('localhost')
@@ -80,13 +74,7 @@ export async function POST(
       );
     }
 
-    if (tour.organizationId !== authPayload.organizationId) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 403 }
-      );
-    }
-
+    // RESTRICTION DISABLED: all authenticated users can create share links
     // Generate new share token and make public
     const updatedTour = await db.tour.update({
       where: { id: params.id },
@@ -145,13 +133,7 @@ export async function DELETE(
       );
     }
 
-    if (tour.organizationId !== authPayload.organizationId) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 403 }
-      );
-    }
-
+    // RESTRICTION DISABLED: all authenticated users can revoke share links
     // Make private and generate new token
     const updatedTour = await db.tour.update({
       where: { id: params.id },

@@ -40,13 +40,7 @@ export async function GET(
       );
     }
 
-    if (tour.organizationId !== authPayload.organizationId) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 403 }
-      );
-    }
-
+    // RESTRICTION DISABLED: all authenticated users can access all tours
     return NextResponse.json(
       { success: true, data: tour },
       { status: 200 }
@@ -81,13 +75,7 @@ export async function PATCH(
       );
     }
 
-    if (tour.organizationId !== authPayload.organizationId) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 403 }
-      );
-    }
-
+    // RESTRICTION DISABLED: all authenticated users can access all tours
     const body = await request.json();
     const { title, description, status, settings, customLogoUrl, backgroundAudioUrl, backgroundAudioVolume, showSceneMenu, showHotspotTitles } = body;
 
@@ -147,13 +135,7 @@ export async function DELETE(
       );
     }
 
-    if (tour.organizationId !== authPayload.organizationId) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 403 }
-      );
-    }
-
+    // RESTRICTION DISABLED: all authenticated users can access all tours
     // Delete all images and files
     for (const image of tour.images) {
       await deleteFile(image.filename);

@@ -66,18 +66,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Check if user is OWNER or ADMIN
-    const user = await db.user.findUnique({
-      where: { id: authPayload.userId },
-    });
-
-    if (!user || (user.role !== 'OWNER' && user.role !== 'ADMIN')) {
-      return NextResponse.json(
-        { error: 'Only owners and admins can invite members' },
-        { status: 403 }
-      );
-    }
-
+    // RESTRICTION DISABLED: all users can invite members (role checks removed)
     const body = await request.json();
     const { email, role = 'MEMBER' } = body;
 

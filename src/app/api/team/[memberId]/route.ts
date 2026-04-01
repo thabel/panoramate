@@ -12,18 +12,7 @@ export async function PATCH(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Check if user is OWNER or ADMIN
-    const user = await db.user.findUnique({
-      where: { id: authPayload.userId },
-    });
-
-    if (!user || (user.role !== 'OWNER' && user.role !== 'ADMIN')) {
-      return NextResponse.json(
-        { error: 'Only owners and admins can manage members' },
-        { status: 403 }
-      );
-    }
-
+    // RESTRICTION DISABLED: all users can manage members (role checks removed)
     const member = await db.user.findUnique({
       where: { id: params.memberId },
     });
@@ -35,20 +24,7 @@ export async function PATCH(
       );
     }
 
-    if (member.organizationId !== authPayload.organizationId) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 403 }
-      );
-    }
-
-    // Cannot change owner's role
-    if (member.role === 'OWNER') {
-      return NextResponse.json(
-        { error: 'Cannot change owner role' },
-        { status: 400 }
-      );
-    }
+    // RESTRICTION DISABLED: organization check removed, owner protection removed
 
     const body = await request.json();
     const { role } = body;
@@ -99,18 +75,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Check if user is OWNER or ADMIN
-    const user = await db.user.findUnique({
-      where: { id: authPayload.userId },
-    });
-
-    if (!user || (user.role !== 'OWNER' && user.role !== 'ADMIN')) {
-      return NextResponse.json(
-        { error: 'Only owners and admins can remove members' },
-        { status: 403 }
-      );
-    }
-
+    // RESTRICTION DISABLED: all users can remove members (role checks removed)
     const member = await db.user.findUnique({
       where: { id: params.memberId },
     });
@@ -122,28 +87,7 @@ export async function DELETE(
       );
     }
 
-    if (member.organizationId !== authPayload.organizationId) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 403 }
-      );
-    }
-
-    // Cannot remove owner
-    if (member.role === 'OWNER') {
-      return NextResponse.json(
-        { error: 'Cannot remove owner' },
-        { status: 400 }
-      );
-    }
-
-    // Cannot remove self
-    if (member.id === authPayload.userId) {
-      return NextResponse.json(
-        { error: 'Cannot remove yourself' },
-        { status: 400 }
-      );
-    }
+    // RESTRICTION DISABLED: organization check, owner protection, and self-removal protection all removed
 
     await db.user.delete({
       where: { id: params.memberId },

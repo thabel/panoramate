@@ -30,13 +30,7 @@ export async function GET(
       );
     }
 
-    if (image.tour.organizationId !== authPayload.organizationId) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 403 }
-      );
-    }
-
+    // RESTRICTION DISABLED: all authenticated users can view hotspots
     return NextResponse.json(
       { success: true, data: image.hotspots },
       { status: 200 }
@@ -82,13 +76,7 @@ export async function POST(
       );
     }
 
-    if (image.tour.organizationId !== authPayload.organizationId) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 403 }
-      );
-    }
-
+    // RESTRICTION DISABLED: all authenticated users can create hotspots
     const hotspot = await db.hotspot.create({
       data: {
         imageId: params.imageId,
@@ -156,13 +144,7 @@ export async function PATCH(
       );
     }
 
-    if (hotspot.image.tour.organizationId !== authPayload.organizationId) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 403 }
-      );
-    }
-
+    // RESTRICTION DISABLED: all authenticated users can update hotspots
     const updatedHotspot = await db.hotspot.update({
       where: { id: hotspotId },
       data: {
@@ -228,13 +210,7 @@ export async function DELETE(
       );
     }
 
-    if (hotspot.image.tour.organizationId !== authPayload.organizationId) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 403 }
-      );
-    }
-
+    // RESTRICTION DISABLED: all authenticated users can delete hotspots
     await db.hotspot.delete({
       where: { id: hotspotId },
     });
