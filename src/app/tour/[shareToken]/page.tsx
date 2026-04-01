@@ -3,9 +3,9 @@
 import { useEffect, useState, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { MarzipanoViewer } from '@/components/viewer/MarzipanoViewer';
-import { TopSceneMenu } from '@/components/viewer/TopSceneMenu';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import { Button } from '@/components/ui/Button';
+import { SceneNavigation } from '@/components/viewer/SceneNavigation';
+import { TopSceneMenu } from '@/components/viewer/TopSceneMenu';
 import { Maximize, Minimize, ChevronLeft, ChevronRight, Volume2, VolumeX, Play, Pause, Settings } from 'lucide-react';
 
 export default function PublicTourPage({
@@ -201,7 +201,7 @@ export default function PublicTourPage({
                     const id = getPrevSceneId();
                     if (id) setCurrentSceneId(id);
                   }}
-                  className="absolute z-30 p-3 text-white transition-all -translate-y-1/2 border rounded-full opacity-0 left-4 top-1/2 bg-dark-900/40 hover:bg-dark-900/80 backdrop-blur-md border-dark-700/50 group-hover/viewer:opacity-100 active:scale-90"
+                  className="absolute z-30 p-3 text-white transition-all -translate-y-1/2 border rounded-full opacity-0 left-4 top-1/2 bg-dark-900/40 hover:bg-dark-800 backdrop-blur-md border-dark-700/50 group-hover/viewer:opacity-100 active:scale-90"
                   title="Previous Scene"
                 >
                   <ChevronLeft size={32} />
@@ -211,7 +211,7 @@ export default function PublicTourPage({
                     const id = getNextSceneId();
                     if (id) setCurrentSceneId(id);
                   }}
-                  className="absolute z-30 p-3 text-white transition-all -translate-y-1/2 border rounded-full opacity-0 right-4 top-1/2 bg-dark-900/40 hover:bg-dark-900/80 backdrop-blur-md border-dark-700/50 group-hover/viewer:opacity-100 active:scale-90"
+                  className="absolute z-30 p-3 text-white transition-all -translate-y-1/2 border rounded-full opacity-0 right-4 top-1/2 bg-dark-900/40 hover:bg-dark-800 backdrop-blur-md border-dark-700/50 group-hover/viewer:opacity-100 active:scale-90"
                   title="Next Scene"
                 >
                   <ChevronRight size={32} />
@@ -294,6 +294,16 @@ export default function PublicTourPage({
                 <Settings size={20} />
               </button>
             </div>
+
+            {/* Bottom Scene Navigation Grid */}
+            {tour.showSceneMenu !== false && (
+              <SceneNavigation
+                scenes={tour.images}
+                currentSceneId={currentSceneId}
+                onSceneSelect={setCurrentSceneId}
+                showMenu={true}
+              />
+            )}
 
             {isSettingsOpen && (
               <div className="absolute z-30 w-64 p-4 space-y-4 border shadow-2xl top-20 right-4 rounded-xl bg-dark-900/95 backdrop-blur-md border-dark-700/50 animate-fade-in">
