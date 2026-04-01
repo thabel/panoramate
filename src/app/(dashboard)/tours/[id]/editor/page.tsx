@@ -2,6 +2,8 @@
 'use client';
 
 import { useEffect, useState, useCallback, useMemo } from 'react';
+import { createPortal } from 'react-dom';
+import { useUI } from '@/context/UIContext';
 import { useSearchParams } from 'next/navigation';
 import { TourWithImages } from '@/types';
 import { MarzipanoViewer } from '@/components/viewer/MarzipanoViewer';
@@ -21,6 +23,8 @@ export default function TourEditorPage({
   params: { id: string };
 }) {
   const searchParams = useSearchParams();
+  const { isHotspotPanelOpen, setIsHotspotPanelOpen, isHotspotPanelCollapsed, setIsHotspotPanelCollapsed } = useUI();
+  const [mounted, setMounted] = useState(false);
   const [tour, setTour] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [currentSceneIndex, setCurrentSceneIndex] = useState(0);
@@ -28,7 +32,6 @@ export default function TourEditorPage({
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [addHotspotMode, setAddHotspotMode] = useState(false);
-  const [isHotspotModalOpen, setIsHotspotModalOpen] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isRenameModalOpen, setIsRenameModalOpen] = useState(false);
   const [newSceneTitle, setNewSceneTitle] = useState('');
@@ -60,6 +63,7 @@ export default function TourEditorPage({
   }, [tour]);
 
   useEffect(() => {
+    setMounted(true);
     fetchTour();
   }, []);
 
@@ -239,7 +243,7 @@ export default function TourEditorPage({
         ...hotspotForm,
         targetImageId: tour?.images.find(img => img.id !== tour.images[currentSceneIndex].id)?.id || '',
       });
-      setIsHotspotModalOpen(true);
+      setIsHotspotPanelOpen(true);
       // We keep addHotspotMode true until it's actually created or cancelled
     }
   };
@@ -306,7 +310,7 @@ export default function TourEditorPage({
           )
         });
         
-        setIsHotspotModalOpen(false);
+        setIsHotspotPanelOpen(false);
         setAddHotspotMode(false);
         setNewHotspotCoords(null);
         setSceneSearchQuery('');
@@ -561,8 +565,328 @@ export default function TourEditorPage({
 
   const currentScene = tour.images[currentSceneIndex];
 
+  const renderHotspotPanel = () => {
+    if (!isHotspotPanelOpen || !mounted) return null;
+
+    const slot = document.getElementById('hotspot-panel-slot');
+    if (!slot) return null;
+
+    return createPortal(
+      <div className="flex flex-col h-full overflow-hidden text-white">
+        {isHotspotPanelCollapsed ? (
+          <div className="flex flex-col items-center py-6 gap-6">
+             <button
+              onClick={() => setIsHotspotPanelCollapsed(false)}
+              className="p-2 transition-colors rounded-lg hover:bg-dark-700 text-primary-400"
+              title="Expand Panel"
+            >
+              <ChevronLeft size={20} />
+            </button>
+            <div className="w-px h-12 bg-dark-700" />
+            <div className="vertical-text text-[10px] font-bold text-dark-400 uppercase tracking-[0.2em] whitespace-nowrap select-none" style={{ writingMode: 'vertical-rl' }}>
+              Configuration
+            </div>
+          </div>
+        ) : (
+          <>
+            <div className="flex items-center justify-between px-6 py-4 border-b border-dark-700 bg-dark-900/50">
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setIsHotspotPanelCollapsed(true)}
+                  className="p-1 transition-colors rounded-lg hover:bg-dark-700 text-dark-400"
+                  title="Collapse Panel"
+                >
+                  <ChevronRight size={20} />
+                </button>
+                <h2 className="text-lg font-semibold text-white">Configure Hotspot</h2>
+              </div>
+              <button
+                onClick={() => {
+                  setIsHotspotPanelOpen(false);
+                  setAddHotspotMode(false);
+                  setNewHotspotCoords(null);
+                  setSceneSearchQuery('');
+                }}
+                className="p-1 transition-colors rounded-lg hover:bg-dark-700 text-dark-400"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div className="flex-1 p-6 space-y-6 overflow-y-auto scrollbar-hide">
+              <div className="space-y-4">
+                <div>
+                  <label className="block mb-2 text-sm font-medium text-dark-300">Hotspot Type</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      { value: 'LINK', label: 'Link to Scene', icon: LinkIcon, color: 'from-blue-500 to-blue-600' },
+                      { value: 'INFO', label: 'Information', icon: Info, color: 'from-indigo-500 to-indigo-600' },
+                      { value: 'URL', label: 'External Link', icon: ExternalLink, color: 'from-green-500 to-green-600' },
+                      { value: 'VIDEO', label: 'Video', icon: Video, color: 'from-red-500 to-red-600' },
+                    ].map(({ value, label, icon: IconComponent, color }) => (
+                      <button
+                        key={value}
+                        onClick={() => setHotspotForm({ ...hotspotForm, type: value })}
+                        className={`flex items-center gap-2 px-3 py-2.5 rounded-lg text-xs font-medium transition-all border ${
+                          hotspotForm.type === value
+                            ? `bg-gradient-to-r ${color} text-white border-transparent shadow-lg scale-105`
+                            : 'bg-dark-700 text-dark-300 border-dark-600 hover:border-dark-500 hover:text-white'
+                        }`}
+                      >
+                        <IconComponent size={16} />
+                        <span>{label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="flex items-center block gap-2 mb-2 text-sm font-medium text-dark-300">
+                    <Zap size={16} className="text-primary-400" />
+                    Hotspot Title
+                  </label>
+                  <input
+                    type="text"
+                    value={hotspotForm.title}
+                    onChange={(e) => setHotspotForm({ ...hotspotForm, title: e.target.value })}
+                    placeholder="e.g. Living Room"
+                    className="w-full px-3 py-2 text-sm text-white transition-all border rounded-lg outline-none bg-dark-700 border-dark-600 focus:border-primary-500"
+                  />
+                </div>
+              </div>
+
+              {/* Customization Options */}
+              <div className="pt-4 space-y-4 border-t border-dark-700">
+                <div className="flex items-center gap-2 p-3 rounded-lg bg-primary-500/10 border border-primary-500/20">
+                  <Zap size={18} className="text-primary-400 flex-shrink-0" />
+                  <div>
+                    <p className="text-xs font-semibold text-primary-400">Customize Appearance</p>
+                    <p className="text-[11px] text-primary-300">Animations & Colors</p>
+                  </div>
+                </div>
+
+                {/* Animation Type */}
+                <div>
+                  <label className="block mb-2 text-sm font-medium text-dark-300">Animation</label>
+                  <select
+                    value={hotspotForm.animationType || 'NONE'}
+                    onChange={(e) => setHotspotForm({ ...hotspotForm, animationType: e.target.value })}
+                    className="w-full px-3 py-2 text-sm text-white transition-all border rounded-lg outline-none bg-dark-700 border-dark-600 focus:border-primary-500"
+                  >
+                    <option value="NONE">None</option>
+                    <option value="PULSE">Pulse</option>
+                    <option value="GLOW">Glow</option>
+                    <option value="BOUNCE">Bounce</option>
+                    <option value="FLOAT">Float</option>
+                  </select>
+                </div>
+
+                {/* Color Picker */}
+                <div>
+                  <label className="block mb-2 text-sm font-medium text-dark-300">Color</label>
+                  <input
+                    type="color"
+                    value={hotspotForm.color || '#6366f1'}
+                    onChange={(e) => setHotspotForm({ ...hotspotForm, color: e.target.value })}
+                    className="w-full h-10 rounded-lg cursor-pointer transition-all border border-dark-600"
+                  />
+                </div>
+
+                {/* Scale/Size */}
+                <div>
+                  <label className="block mb-2 text-sm font-medium text-dark-300">
+                    Size: {(hotspotForm.scale || 1.0).toFixed(1)}x
+                  </label>
+                  <input
+                    type="range"
+                    min="0.5"
+                    max="2"
+                    step="0.1"
+                    value={hotspotForm.scale || 1.0}
+                    onChange={(e) => setHotspotForm({ ...hotspotForm, scale: parseFloat(e.target.value) })}
+                    className="w-full h-2 bg-dark-700 rounded-lg cursor-pointer appearance-none"
+                  />
+                </div>
+              </div>
+
+              {/* Link to Scene */}
+              {hotspotForm.type === 'LINK' && (
+                <div className="pt-4 space-y-4 border-t border-dark-700">
+                  <div className="flex flex-col gap-3">
+                    <label className="flex items-center gap-2 text-sm font-semibold text-white">
+                      Target Scene
+                    </label>
+                    <div className="flex w-full p-1 border rounded-lg bg-dark-900 border-dark-700">
+                      <button
+                        onClick={() => setSelectionMode('name')}
+                        className={`flex-1 py-1.5 px-2 text-xs font-medium rounded-md transition-all flex items-center justify-center gap-1 ${
+                          selectionMode === 'name' ? 'bg-primary-600 text-white' : 'text-dark-400'
+                        }`}
+                      >
+                        By name
+                      </button>
+                      <button
+                        onClick={() => setSelectionMode('image')}
+                        className={`flex-1 py-1.5 px-2 text-xs font-medium rounded-md transition-all flex items-center justify-center gap-1 ${
+                          selectionMode === 'image' ? 'bg-primary-600 text-white' : 'text-dark-400'
+                        }`}
+                      >
+                        By image
+                      </button>
+                    </div>
+                  </div>
+
+                  {selectionMode === 'name' ? (
+                    <div className="space-y-3">
+                      <div className="relative">
+                        <Search className="absolute -translate-y-1/2 left-3 top-1/2 text-dark-400" size={16} />
+                        <input
+                          type="text"
+                          placeholder="Search scene..."
+                          value={sceneSearchQuery}
+                          onChange={(e) => setSceneSearchQuery(e.target.value)}
+                          className="w-full py-2 pl-10 pr-4 text-xs text-white border rounded-lg outline-none bg-dark-900 border-dark-700 focus:border-primary-500"
+                        />
+                      </div>
+                      <div className="pr-1 space-y-1 overflow-y-auto max-h-48 scrollbar-thin">
+                        {tour.images
+                          .filter(img =>
+                            img.id !== tour.images[currentSceneIndex].id &&
+                            (img.title || `Scene ${img.order + 1}`).toLowerCase().includes(sceneSearchQuery.toLowerCase())
+                          )
+                          .map(img => (
+                            <button
+                              key={img.id}
+                              onClick={() => setHotspotForm({ ...hotspotForm, targetImageId: img.id })}
+                              className={`w-full text-left px-3 py-2.5 rounded-lg text-xs transition-all border ${
+                                hotspotForm.targetImageId === img.id
+                                  ? 'bg-primary-600/20 border-primary-500 text-white'
+                                  : 'bg-dark-900/40 border-transparent text-dark-300'
+                              }`}
+                            >
+                              {img.title || `Scene ${img.order + 1}`}
+                            </button>
+                          ))
+                        }
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-2 pr-1 overflow-y-auto max-h-48 scrollbar-thin">
+                      {tour.images
+                        .filter(img => img.id !== tour.images[currentSceneIndex].id)
+                        .map(img => (
+                          <button
+                            key={img.id}
+                            onClick={() => setHotspotForm({ ...hotspotForm, targetImageId: img.id })}
+                            className={`relative group rounded-lg overflow-hidden border-2 transition-all ${
+                              hotspotForm.targetImageId === img.id
+                                ? 'border-primary-500'
+                                : 'border-transparent'
+                            }`}
+                          >
+                            <img
+                              src={`/api/uploads/${img.filename}`}
+                              alt={img.title || 'Scene'}
+                              className="object-cover w-full h-16"
+                            />
+                          </button>
+                        ))
+                      }
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Information Box */}
+              {hotspotForm.type === 'INFO' && (
+                <div className="pt-4 space-y-4 border-t border-dark-700">
+                  <div>
+                    <label className="flex items-center block gap-2 mb-2 text-sm font-medium text-dark-300">
+                      Content Text
+                    </label>
+                    <textarea
+                      value={hotspotForm.content}
+                      onChange={(e) => setHotspotForm({ ...hotspotForm, content: e.target.value })}
+                      placeholder="Enter information text..."
+                      rows={4}
+                      className="w-full px-3 py-2 text-sm text-white transition-all border rounded-lg outline-none resize-none bg-dark-700 border-dark-600 focus:border-primary-500"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* External Link */}
+              {hotspotForm.type === 'URL' && (
+                <div className="pt-4 space-y-4 border-t border-dark-700">
+                  <div>
+                    <label className="flex items-center block gap-2 mb-2 text-sm font-medium text-dark-300">
+                      Website URL
+                    </label>
+                    <input
+                      type="url"
+                      value={hotspotForm.url}
+                      onChange={(e) => setHotspotForm({ ...hotspotForm, url: e.target.value })}
+                      placeholder="https://example.com"
+                      className="w-full px-3 py-2 text-sm text-white transition-all border rounded-lg outline-none bg-dark-700 border-dark-600 focus:border-primary-500"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Video */}
+              {hotspotForm.type === 'VIDEO' && (
+                <div className="pt-4 space-y-4 border-t border-dark-700">
+                  <div>
+                    <label className="flex items-center block gap-2 mb-2 text-sm font-medium text-dark-300">
+                      Video URL
+                    </label>
+                    <input
+                      type="url"
+                      value={hotspotForm.videoUrl}
+                      onChange={(e) => setHotspotForm({ ...hotspotForm, videoUrl: e.target.value })}
+                      placeholder="YouTube or Vimeo URL"
+                      className="w-full px-3 py-2 text-sm text-white transition-all border rounded-lg outline-none bg-dark-700 border-dark-600 focus:border-primary-500"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="flex gap-3 p-6 border-t border-dark-700 bg-dark-900/50">
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  setIsHotspotPanelOpen(false);
+                  setAddHotspotMode(false);
+                  setNewHotspotCoords(null);
+                }}
+                className="flex-1 text-xs"
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                onClick={handleCreateHotspot}
+                className="flex-1 text-xs"
+                disabled={
+                  (hotspotForm.type === 'LINK' && !hotspotForm.targetImageId) ||
+                  (hotspotForm.type === 'INFO' && !hotspotForm.content) ||
+                  (hotspotForm.type === 'URL' && !hotspotForm.url) ||
+                  (hotspotForm.type === 'VIDEO' && !hotspotForm.videoUrl)
+                }
+              >
+                Create
+              </Button>
+            </div>
+          </>
+        )}
+      </div>,
+      slot
+    );
+  };
+
   return (
-    <div className="flex flex-col h-screen overflow-hidden bg-dark-900">
+    <div className="flex flex-col h-full overflow-hidden bg-dark-900">
       {/* Header */}
       <div className="z-20 flex items-center justify-between flex-shrink-0 h-16 px-6 py-4 border-b bg-dark-800 border-dark-700">
         <div className="flex items-center gap-4">
@@ -624,18 +948,15 @@ export default function TourEditorPage({
           <button
             onClick={() =>{
               const nextMode = !addHotspotMode;
-              logger.info({ tourId: params.id, addHotspotMode: nextMode }, 'Toggling hotspot addition mode');
               setAddHotspotMode(nextMode);
               if (!nextMode) {
-                setIsHotspotModalOpen(false);
+                setIsHotspotPanelOpen(false);
                 setNewHotspotCoords(null);
-                setSceneSearchQuery('');
               }
             }}
-            title={addHotspotMode ? 'Cancel Add Hotspot' : 'Add Hotspot'}
             className={`flex flex-col items-center gap-1 p-2 w-16 rounded-xl transition-all duration-200 ${
               addHotspotMode 
-                ? 'bg-primary-600 text-white shadow-[0_0_15px_rgba(99,102,241,0.4)]' 
+                ? 'bg-primary-600 text-white' 
                 : 'text-dark-400 hover:text-white hover:bg-dark-700'
             }`}
           >
@@ -648,7 +969,6 @@ export default function TourEditorPage({
               setNewSceneTitle(currentScene.title || `Scene ${currentSceneIndex + 1}`);
               setIsRenameModalOpen(true);
             }}
-            title="Rename Scene"
             className="flex flex-col items-center w-16 gap-1 p-2 transition-all duration-200 rounded-xl text-dark-400 hover:text-white hover:bg-dark-700"
           >
             <Edit2 size={22} />
@@ -657,7 +977,6 @@ export default function TourEditorPage({
 
           <button
             onClick={() => setIsSettingsModalOpen(true)}
-            title="Tour Settings"
             className="flex flex-col items-center w-16 gap-1 p-2 transition-all duration-200 rounded-xl text-dark-400 hover:text-white hover:bg-dark-700"
           >
             <Settings size={22} />
@@ -668,7 +987,6 @@ export default function TourEditorPage({
 
           <button
             onClick={handleSave}
-            title="Save Tour"
             className="flex flex-col items-center w-16 gap-1 p-2 transition-all duration-200 rounded-xl text-dark-400 hover:text-white hover:bg-dark-700"
           >
             <Save size={22} />
@@ -755,380 +1073,8 @@ export default function TourEditorPage({
           </div>
         </div>
 
-        {/* Hotspot Configuration Panel (Right Side Drawer) */}
-        {isHotspotModalOpen && (
-          <div className="z-20 flex flex-col h-full overflow-hidden duration-300 border-l shadow-2xl w-80 bg-dark-800 border-dark-700 animate-in slide-in-from-right">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-dark-700 bg-dark-900/50">
-              <h2 className="text-lg font-semibold text-white">Configure Hotspot</h2>
-              <button
-                onClick={() => {
-                  setIsHotspotModalOpen(false);
-                  setNewHotspotCoords(null);
-                  setSceneSearchQuery('');
-                }}
-                className="p-1 transition-colors rounded-lg hover:bg-dark-700 text-dark-400"
-              >
-                <X size={20} />
-              </button>
-            </div>
-            
-            <div className="flex-1 p-6 space-y-6 overflow-y-auto scrollbar-hide">
-              <div className="space-y-4">
-                <div>
-                  <label className="block mb-2 text-sm font-medium text-dark-300">Hotspot Type</label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {[
-                      { value: 'LINK', label: 'Link to Scene', icon: LinkIcon, color: 'from-blue-500 to-blue-600' },
-                      { value: 'INFO', label: 'Information', icon: Info, color: 'from-indigo-500 to-indigo-600' },
-                      { value: 'URL', label: 'External Link', icon: ExternalLink, color: 'from-green-500 to-green-600' },
-                      { value: 'VIDEO', label: 'Video', icon: Video, color: 'from-red-500 to-red-600' },
-                    ].map(({ value, label, icon: IconComponent, color }) => (
-                      <button
-                        key={value}
-                        onClick={() => setHotspotForm({ ...hotspotForm, type: value })}
-                        className={`flex items-center gap-2 px-3 py-2.5 rounded-lg text-xs font-medium transition-all border ${
-                          hotspotForm.type === value
-                            ? `bg-gradient-to-r ${color} text-white border-transparent shadow-lg scale-105`
-                            : 'bg-dark-700 text-dark-300 border-dark-600 hover:border-dark-500 hover:text-white'
-                        }`}
-                      >
-                        <IconComponent size={16} />
-                        <span>{label}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <label className="flex items-center block gap-2 mb-2 text-sm font-medium text-dark-300">
-                    <Zap size={16} className="text-primary-400" />
-                    Hotspot Title
-                  </label>
-                  <input
-                    type="text"
-                    value={hotspotForm.title}
-                    onChange={(e) => setHotspotForm({ ...hotspotForm, title: e.target.value })}
-                    placeholder="e.g. Living Room"
-                    className="w-full px-3 py-2 text-sm text-white transition-all border rounded-lg outline-none bg-dark-700 border-dark-600 focus:border-primary-500"
-                  />
-                </div>
-              </div>
-
-              {/* Customization Options */}
-              <div className="pt-4 space-y-4 border-t border-dark-700">
-                <div className="flex items-center gap-2 p-3 rounded-lg bg-primary-500/10 border border-primary-500/20">
-                  <Zap size={18} className="text-primary-400 flex-shrink-0" />
-                  <div>
-                    <p className="text-xs font-semibold text-primary-400">Customize Appearance</p>
-                    <p className="text-[11px] text-primary-300">Add animations, colors, and custom icons</p>
-                  </div>
-                </div>
-
-                {/* Animation Type */}
-                <div>
-                  <label className="block mb-2 text-sm font-medium text-dark-300">Animation</label>
-                  <select
-                    value={hotspotForm.animationType || 'NONE'}
-                    onChange={(e) => setHotspotForm({ ...hotspotForm, animationType: e.target.value })}
-                    className="w-full px-3 py-2 text-sm text-white transition-all border rounded-lg outline-none bg-dark-700 border-dark-600 focus:border-primary-500"
-                  >
-                    <option value="NONE">None</option>
-                    <option value="PULSE">Pulse</option>
-                    <option value="GLOW">Glow</option>
-                    <option value="BOUNCE">Bounce</option>
-                    <option value="FLOAT">Float</option>
-                  </select>
-                </div>
-
-                {/* Color Picker */}
-                <div>
-                  <label className="block mb-2 text-sm font-medium text-dark-300">Color (for INFO type)</label>
-                  <input
-                    type="color"
-                    value={hotspotForm.color || '#6366f1'}
-                    onChange={(e) => setHotspotForm({ ...hotspotForm, color: e.target.value })}
-                    className="w-full h-10 rounded-lg cursor-pointer transition-all border border-dark-600"
-                  />
-                </div>
-
-                {/* Scale/Size */}
-                <div>
-                  <label className="block mb-2 text-sm font-medium text-dark-300">
-                    Size Scale: {(hotspotForm.scale || 1.0).toFixed(1)}x
-                  </label>
-                  <input
-                    type="range"
-                    min="0.5"
-                    max="2"
-                    step="0.1"
-                    value={hotspotForm.scale || 1.0}
-                    onChange={(e) => setHotspotForm({ ...hotspotForm, scale: parseFloat(e.target.value) })}
-                    className="w-full h-2 bg-dark-700 rounded-lg cursor-pointer appearance-none"
-                  />
-                  <p className="mt-1 text-xs text-dark-400">Range: 0.5x to 2.0x</p>
-                </div>
-
-                {/* Custom Icon Upload (for LINK type) */}
-                {hotspotForm.type === 'LINK' && (
-                  <div>
-                    <label className="block mb-2 text-sm font-medium text-dark-300">Custom Icon (optional)</label>
-                    <input
-                      type="file"
-                      accept=".svg,.png,.jpg,.jpeg,.gif"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) {
-                          uploadHotspotIcon(file);
-                        }
-                      }}
-                      className="w-full text-sm text-dark-400 file:mr-4 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-primary-600 file:text-white hover:file:bg-primary-700 cursor-pointer"
-                    />
-                    <p className="mt-1 text-xs text-dark-400">SVG, PNG, JPEG, GIF (max 5MB)</p>
-                    {hotspotForm.iconUrl && (
-                      <div className="mt-2 p-2 rounded-lg bg-dark-700 flex items-center gap-2">
-                        <div className="w-8 h-8 rounded bg-dark-600 flex items-center justify-center">
-                          <img src={`/api/uploads/${hotspotForm.iconUrl}`} alt="icon" className="w-6 h-6 object-contain" />
-                        </div>
-                        <span className="text-xs text-dark-300 truncate flex-1">{hotspotForm.iconUrl.split('/').pop()}</span>
-                        <button
-                          onClick={() => setHotspotForm({ ...hotspotForm, iconUrl: '' })}
-                          className="p-1 hover:bg-dark-600 rounded transition-colors"
-                        >
-                          <X size={14} className="text-dark-400" />
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {/* Link to Scene */}
-              {hotspotForm.type === 'LINK' && (
-                <div className="pt-4 space-y-4 border-t border-dark-700">
-                  <div className="flex items-center gap-2 p-3 border rounded-lg bg-blue-500/10 border-blue-500/20">
-                    <LinkIcon size={18} className="flex-shrink-0 text-blue-400" />
-                    <div>
-                      <p className="text-xs font-semibold text-blue-400">Navigate to Another Scene</p>
-                      <p className="text-[11px] text-blue-300">Clicking this hotspot will switch to the selected scene</p>
-                    </div>
-                  </div>
-                  <div className="flex flex-col gap-3">
-                    <label className="flex items-center gap-2 text-sm font-semibold text-white">
-                      <ArrowRight size={16} className="text-primary-400" />
-                      Target Scene
-                    </label>
-                    <div className="flex w-full p-1 border rounded-lg bg-dark-900 border-dark-700">
-                      <button
-                        onClick={() => setSelectionMode('name')}
-                        className={`flex-1 py-1.5 px-2 text-xs font-medium rounded-md transition-all flex items-center justify-center gap-1 ${
-                          selectionMode === 'name' ? 'bg-primary-600 text-white shadow-sm' : 'text-dark-400 hover:text-white'
-                        }`}
-                      >
-                        <FileText size={14} />
-                        By name
-                      </button>
-                      <button
-                        onClick={() => setSelectionMode('image')}
-                        className={`flex-1 py-1.5 px-2 text-xs font-medium rounded-md transition-all flex items-center justify-center gap-1 ${
-                          selectionMode === 'image' ? 'bg-primary-600 text-white shadow-sm' : 'text-dark-400 hover:text-white'
-                        }`}
-                      >
-                        <ImageIcon size={14} />
-                        By image
-                      </button>
-                    </div>
-                  </div>
-
-                  {selectionMode === 'name' ? (
-                    <div className="space-y-3">
-                      <div className="relative">
-                        <Search className="absolute -translate-y-1/2 left-3 top-1/2 text-dark-400" size={16} />
-                        <input
-                          type="text"
-                          placeholder="Search scene..."
-                          value={sceneSearchQuery}
-                          onChange={(e) => setSceneSearchQuery(e.target.value)}
-                          className="w-full py-2 pl-10 pr-4 text-xs text-white border rounded-lg outline-none bg-dark-900 border-dark-700 focus:border-primary-500"
-                        />
-                      </div>
-                      <div className="pr-1 space-y-1 overflow-y-auto max-h-64 scrollbar-thin scrollbar-thumb-dark-600">
-                        {tour.images
-                          .filter(img =>
-                            img.id !== tour.images[currentSceneIndex].id &&
-                            (img.title || `Scene ${img.order + 1}`).toLowerCase().includes(sceneSearchQuery.toLowerCase())
-                          )
-                          .map(img => (
-                            <button
-                              key={img.id}
-                              onClick={() => setHotspotForm({ ...hotspotForm, targetImageId: img.id })}
-                              className={`w-full text-left px-3 py-2.5 rounded-lg text-xs transition-all border ${
-                                hotspotForm.targetImageId === img.id
-                                  ? 'bg-primary-600/20 border-primary-500 text-white'
-                                  : 'bg-dark-900/40 border-transparent text-dark-300 hover:bg-dark-700 hover:text-white'
-                              }`}
-                            >
-                              {img.title || `Scene ${img.order + 1}`}
-                            </button>
-                          ))
-                        }
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-2 gap-2 pr-1 overflow-y-auto max-h-80 scrollbar-thin scrollbar-thumb-dark-600">
-                      {tour.images
-                        .filter(img => img.id !== tour.images[currentSceneIndex].id)
-                        .map(img => (
-                          <button
-                            key={img.id}
-                            onClick={() => setHotspotForm({ ...hotspotForm, targetImageId: img.id })}
-                            className={`relative group rounded-lg overflow-hidden border-2 transition-all ${
-                              hotspotForm.targetImageId === img.id
-                                ? 'border-primary-500 ring-2 ring-primary-500/20'
-                                : 'border-transparent hover:border-dark-600'
-                            }`}
-                          >
-                            <img
-                              src={`/api/uploads/${img.filename}`}
-                              alt={img.title || 'Scene'}
-                              className="object-cover w-full h-20"
-                            />
-                            <div className="absolute inset-x-0 bottom-0 p-1 bg-black/60 backdrop-blur-[1px] text-[9px] text-white truncate text-center font-medium">
-                              {img.title || `Scene ${img.order + 1}`}
-                            </div>
-                          </button>
-                        ))
-                      }
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Information Box */}
-              {hotspotForm.type === 'INFO' && (
-                <div className="pt-4 space-y-4 border-t border-dark-700">
-                  <div className="flex items-center gap-2 p-3 border rounded-lg bg-indigo-500/10 border-indigo-500/20">
-                    <Info size={18} className="flex-shrink-0 text-indigo-400" />
-                    <div>
-                      <p className="text-xs font-semibold text-indigo-400">Detailed Information</p>
-                      <p className="text-[11px] text-indigo-300">Display text with optional image when clicked</p>
-                    </div>
-                  </div>
-                  <div>
-                    <label className="flex items-center block gap-2 mb-2 text-sm font-medium text-dark-300">
-                      <FileText size={16} className="text-indigo-400" />
-                      Content Text
-                    </label>
-                    <textarea
-                      value={hotspotForm.content}
-                      onChange={(e) => setHotspotForm({ ...hotspotForm, content: e.target.value })}
-                      placeholder="Enter information text..."
-                      rows={4}
-                      className="w-full px-3 py-2 text-sm text-white transition-all border rounded-lg outline-none resize-none bg-dark-700 border-dark-600 focus:border-primary-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="flex items-center block gap-2 mb-2 text-sm font-medium text-dark-300">
-                      <ImageIcon size={16} className="text-indigo-400" />
-                      Image URL (Optional)
-                    </label>
-                    <input
-                      type="url"
-                      value={hotspotForm.imageUrl}
-                      onChange={(e) => setHotspotForm({ ...hotspotForm, imageUrl: e.target.value })}
-                      placeholder="https://example.com/image.jpg"
-                      className="w-full px-3 py-2 text-sm text-white transition-all border rounded-lg outline-none bg-dark-700 border-dark-600 focus:border-primary-500"
-                    />
-                  </div>
-                </div>
-              )}
-
-              {/* External Link */}
-              {hotspotForm.type === 'URL' && (
-                <div className="pt-4 space-y-4 border-t border-dark-700">
-                  <div className="flex items-center gap-2 p-3 border rounded-lg bg-green-500/10 border-green-500/20">
-                    <ExternalLink size={18} className="flex-shrink-0 text-green-400" />
-                    <div>
-                      <p className="text-xs font-semibold text-green-400">Open External Website</p>
-                      <p className="text-[11px] text-green-300">Opens URL in a new tab when clicked</p>
-                    </div>
-                  </div>
-                  <div>
-                    <label className="flex items-center block gap-2 mb-2 text-sm font-medium text-dark-300">
-                      <Zap size={16} className="text-green-400" />
-                      Website URL
-                    </label>
-                    <input
-                      type="url"
-                      value={hotspotForm.url}
-                      onChange={(e) => setHotspotForm({ ...hotspotForm, url: e.target.value })}
-                      placeholder="https://example.com"
-                      className="w-full px-3 py-2 text-sm text-white transition-all border rounded-lg outline-none bg-dark-700 border-dark-600 focus:border-primary-500"
-                    />
-                  </div>
-                </div>
-              )}
-
-              {/* Video */}
-              {hotspotForm.type === 'VIDEO' && (
-                <div className="pt-4 space-y-4 border-t border-dark-700">
-                  <div className="flex items-center gap-2 p-3 border rounded-lg bg-red-500/10 border-red-500/20">
-                    <Video size={18} className="flex-shrink-0 text-red-400" />
-                    <div>
-                      <p className="text-xs font-semibold text-red-400">Embed Video</p>
-                      <p className="text-[11px] text-red-300">MP4, YouTube, or Vimeo videos</p>
-                    </div>
-                  </div>
-                  <div>
-                    <label className="flex items-center block gap-2 mb-2 text-sm font-medium text-dark-300">
-                      <Video size={16} className="text-red-400" />
-                      Video URL
-                    </label>
-                    <input
-                      type="url"
-                      value={hotspotForm.videoUrl}
-                      onChange={(e) => setHotspotForm({ ...hotspotForm, videoUrl: e.target.value })}
-                      placeholder="https://example.com/video.mp4"
-                      className="w-full px-3 py-2 text-sm text-white transition-all border rounded-lg outline-none bg-dark-700 border-dark-600 focus:border-primary-500"
-                    />
-                    <p className="flex items-center gap-1 mt-2 text-xs text-dark-400">
-                      <Zap size={12} className="text-yellow-400" />
-                      Supports MP4 URLs, YouTube, and Vimeo links
-                    </p>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="flex gap-3 p-6 border-t border-dark-700 bg-dark-900/50">
-              <Button
-                variant="secondary"
-                onClick={() => {
-                  setIsHotspotModalOpen(false);
-                  setNewHotspotCoords(null);
-                  setSceneSearchQuery('');
-                }}
-                className="flex items-center justify-center flex-1 gap-2 text-xs"
-              >
-                <X size={16} />
-                Cancel
-              </Button>
-              <Button
-                variant="primary"
-                onClick={handleCreateHotspot}
-                className="flex items-center justify-center flex-1 gap-2 text-xs"
-                disabled={
-                  (hotspotForm.type === 'LINK' && !hotspotForm.targetImageId) ||
-                  (hotspotForm.type === 'INFO' && !hotspotForm.content) ||
-                  (hotspotForm.type === 'URL' && !hotspotForm.url) ||
-                  (hotspotForm.type === 'VIDEO' && !hotspotForm.videoUrl)
-                }
-              >
-                <Plus size={16} />
-                Create
-              </Button>
-            </div>
-          </div>
-        )}
+        {/* Portaled Panel Content */}
+        {renderHotspotPanel()}
       </div>
 
       <Modal

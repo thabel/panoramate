@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Toaster } from 'react-hot-toast';
 import Script from 'next/script';
 import './globals.css';
+import { UIProvider } from '@/context/UIContext';
 
 export const metadata: Metadata = {
   title: 'Panoramate - Virtual Tour Creator',
@@ -19,9 +20,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="bg-dark-900 text-dark-50">
-        {children}
-        <Toaster position="top-right" />
-        <Script 
+        <UIProvider>
+          {children}
+          <Toaster position="top-right" />
+        </UIProvider>
+        <Script
           src="https://www.marzipano.net/demos/common/es5-shim.js" 
           strategy="afterInteractive" 
         />

@@ -1,9 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
+import { useUI } from '@/context/UIContext';
 import {
   BarChart3,
   FileStack,
@@ -28,9 +29,12 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
   const { user, organization, isLoading, logout } = useAuth();
+  const { isSidebarCollapsed, setIsSidebarCollapsed } = useUI();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [isCollapsed, setIsCollapsed] = useState(false);
+
+  const isEditor = pathname?.includes('/editor');
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -99,13 +103,13 @@ export default function DashboardLayout({
       {/* Sidebar */}
       <aside
         className={`fixed lg:static top-0 left-0 h-full bg-dark-800 border-r border-dark-700 z-50 transition-all duration-300 ${
-          isCollapsed ? 'w-20' : 'w-64'
+          isSidebarCollapsed ? 'w-20' : 'w-64'
         } ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         }`}
       >
-        <div className={`p-4 border-b border-dark-700 flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'}`}>
-          {!isCollapsed && (
+        <div className={`p-4 border-b border-dark-700 flex items-center ${isSidebarCollapsed ? 'justify-center' : 'justify-between'}`}>
+          {!isSidebarCollapsed && (
             <div>
               <div className="text-2xl font-bold text-transparent bg-gradient-to-r from-primary-400 to-primary-600 bg-clip-text">
                 Panoramate
@@ -113,14 +117,14 @@ export default function DashboardLayout({
               {/* <p className="mt-1 text-xs text-dark-400 truncate max-w-[140px]">{organization.name}</p> */}
             </div>
           )}
-          {isCollapsed && (
+          {isSidebarCollapsed && (
             <div className="text-2xl font-bold text-primary-500">P</div>
           )}
           <button 
-            onClick={() => setIsCollapsed(!isCollapsed)}
+            onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
             className="hidden lg:block p-1.5 rounded-lg hover:bg-dark-700 text-dark-400 hover:text-white"
           >
-            {isCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
+            {isSidebarCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
           </button>
         </div>
 
@@ -132,18 +136,18 @@ export default function DashboardLayout({
                 key={item.href}
                 href={item.href}
                 onClick={() => setSidebarOpen(false)}
-                title={isCollapsed ? item.label : ''}
-                className={`flex items-center gap-3 px-4 py-2.5 transition-all rounded-lg text-dark-300 hover:text-white hover:bg-dark-700 group ${isCollapsed ? 'justify-center' : ''}`}
+                title={isSidebarCollapsed ? item.label : ''}
+                className={`flex items-center gap-3 px-4 py-2.5 transition-all rounded-lg text-dark-300 hover:text-white hover:bg-dark-700 group ${isSidebarCollapsed ? 'justify-center' : ''}`}
               >
                 <Icon size={22} className="flex-shrink-0" />
-                {!isCollapsed && <span className="font-medium">{item.label}</span>}
+                {!isSidebarCollapsed && <span className="font-medium">{item.label}</span>}
               </Link>
             );
           })}
         </nav>
 
         <div className="p-4 space-y-3 border-t border-dark-700">
-          {!isCollapsed && (
+          {!isSidebarCollapsed && (
             <div className="p-3 rounded-lg bg-dark-700">
               <Badge variant="plan" className="block mb-2 text-center text-[10px] uppercase tracking-wider">
                 {organization.plan === 'FREE_TRIAL'
@@ -160,11 +164,11 @@ export default function DashboardLayout({
 
           <button
             onClick={logout}
-            title={isCollapsed ? 'Sign Out' : ''}
-            className={`flex items-center w-full gap-2 px-4 py-2 text-sm transition-colors rounded-lg text-dark-300 hover:text-white hover:bg-dark-700 ${isCollapsed ? 'justify-center' : ''}`}
+            title={isSidebarCollapsed ? 'Sign Out' : ''}
+            className={`flex items-center w-full gap-2 px-4 py-2 text-sm transition-colors rounded-lg text-dark-300 hover:text-white hover:bg-dark-700 ${isSidebarCollapsed ? 'justify-center' : ''}`}
           >
             <LogOut size={20} className="flex-shrink-0" />
-            {!isCollapsed && <span className="font-medium">Sign Out</span>}
+            {!isSidebarCollapsed && <span className="font-medium">Sign Out</span>}
           </button>
         </div>
       </aside>
@@ -202,25 +206,27 @@ export default function DashboardLayout({
           </div>
         </header>
 
-        {/* Content */}
-        <main className="flex-1 overflow-auto">
-          {/* Trial Warning */}
-          {isTrialing && trialDaysLeft <= 7 && trialDaysLeft > 0 && (
-            <div className="p-4 border-b bg-dark-800 border-dark-700">
-              <Alert variant="warning" title="Trial Ending Soon">
-                Your free trial ends in {trialDaysLeft} days.{' '}
-                <Link href="/billing" className="font-semibold text-primary-400 hover:text-primary-300">
-                  Upgrade now
-                </Link>
-                {' '}to continue using Panoramate.
-              </Alert>
-            </div>
-          )}
+        {/* Content Area */}
+        <div className="flex flex-1 overflow-hidden">
+          <main className="flex-1 overflow-auto">
+            {/* Trial Warning */}
+            {isTrialing && trialDaysLeft <= 7 && trialDaysLeft > 0 && (
+              <div className="p-4 border-b bg-dark-800 border-dark-700">
+                <Alert variant="warning" title="Trial Ending Soon">
+                  Your free trial ends in {trialDaysLeft} days.{' '}
+                  <Link href="/billing" className="font-semibold text-primary-400 hover:text-primary-300">
+                    Upgrade now
+                  </Link>
+                  {' '}to continue using Panoramate.
+                </Alert>
+              </div>
+            )}
 
-          <div className="p-4 md:p-8">
-            {children}
-          </div>
-        </main>
+            <div className={isEditor ? 'h-full' : 'p-4 md:p-8'}>
+              {children}
+            </div>
+          </main>
+        </div>
       </div>
     </div>
   );
