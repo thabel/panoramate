@@ -11,7 +11,7 @@
 
 ## Optique View
 
-Siur le hoststop on peut mettre 
+Sur le hoststop info on peut mettre 
     du texte 
     une image
     une video 

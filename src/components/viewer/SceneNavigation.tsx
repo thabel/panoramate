@@ -58,17 +58,17 @@ export const SceneNavigation: React.FC<SceneNavigationProps> = ({
 
       {/* Navigation Panel */}
       {isOpen && (
-        <div className="w-full max-w-4xl px-3 py-4 bg-dark-900/90 backdrop-blur-md border border-dark-700/50 rounded-2xl shadow-2xl animate-fade-in space-y-3">
+        <div className="w-full max-w-4xl px-3 py-4 space-y-3 border shadow-2xl bg-dark-900/90 backdrop-blur-md border-dark-700/50 rounded-2xl animate-fade-in">
           {/* Search Bar */}
           <div className="px-3">
             <div className="relative">
-              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-dark-400" />
+              <Search size={16} className="absolute -translate-y-1/2 left-3 top-1/2 text-dark-400" />
               <input
                 type="text"
                 placeholder="Search scenes by title..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 text-sm bg-dark-800 text-white border border-dark-600 rounded-lg focus:border-primary-500 outline-none transition-all"
+                className="w-full py-2 pr-3 text-sm text-white transition-all border rounded-lg outline-none pl-9 bg-dark-800 border-dark-600 focus:border-primary-500"
               />
             </div>
           </div>
@@ -114,7 +114,7 @@ export const SceneNavigation: React.FC<SceneNavigationProps> = ({
 
               <div
                 ref={scrollContainerRef}
-                className="flex gap-3 overflow-x-auto scrollbar-hide pb-2"
+                className="flex gap-3 pb-2 overflow-x-auto scrollbar-hide"
               >
                 {filteredScenes.length > 0 ? (
                   filteredScenes.map((scene) => (
@@ -145,7 +145,7 @@ export const SceneNavigation: React.FC<SceneNavigationProps> = ({
                     </button>
                   ))
                 ) : (
-                  <div className="w-full text-center py-4 text-dark-400 text-sm">
+                  <div className="w-full py-4 text-sm text-center text-dark-400">
                     No scenes match your search
                   </div>
                 )}
@@ -162,7 +162,7 @@ export const SceneNavigation: React.FC<SceneNavigationProps> = ({
             </div>
           ) : (
             // List View
-            <div className="max-h-64 overflow-y-auto space-y-1 px-3 scrollbar-thin scrollbar-thumb-dark-700">
+            <div className="px-3 space-y-1 overflow-y-auto max-h-64 scrollbar-thin scrollbar-thumb-dark-700">
               {filteredScenes.length > 0 ? (
                 filteredScenes.map((scene, index) => (
                   <button
@@ -177,7 +177,7 @@ export const SceneNavigation: React.FC<SceneNavigationProps> = ({
                         : 'bg-dark-800 border-dark-700 text-dark-300 hover:bg-dark-700 hover:text-white'
                     }`}
                   >
-                    <span className="flex-shrink-0 w-6 h-6 rounded bg-dark-900/50 flex items-center justify-center text-xs font-medium">
+                    <span className="flex items-center justify-center flex-shrink-0 w-6 h-6 text-xs font-medium rounded bg-dark-900/50">
                       {index + 1}
                     </span>
                     <span className="flex-1 truncate">
@@ -189,7 +189,7 @@ export const SceneNavigation: React.FC<SceneNavigationProps> = ({
                   </button>
                 ))
               ) : (
-                <div className="w-full text-center py-4 text-dark-400 text-sm">
+                <div className="w-full py-4 text-sm text-center text-dark-400">
                   No scenes match your search
                 </div>
               )}
@@ -197,7 +197,7 @@ export const SceneNavigation: React.FC<SceneNavigationProps> = ({
           )}
 
           {/* Scene Count */}
-          <div className="text-center text-xs text-dark-400 px-3">
+          <div className="px-3 text-xs text-center text-dark-400">
             {filteredScenes.length} of {scenes.length} scenes
           </div>
         </div>

@@ -247,23 +247,23 @@ export default function PublicTourPage({
                 <div className="flex items-center gap-2 px-3 py-1.5 bg-dark-900/60 hover:bg-dark-800 backdrop-blur-sm border border-dark-700/50 rounded-lg transition-all group/audio">
                   <button
                     onClick={togglePlay}
-                    className="text-white hover:text-primary-400 transition-colors"
+                    className="text-white transition-colors hover:text-primary-400"
                     title={isPlaying ? 'Pause' : 'Play'}
                   >
                     {isPlaying ? <Pause size={20} /> : <Play size={20} />}
                   </button>
                   
-                  <div className="w-px h-4 bg-dark-700/50 mx-1" />
+                  <div className="w-px h-4 mx-1 bg-dark-700/50" />
                   
                   <button
                     onClick={toggleMute}
-                    className="text-white hover:text-primary-400 transition-colors"
+                    className="text-white transition-colors hover:text-primary-400"
                     title={isMuted ? 'Unmute' : 'Mute'}
                   >
                     {isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
                   </button>
 
-                  <div className="w-0 group-hover/audio:w-20 overflow-hidden transition-all duration-300 flex items-center">
+                  <div className="flex items-center w-0 overflow-hidden transition-all duration-300 group-hover/audio:w-20">
                     <input
                       type="range"
                       min="0"
@@ -274,7 +274,7 @@ export default function PublicTourPage({
                         setVolume(parseFloat(e.target.value));
                         if (isMuted) setIsMuted(false);
                       }}
-                      className="w-full h-1 bg-dark-700 rounded-lg appearance-none cursor-pointer accent-primary-500 ml-2"
+                      className="w-full h-1 ml-2 rounded-lg appearance-none cursor-pointer bg-dark-700 accent-primary-500"
                     />
                   </div>
                 </div>
@@ -309,11 +309,11 @@ export default function PublicTourPage({
             </button>
 
             {isSettingsOpen && (
-              <div className="absolute top-24 right-4 z-30 w-64 p-4 rounded-xl bg-dark-900/95 backdrop-blur-md border border-dark-700/50 shadow-2xl space-y-4 animate-fade-in">
+              <div className="absolute z-30 w-64 p-4 space-y-4 border shadow-2xl top-24 right-4 rounded-xl bg-dark-900/95 backdrop-blur-md border-dark-700/50 animate-fade-in">
                 <div>
-                  <h3 className="text-sm font-semibold text-white mb-3">Display Settings</h3>
+                  <h3 className="mb-3 text-sm font-semibold text-white">Display Settings</h3>
                   <div className="space-y-2">
-                    <label className="flex items-center gap-2 cursor-pointer hover:bg-dark-800 p-2 rounded transition-all">
+                    <label className="flex items-center gap-2 p-2 transition-all rounded cursor-pointer hover:bg-dark-800">
                       <input
                         type="checkbox"
                         checked={showHotspotTitles}

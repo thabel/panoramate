@@ -794,7 +794,7 @@ export default function TourEditorPage({
                 </div>
 
                 <div>
-                  <label className="block mb-2 text-sm font-medium text-dark-300 flex items-center gap-2">
+                  <label className="flex items-center block gap-2 mb-2 text-sm font-medium text-dark-300">
                     <Zap size={16} className="text-primary-400" />
                     Hotspot Title
                   </label>
@@ -811,15 +811,15 @@ export default function TourEditorPage({
               {/* Link to Scene */}
               {hotspotForm.type === 'LINK' && (
                 <div className="pt-4 space-y-4 border-t border-dark-700">
-                  <div className="flex items-center gap-2 p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
-                    <LinkIcon size={18} className="text-blue-400 flex-shrink-0" />
+                  <div className="flex items-center gap-2 p-3 border rounded-lg bg-blue-500/10 border-blue-500/20">
+                    <LinkIcon size={18} className="flex-shrink-0 text-blue-400" />
                     <div>
                       <p className="text-xs font-semibold text-blue-400">Navigate to Another Scene</p>
                       <p className="text-[11px] text-blue-300">Clicking this hotspot will switch to the selected scene</p>
                     </div>
                   </div>
                   <div className="flex flex-col gap-3">
-                    <label className="text-sm font-semibold text-white flex items-center gap-2">
+                    <label className="flex items-center gap-2 text-sm font-semibold text-white">
                       <ArrowRight size={16} className="text-primary-400" />
                       Target Scene
                     </label>
@@ -912,15 +912,15 @@ export default function TourEditorPage({
               {/* Information Box */}
               {hotspotForm.type === 'INFO' && (
                 <div className="pt-4 space-y-4 border-t border-dark-700">
-                  <div className="flex items-center gap-2 p-3 rounded-lg bg-indigo-500/10 border border-indigo-500/20">
-                    <Info size={18} className="text-indigo-400 flex-shrink-0" />
+                  <div className="flex items-center gap-2 p-3 border rounded-lg bg-indigo-500/10 border-indigo-500/20">
+                    <Info size={18} className="flex-shrink-0 text-indigo-400" />
                     <div>
                       <p className="text-xs font-semibold text-indigo-400">Detailed Information</p>
                       <p className="text-[11px] text-indigo-300">Display text with optional image when clicked</p>
                     </div>
                   </div>
                   <div>
-                    <label className="block mb-2 text-sm font-medium text-dark-300 flex items-center gap-2">
+                    <label className="flex items-center block gap-2 mb-2 text-sm font-medium text-dark-300">
                       <FileText size={16} className="text-indigo-400" />
                       Content Text
                     </label>
@@ -933,7 +933,7 @@ export default function TourEditorPage({
                     />
                   </div>
                   <div>
-                    <label className="block mb-2 text-sm font-medium text-dark-300 flex items-center gap-2">
+                    <label className="flex items-center block gap-2 mb-2 text-sm font-medium text-dark-300">
                       <ImageIcon size={16} className="text-indigo-400" />
                       Image URL (Optional)
                     </label>
@@ -951,15 +951,15 @@ export default function TourEditorPage({
               {/* External Link */}
               {hotspotForm.type === 'URL' && (
                 <div className="pt-4 space-y-4 border-t border-dark-700">
-                  <div className="flex items-center gap-2 p-3 rounded-lg bg-green-500/10 border border-green-500/20">
-                    <ExternalLink size={18} className="text-green-400 flex-shrink-0" />
+                  <div className="flex items-center gap-2 p-3 border rounded-lg bg-green-500/10 border-green-500/20">
+                    <ExternalLink size={18} className="flex-shrink-0 text-green-400" />
                     <div>
                       <p className="text-xs font-semibold text-green-400">Open External Website</p>
                       <p className="text-[11px] text-green-300">Opens URL in a new tab when clicked</p>
                     </div>
                   </div>
                   <div>
-                    <label className="block mb-2 text-sm font-medium text-dark-300 flex items-center gap-2">
+                    <label className="flex items-center block gap-2 mb-2 text-sm font-medium text-dark-300">
                       <Zap size={16} className="text-green-400" />
                       Website URL
                     </label>
@@ -977,15 +977,15 @@ export default function TourEditorPage({
               {/* Video */}
               {hotspotForm.type === 'VIDEO' && (
                 <div className="pt-4 space-y-4 border-t border-dark-700">
-                  <div className="flex items-center gap-2 p-3 rounded-lg bg-red-500/10 border border-red-500/20">
-                    <Video size={18} className="text-red-400 flex-shrink-0" />
+                  <div className="flex items-center gap-2 p-3 border rounded-lg bg-red-500/10 border-red-500/20">
+                    <Video size={18} className="flex-shrink-0 text-red-400" />
                     <div>
                       <p className="text-xs font-semibold text-red-400">Embed Video</p>
                       <p className="text-[11px] text-red-300">MP4, YouTube, or Vimeo videos</p>
                     </div>
                   </div>
                   <div>
-                    <label className="block mb-2 text-sm font-medium text-dark-300 flex items-center gap-2">
+                    <label className="flex items-center block gap-2 mb-2 text-sm font-medium text-dark-300">
                       <Video size={16} className="text-red-400" />
                       Video URL
                     </label>
@@ -996,7 +996,7 @@ export default function TourEditorPage({
                       placeholder="https://example.com/video.mp4"
                       className="w-full px-3 py-2 text-sm text-white transition-all border rounded-lg outline-none bg-dark-700 border-dark-600 focus:border-primary-500"
                     />
-                    <p className="mt-2 text-xs text-dark-400 flex items-center gap-1">
+                    <p className="flex items-center gap-1 mt-2 text-xs text-dark-400">
                       <Zap size={12} className="text-yellow-400" />
                       Supports MP4 URLs, YouTube, and Vimeo links
                     </p>
@@ -1013,7 +1013,7 @@ export default function TourEditorPage({
                   setNewHotspotCoords(null);
                   setSceneSearchQuery('');
                 }}
-                className="flex-1 text-xs flex items-center justify-center gap-2"
+                className="flex items-center justify-center flex-1 gap-2 text-xs"
               >
                 <X size={16} />
                 Cancel
@@ -1021,7 +1021,7 @@ export default function TourEditorPage({
               <Button
                 variant="primary"
                 onClick={handleCreateHotspot}
-                className="flex-1 text-xs flex items-center justify-center gap-2"
+                className="flex items-center justify-center flex-1 gap-2 text-xs"
                 disabled={
                   (hotspotForm.type === 'LINK' && !hotspotForm.targetImageId) ||
                   (hotspotForm.type === 'INFO' && !hotspotForm.content) ||
@@ -1276,10 +1276,10 @@ export default function TourEditorPage({
             </div>
           </div>
 
-          <div className="pt-6 border-t border-dark-700 space-y-4">
+          <div className="pt-6 space-y-4 border-t border-dark-700">
             <h3 className="text-sm font-medium text-dark-300">Viewer Settings</h3>
             <div className="space-y-3">
-              <label className="flex items-center gap-3 p-3 rounded-lg cursor-pointer hover:bg-dark-800 transition-all">
+              <label className="flex items-center gap-3 p-3 transition-all rounded-lg cursor-pointer hover:bg-dark-800">
                 <input
                   type="checkbox"
                   checked={showSceneMenu}
@@ -1287,12 +1287,12 @@ export default function TourEditorPage({
                   className="w-4 h-4 rounded accent-primary-500"
                 />
                 <div className="flex-1">
-                  <p className="text-sm text-white font-medium">Show Scene Navigation Menu</p>
+                  <p className="text-sm font-medium text-white">Show Scene Navigation Menu</p>
                   <p className="text-xs text-dark-400">Allow viewers to search and browse scenes</p>
                 </div>
               </label>
 
-              <label className="flex items-center gap-3 p-3 rounded-lg cursor-pointer hover:bg-dark-800 transition-all">
+              <label className="flex items-center gap-3 p-3 transition-all rounded-lg cursor-pointer hover:bg-dark-800">
                 <input
                   type="checkbox"
                   checked={showHotspotTitles}
@@ -1300,7 +1300,7 @@ export default function TourEditorPage({
                   className="w-4 h-4 rounded accent-primary-500"
                 />
                 <div className="flex-1">
-                  <p className="text-sm text-white font-medium">Show Hotspot Titles</p>
+                  <p className="text-sm font-medium text-white">Show Hotspot Titles</p>
                   <p className="text-xs text-dark-400">Display labels when hovering over hotspots</p>
                 </div>
               </label>
