@@ -20,6 +20,8 @@ interface MarzipanoViewerProps {
   showHotspotTitles?: boolean;
   onHotspotClick?: (hotspot: HotspotType) => void;
   onPanoramaClick?: (yaw: number, pitch: number) => void;
+  onTempHotspotSettings?: () => void;
+  onTempHotspotCancel?: () => void;
 }
 
 export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
@@ -32,6 +34,8 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
   showHotspotTitles = true,
   onHotspotClick,
   onPanoramaClick,
+  onTempHotspotSettings,
+  onTempHotspotCancel,
 }) => {
 
   const containerRef = useRef<HTMLDivElement>(null);
@@ -125,9 +129,9 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
         viewerRef.current = null;
       }
     };
-  }, [scenes]); // Removed addHotspotMode from dependencies
+  }, [scenes]);
 
-  // Separate Hotspot Click/Create Handler - FIXED coordinate calculation
+  // Separate Hotspot Click/Create Handler
   useEffect(() => {
     const handleContainerClick = (e: MouseEvent) => {
       if (!addHotspotMode || !viewerRef.current || !containerRef.current) return;
@@ -137,18 +141,14 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
 
       const view = scene.view();
 
-      // FIXED: Get the exact canvas dimensions and position
       const canvas = containerRef.current.querySelector('canvas') as HTMLCanvasElement;
       if (!canvas) return;
 
       const rect = canvas.getBoundingClientRect();
-      const containerRect = containerRef.current.getBoundingClientRect();
 
-      // Calculate position relative to canvas element accounting for any offset
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
 
-      // Validate coordinates are within canvas bounds
       if (x < 0 || y < 0 || x > rect.width || y > rect.height) return;
 
       const coords = view.screenToCoordinates({ x, y });
@@ -173,10 +173,8 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
   // Handle scene switching
   useEffect(() => {
     if (viewerRef.current && initialSceneId && initialSceneId !== currentSceneId) {
-      console.log('Detected scene change request to:', initialSceneId);
       const scene = scenesRef.current[initialSceneId];
       if (scene) {
-        console.log('Switching to scene:', initialSceneId);
         scene.switchTo();
         setCurrentSceneId(initialSceneId);
       } else {
@@ -192,14 +190,12 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
     onClick?: () => void,
     title?: string
   ) => {
-    // 1. The Host element: Marzipano will manage this element's transform.
     const host = document.createElement('div');
     host.className = 'marzipano-hotspot-host';
     host.style.position = 'absolute';
     host.style.width = '0px';
     host.style.height = '0px';
 
-    // 2. The Visual element: This is where we put our styles, size and centering.
     const visual = document.createElement('div');
     const size = type === 'TEMP' ? 32 : 42;
     visual.className = `marzipano-hotspot-visual ${type === 'TEMP' ? 'temp-preview' : 'cursor-pointer'}`;
@@ -217,34 +213,125 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
     visual.style.willChange = 'transform';
     visual.style.flexDirection = 'column';
 
-    // Icon container
     const iconContainer = document.createElement('div');
     iconContainer.style.display = 'flex';
     iconContainer.style.alignItems = 'center';
     iconContainer.style.justifyContent = 'center';
 
     if (type === 'TEMP') {
-      visual.className += ' text-white border-2 border-white rounded-full shadow-lg bg-primary-500 animate-pulse';
+      visual.className += ' text-white border-2 border-white rounded-full shadow-lg bg-primary-500 ';
       iconContainer.innerHTML = `
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M12 5v14M5 12h14"></path>
         </svg>
       `;
+
+      visual.appendChild(iconContainer);
+
+      // ── Circular ring with Settings & Cancel icons ──────────────────────
+      const RING_RADIUS = 32; // px from center to icon center
+      const ICON_SIZE = 28;   // px for each icon button
+
+      // Icons config: alternating settings / cancel at 8 positions (every 45°)
+      const ringItems = [
+        
+
+        { angleDeg: 180, type: 'settings' },
+        // { angleDeg: 225, type: 'cancel'   },
+
+        { angleDeg: 296, type: 'cancel'   },
+
+   
+      ];
+
+      // SVG paths for each icon type
+      const settingsSVG = `
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06
+            a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09
+            A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83
+            l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09
+            A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83
+            l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09
+            a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83
+            l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09
+            a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>`;
+
+      const cancelSVG = `
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6"  y1="6" x2="18" y2="18"/>
+        </svg>`;
+
+      ringItems.forEach(({ angleDeg, type: iconType }) => {
+        const rad = (angleDeg * Math.PI) / 180;
+        const cx = Math.cos(rad) * RING_RADIUS; // offset from hotspot center
+        const cy = Math.sin(rad) * RING_RADIUS;
+
+        const btn = document.createElement('div');
+        btn.style.cssText = `
+          position: absolute;
+          width: ${ICON_SIZE}px;
+          height: ${ICON_SIZE}px;
+          left: ${cx - ICON_SIZE / 2}px;
+          top:  ${cy - ICON_SIZE / 2}px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: rgba(255,255,255,0.95);
+          border: 1px solid rgba(0,0,0,0.12);
+          border-radius: 6px;
+          cursor: pointer;
+          color: ${iconType === 'settings' ? '#6366f1' : '#ef4444'};
+          box-shadow: 0 1px 4px rgba(0,0,0,0.18);
+
+          z-index: 20;
+        `;
+        btn.innerHTML = iconType === 'settings' ? settingsSVG : cancelSVG;
+
+        btn.onmouseenter = () => {
+          btn.style.transform = 'scale(1.18)';
+          btn.style.background = iconType === 'settings'
+            ? 'rgba(99,102,241,0.10)'
+            : 'rgba(239,68,68,0.10)';
+        };
+        btn.onmouseleave = () => {
+          btn.style.transform = 'scale(1)';
+          btn.style.background = 'rgba(255,255,255,0.95)';
+        };
+        btn.onmousedown = (e: MouseEvent) => {
+          e.stopPropagation();
+          if (iconType === 'settings' && onTempHotspotSettings) {
+            onTempHotspotSettings();
+          } else if (iconType === 'cancel' && onTempHotspotCancel) {
+            onTempHotspotCancel();
+          }
+        };
+
+        visual.appendChild(btn);
+      });
+      // ── end ring ────────────────────────────────────────────────────────
+
     } else if (type === 'LINK') {
       iconContainer.innerHTML = `<img src="/icons/link.png" style="width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));" alt="Link" />`;
+      visual.appendChild(iconContainer);
     } else {
       visual.style.borderRadius = '50%';
       visual.style.backgroundColor = 'rgba(255, 255, 255, 0.9)';
       visual.style.border = '2px solid #6366f1';
       iconContainer.innerHTML = '<span style="color: #6366f1; font-weight: bold; font-size: 18px;">i</span>';
+      visual.appendChild(iconContainer);
     }
-
-    visual.appendChild(iconContainer);
 
     // Title label (only if showHotspotTitles and title exists)
     if (showHotspotTitles && title && type !== 'TEMP') {
       const titleLabel = document.createElement('div');
-      const size = type === 'TEMP' ? 32 : 42;
       titleLabel.style.position = 'absolute';
       titleLabel.style.top = `${size + 4}px`;
       titleLabel.style.whiteSpace = 'nowrap';
@@ -280,11 +367,10 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
     return host;
   };
 
-  // Hotspot Synchronization with improved coordinate handling
+  // Hotspot Synchronization
   useEffect(() => {
     if (!viewerRef.current) return;
 
-    // Clear all hotspots first (Marzipano keeps them per scene)
     Object.values(scenesRef.current).forEach(scene => {
       const container = scene.hotspotContainer();
       if (container && typeof container.listHotspots === 'function') {
@@ -294,7 +380,6 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
     });
     hotspotElementsRef.current = {};
 
-    // Add hotspots to their respective scenes
     hotspots.forEach(hotspot => {
       const scene = scenesRef.current[hotspot.imageId];
       if (!scene) return;
@@ -316,7 +401,7 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
       hotspotElementsRef.current[hotspot.id] = marzipanoHotspot;
     });
 
-    // Add temporary preview hotspot if it exists on the CURRENT scene
+    // Add temporary preview hotspot on the CURRENT scene
     if (tempHotspot && currentSceneId) {
       const scene = scenesRef.current[currentSceneId];
       if (scene) {
@@ -328,15 +413,16 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
       }
     }
   }, [hotspots, onHotspotClick, tempHotspot, currentSceneId, editorMode, addHotspotMode, showHotspotTitles]);
-// Debug logs for hotspot mode
-useEffect(() => {
-  logger.debug({ addHotspotMode }, 'addHotspotMode changed');
 
-  if (containerRef.current) {
-    const parentClass = containerRef.current.parentElement?.className;
-    logger.debug({ parentClass }, 'Container cursor class update');
-  }
-}, [addHotspotMode]);
+  // Debug logs for hotspot mode
+  useEffect(() => {
+    logger.debug({ addHotspotMode }, 'addHotspotMode changed');
+
+    if (containerRef.current) {
+      const parentClass = containerRef.current.parentElement?.className;
+      logger.debug({ parentClass }, 'Container cursor class update');
+    }
+  }, [addHotspotMode]);
 
   return (
     <div className={`w-full h-full min-h-[400px] bg-black relative ${addHotspotMode ? 'hotspot-cursor' : ''}`}>
@@ -349,14 +435,14 @@ useEffect(() => {
           z-index: 10;
         }
         @keyframes pulse {
-          0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.7); }
-          70% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(99, 102, 241, 0); }
-          100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(99, 102, 241, 0); }
+          0%   { transform: scale(1);    box-shadow: 0 0 0 0   rgba(99,102,241,0.7); }
+          70%  { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(99,102,241,0); }
+          100% { transform: scale(1);    box-shadow: 0 0 0 0   rgba(99,102,241,0); }
         }
         .animate-pulse {
           animation: pulse 2s infinite;
         }
-        .hotspot-cursor, 
+        .hotspot-cursor,
         .hotspot-cursor *,
         .hotspot-cursor canvas,
         .hotspot-cursor .marzipano-container {

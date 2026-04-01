@@ -78,3 +78,15 @@ select:focus {
 .dark {
   color-scheme: dark;
 }
+
+@keyframes popIn {
+  from {
+    opacity: 0;
+    transform-origin: center center;
+    scale: 0.5;
+  }
+  to {
+    opacity: 1;
+    scale: 1;
+  }
+}
