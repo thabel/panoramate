@@ -140,21 +140,25 @@ model TourImage {
 }
 
 model Hotspot {
-  id            String      @id @default(uuid())
+  id            String          @id @default(uuid())
   imageId       String
-  type          HotspotType @default(LINK)
+  type          HotspotType     @default(LINK)
   yaw           Float
   pitch         Float
-  rotation      Float       @default(0)
+  rotation      Float           @default(0)
   targetImageId String?
   title         String?
-  content       String?     @db.Text
-  url           String?     @db.Text
-  videoUrl      String?     @db.Text
-  imageUrl      String?     @db.Text
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
-  image         TourImage   @relation(fields: [imageId], references: [id], onDelete: Cascade)
+  content       String?         @db.Text
+  url           String?         @db.Text
+  videoUrl      String?         @db.Text
+  imageUrl      String?         @db.Text
+  animationType AnimationType   @default(NONE)
+  iconUrl       String?         @db.Text
+  color         String?
+  scale         Float           @default(1.0)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  image         TourImage       @relation(fields: [imageId], references: [id], onDelete: Cascade)
 
   @@index([imageId], map: "hotspots_imageId_fkey")
   @@map("hotspots")
@@ -232,6 +236,14 @@ enum HotspotType {
   INFO
   URL
   VIDEO
+}
+
+enum AnimationType {
+  NONE
+  PULSE
+  GLOW
+  BOUNCE
+  FLOAT
 }
 
 enum InvoiceStatus {

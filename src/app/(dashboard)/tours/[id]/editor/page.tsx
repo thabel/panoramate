@@ -45,6 +45,10 @@ export default function TourEditorPage({
     url: '',
     videoUrl: '',
     imageUrl: '',
+    animationType: 'NONE',
+    color: '#6366f1',
+    scale: 1.0,
+    iconUrl: '',
   });
   const [showSceneMenu, setShowSceneMenu] = useState(true);
   const [showHotspotTitles, setShowHotspotTitles] = useState(true);
@@ -240,6 +244,36 @@ export default function TourEditorPage({
     }
   };
 
+  const uploadHotspotIcon = async (file: File) => {
+    if (!tour) return;
+
+    const formData = new FormData();
+    formData.append('icon', file);
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/tours/${tour.id}/icons`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token || ''}`,
+        },
+        body: formData,
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setHotspotForm({ ...hotspotForm, iconUrl: data.data.iconUrl });
+        toast.success('Icon uploaded successfully');
+      } else {
+        const error = await response.json();
+        toast.error(error.error || 'Failed to upload icon');
+      }
+    } catch (error) {
+      console.error('Error uploading icon:', error);
+      toast.error('Error uploading icon');
+    }
+  };
+
   const handleCreateHotspot = async () => {
     if (!newHotspotCoords || !tour) return;
 
@@ -276,6 +310,19 @@ export default function TourEditorPage({
         setAddHotspotMode(false);
         setNewHotspotCoords(null);
         setSceneSearchQuery('');
+        setHotspotForm({
+          type: 'LINK',
+          title: '',
+          targetImageId: '',
+          content: '',
+          url: '',
+          videoUrl: '',
+          imageUrl: '',
+          animationType: 'NONE',
+          color: '#6366f1',
+          scale: 1.0,
+          iconUrl: '',
+        });
         toast.success('Hotspot created');
       } else {
         toast.error('Failed to create hotspot');
@@ -765,6 +812,94 @@ export default function TourEditorPage({
                     className="w-full px-3 py-2 text-sm text-white transition-all border rounded-lg outline-none bg-dark-700 border-dark-600 focus:border-primary-500"
                   />
                 </div>
+              </div>
+
+              {/* Customization Options */}
+              <div className="pt-4 space-y-4 border-t border-dark-700">
+                <div className="flex items-center gap-2 p-3 rounded-lg bg-primary-500/10 border border-primary-500/20">
+                  <Zap size={18} className="text-primary-400 flex-shrink-0" />
+                  <div>
+                    <p className="text-xs font-semibold text-primary-400">Customize Appearance</p>
+                    <p className="text-[11px] text-primary-300">Add animations, colors, and custom icons</p>
+                  </div>
+                </div>
+
+                {/* Animation Type */}
+                <div>
+                  <label className="block mb-2 text-sm font-medium text-dark-300">Animation</label>
+                  <select
+                    value={hotspotForm.animationType || 'NONE'}
+                    onChange={(e) => setHotspotForm({ ...hotspotForm, animationType: e.target.value })}
+                    className="w-full px-3 py-2 text-sm text-white transition-all border rounded-lg outline-none bg-dark-700 border-dark-600 focus:border-primary-500"
+                  >
+                    <option value="NONE">None</option>
+                    <option value="PULSE">Pulse</option>
+                    <option value="GLOW">Glow</option>
+                    <option value="BOUNCE">Bounce</option>
+                    <option value="FLOAT">Float</option>
+                  </select>
+                </div>
+
+                {/* Color Picker */}
+                <div>
+                  <label className="block mb-2 text-sm font-medium text-dark-300">Color (for INFO type)</label>
+                  <input
+                    type="color"
+                    value={hotspotForm.color || '#6366f1'}
+                    onChange={(e) => setHotspotForm({ ...hotspotForm, color: e.target.value })}
+                    className="w-full h-10 rounded-lg cursor-pointer transition-all border border-dark-600"
+                  />
+                </div>
+
+                {/* Scale/Size */}
+                <div>
+                  <label className="block mb-2 text-sm font-medium text-dark-300">
+                    Size Scale: {(hotspotForm.scale || 1.0).toFixed(1)}x
+                  </label>
+                  <input
+                    type="range"
+                    min="0.5"
+                    max="2"
+                    step="0.1"
+                    value={hotspotForm.scale || 1.0}
+                    onChange={(e) => setHotspotForm({ ...hotspotForm, scale: parseFloat(e.target.value) })}
+                    className="w-full h-2 bg-dark-700 rounded-lg cursor-pointer appearance-none"
+                  />
+                  <p className="mt-1 text-xs text-dark-400">Range: 0.5x to 2.0x</p>
+                </div>
+
+                {/* Custom Icon Upload (for LINK type) */}
+                {hotspotForm.type === 'LINK' && (
+                  <div>
+                    <label className="block mb-2 text-sm font-medium text-dark-300">Custom Icon (optional)</label>
+                    <input
+                      type="file"
+                      accept=".svg,.png,.jpg,.jpeg,.gif"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          uploadHotspotIcon(file);
+                        }
+                      }}
+                      className="w-full text-sm text-dark-400 file:mr-4 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-primary-600 file:text-white hover:file:bg-primary-700 cursor-pointer"
+                    />
+                    <p className="mt-1 text-xs text-dark-400">SVG, PNG, JPEG, GIF (max 5MB)</p>
+                    {hotspotForm.iconUrl && (
+                      <div className="mt-2 p-2 rounded-lg bg-dark-700 flex items-center gap-2">
+                        <div className="w-8 h-8 rounded bg-dark-600 flex items-center justify-center">
+                          <img src={`/api/uploads/${hotspotForm.iconUrl}`} alt="icon" className="w-6 h-6 object-contain" />
+                        </div>
+                        <span className="text-xs text-dark-300 truncate flex-1">{hotspotForm.iconUrl.split('/').pop()}</span>
+                        <button
+                          onClick={() => setHotspotForm({ ...hotspotForm, iconUrl: '' })}
+                          className="p-1 hover:bg-dark-600 rounded transition-colors"
+                        >
+                          <X size={14} className="text-dark-400" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Link to Scene */}
