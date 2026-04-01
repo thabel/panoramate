@@ -20,7 +20,6 @@ interface MarzipanoViewerProps {
   showHotspotTitles?: boolean;
   onHotspotClick?: (hotspot: HotspotType) => void;
   onPanoramaClick?: (yaw: number, pitch: number) => void;
-  onHotspotMove?: (hotspot: HotspotType, newYaw: number, newPitch: number) => void;
 }
 
 export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
@@ -33,7 +32,6 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
   showHotspotTitles = true,
   onHotspotClick,
   onPanoramaClick,
-  onHotspotMove,
 }) => {
 
   const containerRef = useRef<HTMLDivElement>(null);
@@ -41,13 +39,6 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
   const scenesRef = useRef<{ [key: string]: any }>({});
   const [currentSceneId, setCurrentSceneId] = useState<string | null>(null);
   const hotspotElementsRef = useRef<{ [key: string]: any }>({});
-  const draggingRef = useRef<{
-    hotspotId: string;
-    isDragging: boolean;
-    startX: number;
-    startY: number;
-    moved: boolean;
-  } | null>(null);
 
   // Store hotspots in a ref to access latest values in handlers without re-binding
   const hotspotsRef = useRef(hotspots);
@@ -194,12 +185,11 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
     }
   }, [initialSceneId, currentSceneId]);
 
-  // Helper function to create consistent hotspot elements with drag support
+  // Helper function to create consistent hotspot elements
   const createHotspotElement = (
     type: 'LINK' | 'INFO' | 'TEMP',
     hotspotId?: string,
     onClick?: () => void,
-    onDragStart?: (e: MouseEvent) => void,
     title?: string
   ) => {
     // 1. The Host element: Marzipano will manage this element's transform.
@@ -271,121 +261,23 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
       visual.appendChild(titleLabel);
     }
 
-    // Store hotspot ID for drag operations
-    if (hotspotId && editorMode && type !== 'TEMP') {
-      (visual as any).dataset.hotspotId = hotspotId;
-      visual.style.cursor = 'grab';
-    }
-
     host.appendChild(visual);
 
     if (onClick) {
       visual.onmousedown = (e: MouseEvent) => {
-        // Check if this is a drag operation in editor mode
-        if (editorMode && hotspotId && !addHotspotMode) {
-          if (onDragStart) {
-            onDragStart(e);
-          }
-          return;
-        }
-        // Regular click handling
         e.stopPropagation();
         onClick();
       };
 
       visual.onmouseover = () => {
-        if (!draggingRef.current?.isDragging) {
-          visual.style.transform = 'translate(-50%, -50%) scale(1.15)';
-          if (editorMode && type !== 'TEMP') {
-            (visual as any).style.cursor = 'grab';
-          }
-        }
+        visual.style.transform = 'translate(-50%, -50%) scale(1.15)';
       };
       visual.onmouseout = () => {
-        if (!draggingRef.current?.isDragging) {
-          visual.style.transform = 'translate(-50%, -50%)';
-        }
+        visual.style.transform = 'translate(-50%, -50%)';
       };
     }
 
     return host;
-  };
-
-  // Handle hotspot dragging
-  const handleHotspotDragStart = (hotspotId: string, e: MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    if (!viewerRef.current || !containerRef.current) return;
-
-    draggingRef.current = {
-      hotspotId,
-      isDragging: true,
-      startX: e.clientX,
-      startY: e.clientY,
-      moved: false,
-    };
-
-    const canvas = containerRef.current.querySelector('canvas') as HTMLCanvasElement;
-    if (!canvas) return;
-
-    const handleMouseMove = (moveEvent: MouseEvent) => {
-      if (!draggingRef.current || !draggingRef.current.isDragging) return;
-
-      const scene = viewerRef.current.scene();
-      if (!scene) return;
-
-      const view = scene.view();
-      const rect = canvas.getBoundingClientRect();
-
-      const x = moveEvent.clientX - rect.left;
-      const y = moveEvent.clientY - rect.top;
-
-      // Validate coordinates are within canvas bounds
-      if (x < 0 || y < 0 || x > rect.width || y > rect.height) return;
-
-      const coords = view.screenToCoordinates({ x, y });
-      if (coords) {
-        draggingRef.current.moved = true;
-        // Optionally could update preview here
-        logger.debug({ hotspotId, x, y, yaw: coords.yaw, pitch: coords.pitch }, 'Dragging hotspot');
-      }
-    };
-
-    const handleMouseUp = (upEvent: MouseEvent) => {
-      if (!draggingRef.current || !draggingRef.current.isDragging) return;
-
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-
-      if (draggingRef.current.moved) {
-        const scene = viewerRef.current.scene();
-        if (!scene) return;
-
-        const view = scene.view();
-        const rect = canvas.getBoundingClientRect();
-
-        const x = upEvent.clientX - rect.left;
-        const y = upEvent.clientY - rect.top;
-
-        // Validate final coordinates
-        if (x >= 0 && y >= 0 && x <= rect.width && y <= rect.height) {
-          const coords = view.screenToCoordinates({ x, y });
-          if (coords && onHotspotMove) {
-            const hotspot = hotspotsRef.current.find(h => h.id === draggingRef.current!.hotspotId);
-            if (hotspot) {
-              logger.info({ hotspotId, newYaw: coords.yaw, newPitch: coords.pitch }, 'Hotspot drag completed');
-              onHotspotMove(hotspot, coords.yaw, coords.pitch);
-            }
-          }
-        }
-      }
-
-      draggingRef.current = null;
-    };
-
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
   };
 
   // Hotspot Synchronization with improved coordinate handling
@@ -413,7 +305,6 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
         () => {
           if (onHotspotClick) onHotspotClick(hotspot);
         },
-        (e) => handleHotspotDragStart(hotspot.id, e),
         hotspot.title
       );
 

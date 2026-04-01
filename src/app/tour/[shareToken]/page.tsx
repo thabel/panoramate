@@ -3,11 +3,10 @@
 import { useEffect, useState, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { MarzipanoViewer } from '@/components/viewer/MarzipanoViewer';
-import { SceneNavigation } from '@/components/viewer/SceneNavigation';
+import { TopSceneMenu } from '@/components/viewer/TopSceneMenu';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { Button } from '@/components/ui/Button';
-import { Maximize, Minimize, ChevronUp, ChevronDown, Layers, ChevronLeft, ChevronRight, Volume2, VolumeX, Play, Pause, Music, Settings } from 'lucide-react';
-import { TourWithImages } from '@/types';
+import { Maximize, Minimize, ChevronLeft, ChevronRight, Volume2, VolumeX, Play, Pause, Settings } from 'lucide-react';
 
 export default function PublicTourPage({
   params,
@@ -21,14 +20,12 @@ export default function PublicTourPage({
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isFullScreen, setIsFullScreen] = useState(false);
-  const [isSwitcherOpen, setIsSwitcherOpen] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [volume, setVolume] = useState(0.5);
   const [showHotspotTitles, setShowHotspotTitles] = useState(true);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
 
   useEffect(() => {
@@ -73,26 +70,16 @@ export default function PublicTourPage({
 
   const getNextSceneId = () => {
     if (!tour || !currentSceneId) return null;
-    const currentIndex = tour.images.findIndex(img => img.id === currentSceneId);
+    const currentIndex = tour.images.findIndex((img: any) => img.id === currentSceneId);
     const nextIndex = (currentIndex + 1) % tour.images.length;
     return tour.images[nextIndex].id;
   };
 
   const getPrevSceneId = () => {
     if (!tour || !currentSceneId) return null;
-    const currentIndex = tour.images.findIndex(img => img.id === currentSceneId);
+    const currentIndex = tour.images.findIndex((img: any) => img.id === currentSceneId);
     const prevIndex = (currentIndex - 1 + tour.images.length) % tour.images.length;
     return tour.images[prevIndex].id;
-  };
-
-  const scrollThumbnails = (direction: 'left' | 'right') => {
-    if (scrollContainerRef.current) {
-      const scrollAmount = 300;
-      scrollContainerRef.current.scrollBy({
-        left: direction === 'left' ? -scrollAmount : scrollAmount,
-        behavior: 'smooth'
-      });
-    }
   };
 
   const fetchTour = async () => {
@@ -130,7 +117,6 @@ export default function PublicTourPage({
     if (hotspot.type === 'LINK' && hotspot.targetImageId) {
       setCurrentSceneId(hotspot.targetImageId);
     } else if (hotspot.type === 'INFO') {
-      // Potentially show info content if we want
       if (hotspot.title || hotspot.content) {
         alert(`${hotspot.title || ''}\n\n${hotspot.content || ''}`);
       }
@@ -189,7 +175,7 @@ export default function PublicTourPage({
           <>
             <MarzipanoViewer
               scenes={tour.images}
-              hotspots={tour.images.flatMap(img => (img as any).hotspots || [])}
+              hotspots={tour.images.flatMap((img: any) => img.hotspots || [])}
               initialSceneId={currentSceneId || undefined}
               onHotspotClick={handleHotspotClick}
               editorMode={false}
@@ -197,15 +183,16 @@ export default function PublicTourPage({
             />
 
             {/* Custom Logo overlay */}
-           {tour.customLogoUrl && (
-  <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 max-w-[120px] max-h-[120px] pointer-events-none drop-shadow-2xl opacity-80">
-    <img
-      src={`/api/uploads/${tour.customLogoUrl}`}
-      alt="Logo"
-      className="w-full h-full object-contain filter drop-shadow-[0_4px_8px_rgba(0,0,0,0.6)]"
-    />
-  </div>
-)}
+            {tour.customLogoUrl && (
+              <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 max-w-[120px] max-h-[120px] pointer-events-none drop-shadow-2xl opacity-80">
+                <img
+                  src={`/api/uploads/${tour.customLogoUrl}`}
+                  alt="Logo"
+                  className="object-contain w-full h-full filter drop-shadow-[0_4px_8px_rgba(0,0,0,0.6)]"
+                />
+              </div>
+            )}
+
             {/* Main Carousel Navigation */}
             {tour.images.length > 1 && (
               <>
@@ -232,18 +219,19 @@ export default function PublicTourPage({
               </>
             )}
 
-            {/* Full screen button toggle */}
-            <button
-              onClick={toggleFullScreen}
-              className="absolute z-30 p-2 text-white transition-all border rounded-lg top-4 right-4 bg-dark-900/60 hover:bg-dark-800 backdrop-blur-sm border-dark-700/50"
-              title={isFullScreen ? 'Exit Full Screen' : 'Full Screen'}
-            >
-              {isFullScreen ? <Minimize size={20} /> : <Maximize size={20} />}
-            </button>
+            {/* Top Right Controls Group */}
+            <div className="absolute z-30 flex items-center gap-2 top-4 right-4">
+              {/* Scene Menu */}
+              {tour.showSceneMenu !== false && tour.images.length > 1 && (
+                <TopSceneMenu
+                  scenes={tour.images}
+                  currentSceneId={currentSceneId}
+                  onSceneSelect={setCurrentSceneId}
+                />
+              )}
 
-            {/* Audio Controls */}
-            {tour.backgroundAudioUrl && (
-              <div className="absolute z-30 flex items-center gap-2 top-4 right-16">
+              {/* Audio Controls */}
+              {tour.backgroundAudioUrl && (
                 <div className="flex items-center gap-2 px-3 py-1.5 bg-dark-900/60 hover:bg-dark-800 backdrop-blur-sm border border-dark-700/50 rounded-lg transition-all group/audio">
                   <button
                     onClick={togglePlay}
@@ -277,39 +265,38 @@ export default function PublicTourPage({
                       className="w-full h-1 ml-2 rounded-lg appearance-none cursor-pointer bg-dark-700 accent-primary-500"
                     />
                   </div>
+                  
+                  <audio
+                    ref={audioRef}
+                    src={`/api/uploads/${tour.backgroundAudioUrl}`}
+                    loop
+                    onPlay={() => setIsPlaying(true)}
+                    onPause={() => setIsPlaying(false)}
+                  />
                 </div>
-                
-                <audio
-                  ref={audioRef}
-                  src={`/api/uploads/${tour.backgroundAudioUrl}`}
-                  loop
-                  onPlay={() => setIsPlaying(true)}
-                  onPause={() => setIsPlaying(false)}
-                />
-              </div>
-            )}
+              )}
 
-            {/* New Scene Navigation with Search */}
-            {tour.showSceneMenu !== false && (
-              <SceneNavigation
-                scenes={tour.images}
-                currentSceneId={currentSceneId}
-                onSceneSelect={setCurrentSceneId}
-                showMenu={true}
-              />
-            )}
+              {/* Full screen button toggle */}
+              <button
+                onClick={toggleFullScreen}
+                className="flex items-center justify-center p-2 text-white transition-all border rounded-lg bg-dark-900/60 hover:bg-dark-800 backdrop-blur-sm border-dark-700/50"
+                title={isFullScreen ? 'Exit Full Screen' : 'Full Screen'}
+              >
+                {isFullScreen ? <Minimize size={20} /> : <Maximize size={20} />}
+              </button>
 
-            {/* Settings Panel */}
-            <button
-              onClick={() => setIsSettingsOpen(!isSettingsOpen)}
-              className="absolute z-30 p-2 text-white transition-all border rounded-lg top-16 right-4 bg-dark-900/60 hover:bg-dark-800 backdrop-blur-sm border-dark-700/50"
-              title="Viewer Settings"
-            >
-              <Settings size={20} />
-            </button>
+              {/* Settings Panel Button */}
+              <button
+                onClick={() => setIsSettingsOpen(!isSettingsOpen)}
+                className="flex items-center justify-center p-2 text-white transition-all border rounded-lg bg-dark-900/60 hover:bg-dark-800 backdrop-blur-sm border-dark-700/50"
+                title="Viewer Settings"
+              >
+                <Settings size={20} />
+              </button>
+            </div>
 
             {isSettingsOpen && (
-              <div className="absolute z-30 w-64 p-4 space-y-4 border shadow-2xl top-24 right-4 rounded-xl bg-dark-900/95 backdrop-blur-md border-dark-700/50 animate-fade-in">
+              <div className="absolute z-30 w-64 p-4 space-y-4 border shadow-2xl top-20 right-4 rounded-xl bg-dark-900/95 backdrop-blur-md border-dark-700/50 animate-fade-in">
                 <div>
                   <h3 className="mb-3 text-sm font-semibold text-white">Display Settings</h3>
                   <div className="space-y-2">
@@ -326,16 +313,6 @@ export default function PublicTourPage({
                 </div>
               </div>
             )}
-
-            <style jsx global>{`
-              .scrollbar-hide::-webkit-scrollbar {
-                display: none;
-              }
-              .scrollbar-hide {
-                -ms-overflow-style: none;
-                scrollbar-width: none;
-              }
-            `}</style>
           </>
         ) : (
           <div className="flex items-center justify-center h-full text-dark-400">
