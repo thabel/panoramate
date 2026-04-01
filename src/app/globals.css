@@ -58,12 +58,69 @@ body {
   }
 }
 
+/* Hotspot Animations */
+@keyframes hotspotPulse {
+  0%, 100% {
+    opacity: 1;
+    box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.7);
+  }
+  50% {
+    opacity: 0.7;
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(99, 102, 241, 0);
+  }
+}
+
+@keyframes hotspotGlow {
+  0%, 100% {
+    filter: drop-shadow(0 0 4px rgba(99, 102, 241, 0.5));
+  }
+  50% {
+    filter: drop-shadow(0 0 12px rgba(99, 102, 241, 1));
+  }
+}
+
+@keyframes hotspotBounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes hotspotFloat {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
 .animate-slide-in {
   animation: slideIn 0.3s ease-out;
 }
 
 .animate-fade-in {
   animation: fadeIn 0.3s ease-out;
+}
+
+.hotspot-animate-pulse {
+  animation: hotspotPulse 2s infinite;
+}
+
+.hotspot-animate-glow {
+  animation: hotspotGlow 2s ease-in-out infinite;
+}
+
+.hotspot-animate-bounce {
+  animation: hotspotBounce 1s ease-in-out infinite;
+}
+
+.hotspot-animate-float {
+  animation: hotspotFloat 3s ease-in-out infinite;
 }
 
 /* Form Elements */

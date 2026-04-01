@@ -1,4 +1,4 @@
-import { PlanType, UserRole, TourStatus, HotspotType, SubscriptionStatus } from '@prisma/client';
+import { PlanType, UserRole, TourStatus, HotspotType, AnimationType, SubscriptionStatus } from '@prisma/client';
 
 export interface AuthUser {
   id: string;
@@ -40,6 +40,10 @@ export interface Hotspot {
   url?: string;
   videoUrl?: string;
   imageUrl?: string;
+  animationType: AnimationType;
+  iconUrl?: string;
+  color?: string;
+  scale: number;
   createdAt: Date;
   updatedAt: Date;
 }

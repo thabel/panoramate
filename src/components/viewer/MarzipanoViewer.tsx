@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { TourImage, Hotspot as HotspotType } from '@/types';
 import { logger } from '@/lib/logger';
+import { HotspotPopover } from './HotspotPopover';
 
 declare global {
   interface Window {
@@ -39,6 +40,8 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
   const scenesRef = useRef<{ [key: string]: any }>({});
   const [currentSceneId, setCurrentSceneId] = useState<string | null>(null);
   const hotspotElementsRef = useRef<{ [key: string]: any }>({});
+  const [hoveredHotspot, setHoveredHotspot] = useState<HotspotType | null>(null);
+  const [popoverPosition, setPopoverPosition] = useState<{ x: number; y: number } | null>(null);
 
   // Store hotspots in a ref to access latest values in handlers without re-binding
   const hotspotsRef = useRef(hotspots);
@@ -190,7 +193,15 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
     type: 'LINK' | 'INFO' | 'TEMP',
     hotspotId?: string,
     onClick?: () => void,
-    title?: string
+    title?: string,
+    options?: {
+      color?: string;
+      scale?: number;
+      animationType?: string;
+      iconUrl?: string;
+    },
+    onHover?: (hotspot: HotspotType | null, position: { x: number; y: number } | null) => void,
+    hotspotData?: HotspotType
   ) => {
     // 1. The Host element: Marzipano will manage this element's transform.
     const host = document.createElement('div');
@@ -201,8 +212,29 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
 
     // 2. The Visual element: This is where we put our styles, size and centering.
     const visual = document.createElement('div');
-    const size = type === 'TEMP' ? 32 : 42;
-    visual.className = `marzipano-hotspot-visual ${type === 'TEMP' ? 'temp-preview' : 'cursor-pointer'}`;
+    const baseSize = type === 'TEMP' ? 32 : 42;
+    const scale = options?.scale || 1.0;
+    const size = baseSize * scale;
+
+    let animationClass = '';
+    if (type !== 'TEMP' && options?.animationType) {
+      switch (options.animationType) {
+        case 'PULSE':
+          animationClass = 'hotspot-animate-pulse';
+          break;
+        case 'GLOW':
+          animationClass = 'hotspot-animate-glow';
+          break;
+        case 'BOUNCE':
+          animationClass = 'hotspot-animate-bounce';
+          break;
+        case 'FLOAT':
+          animationClass = 'hotspot-animate-float';
+          break;
+      }
+    }
+
+    visual.className = `marzipano-hotspot-visual ${type === 'TEMP' ? 'temp-preview' : 'cursor-pointer'} ${animationClass}`;
 
     visual.style.position = 'absolute';
     visual.style.width = `${size}px`;
@@ -222,6 +254,8 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
     iconContainer.style.display = 'flex';
     iconContainer.style.alignItems = 'center';
     iconContainer.style.justifyContent = 'center';
+    iconContainer.style.width = '100%';
+    iconContainer.style.height = '100%';
 
     if (type === 'TEMP') {
       visual.className += ' text-white border-2 border-white rounded-full shadow-lg bg-primary-500 animate-pulse';
@@ -231,12 +265,22 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
         </svg>
       `;
     } else if (type === 'LINK') {
-      iconContainer.innerHTML = `<img src="/icons/link.png" style="width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));" alt="Link" />`;
+      // Use custom icon URL if provided, otherwise use default
+      const iconUrl = options?.iconUrl ? `/api/uploads/${options.iconUrl}` : '/icons/link.png';
+      iconContainer.innerHTML = `<img src="${iconUrl}" style="width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));" alt="Link" />`;
     } else {
       visual.style.borderRadius = '50%';
-      visual.style.backgroundColor = 'rgba(255, 255, 255, 0.9)';
-      visual.style.border = '2px solid #6366f1';
-      iconContainer.innerHTML = '<span style="color: #6366f1; font-weight: bold; font-size: 18px;">i</span>';
+      const bgColor = options?.color || 'rgba(255, 255, 255, 0.9)';
+      const borderColor = options?.color || '#6366f1';
+      visual.style.backgroundColor = bgColor;
+      visual.style.border = `2px solid ${borderColor}`;
+      visual.style.opacity = '0.9';
+      iconContainer.innerHTML = '<span style="color: inherit; font-weight: bold; font-size: 18px;">i</span>';
+      if (options?.color) {
+        iconContainer.style.color = options.color;
+      } else {
+        iconContainer.style.color = '#6366f1';
+      }
     }
 
     visual.appendChild(iconContainer);
@@ -269,11 +313,19 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
         onClick();
       };
 
-      visual.onmouseover = () => {
+      visual.onmouseover = (e: MouseEvent) => {
         visual.style.transform = 'translate(-50%, -50%) scale(1.15)';
+        // Show popover on hover
+        if (onHover && hotspotData) {
+          const rect = visual.getBoundingClientRect();
+          onHover(hotspotData, { x: rect.left, y: rect.top });
+        }
       };
       visual.onmouseout = () => {
         visual.style.transform = 'translate(-50%, -50%)';
+        if (onHover) {
+          onHover(null, null);
+        }
       };
     }
 
@@ -305,7 +357,18 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
         () => {
           if (onHotspotClick) onHotspotClick(hotspot);
         },
-        hotspot.title
+        hotspot.title,
+        {
+          color: hotspot.color || undefined,
+          scale: hotspot.scale || 1.0,
+          animationType: hotspot.animationType || undefined,
+          iconUrl: hotspot.iconUrl || undefined,
+        },
+        (h, pos) => {
+          setHoveredHotspot(h);
+          setPopoverPosition(pos);
+        },
+        hotspot
       );
 
       const marzipanoHotspot = scene.hotspotContainer().createHotspot(element, {
@@ -344,6 +407,14 @@ useEffect(() => {
         ref={containerRef}
         className="w-full h-full"
       />
+      {hoveredHotspot && (
+        <HotspotPopover
+          hotspot={hoveredHotspot}
+          visible={true}
+          position={popoverPosition}
+          scenes={scenes.map(s => ({ id: s.id, title: s.title }))}
+        />
+      )}
       <style jsx global>{`
         .marzipano-hotspot {
           z-index: 10;
@@ -356,7 +427,7 @@ useEffect(() => {
         .animate-pulse {
           animation: pulse 2s infinite;
         }
-        .hotspot-cursor, 
+        .hotspot-cursor,
         .hotspot-cursor *,
         .hotspot-cursor canvas,
         .hotspot-cursor .marzipano-container {

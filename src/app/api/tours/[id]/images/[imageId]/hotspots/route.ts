@@ -55,7 +55,7 @@ export async function POST(
     }
 
     const body = await request.json();
-    const { type, yaw, pitch, rotation, targetImageId, title, content, url, videoUrl, imageUrl } = body;
+    const { type, yaw, pitch, rotation, targetImageId, title, content, url, videoUrl, imageUrl, animationType, iconUrl, color, scale } = body;
 
     if (!type || yaw === undefined || pitch === undefined) {
       return NextResponse.json(
@@ -90,6 +90,10 @@ export async function POST(
         url: url || null,
         videoUrl: videoUrl || null,
         imageUrl: imageUrl || null,
+        animationType: animationType || 'NONE',
+        iconUrl: iconUrl || null,
+        color: color || null,
+        scale: scale || 1.0,
       },
     });
 
@@ -119,7 +123,7 @@ export async function PATCH(
     }
 
     const body = await request.json();
-    const { hotspotId, type, yaw, pitch, rotation, targetImageId, title, content, url, videoUrl, imageUrl } = body;
+    const { hotspotId, type, yaw, pitch, rotation, targetImageId, title, content, url, videoUrl, imageUrl, animationType, iconUrl, color, scale } = body;
 
     if (!hotspotId) {
       return NextResponse.json(
@@ -158,6 +162,10 @@ export async function PATCH(
         ...(url !== undefined && { url }),
         ...(videoUrl !== undefined && { videoUrl }),
         ...(imageUrl !== undefined && { imageUrl }),
+        ...(animationType && { animationType }),
+        ...(iconUrl !== undefined && { iconUrl }),
+        ...(color !== undefined && { color }),
+        ...(scale !== undefined && { scale }),
       },
     });
 
