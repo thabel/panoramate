@@ -339,46 +339,6 @@ export default function TourEditorPage({
     }
   };
 
-  const handleHotspotMove = async (hotspot: any, newYaw: number, newPitch: number) => {
-    try {
-      const currentImageId = tour!.images[currentSceneIndex].id;
-      const token = localStorage.getItem('token');
-      const response = await fetch(`/api/tours/${params.id}/images/${currentImageId}/hotspots`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token || ''}`,
-        },
-        body: JSON.stringify({
-          hotspotId: hotspot.id,
-          yaw: newYaw,
-          pitch: newPitch,
-        }),
-      });
-
-      if (response.ok) {
-        setTour({
-          ...tour!,
-          images: tour!.images.map(img => 
-            img.id === currentImageId 
-              ? { 
-                  ...img, 
-                  hotspots: (img as any).hotspots.map((h: any) => 
-                    h.id === hotspot.id ? { ...h, yaw: newYaw, pitch: newPitch } : h
-                  ) 
-                }
-              : img
-          )
-        });
-        toast.success('Hotspot moved');
-      } else {
-        toast.error('Failed to move hotspot');
-      }
-    } catch (error) {
-      toast.error('Error moving hotspot');
-    }
-  };
-
   const handleRenameScene = async () => {
     if (!tour || !newSceneTitle.trim()) return;
 
@@ -680,7 +640,6 @@ export default function TourEditorPage({
               tempHotspot={newHotspotCoords}
               onPanoramaClick={handlePanoramaClick}
               onHotspotClick={handleHotspotClick}
-              onHotspotMove={handleHotspotMove}
               hotspots={allHotspots}
             />
           </div>

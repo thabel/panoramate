@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { MarzipanoViewer } from '@/components/viewer/MarzipanoViewer';
-import { SceneNavigation } from '@/components/viewer/SceneNavigation';
+import { TopSceneMenu } from '@/components/viewer/TopSceneMenu';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { Button } from '@/components/ui/Button';
 import { Maximize, Minimize, ChevronUp, ChevronDown, Layers, ChevronLeft, ChevronRight, Volume2, VolumeX, Play, Pause, Music, Settings } from 'lucide-react';
@@ -232,84 +232,86 @@ export default function PublicTourPage({
               </>
             )}
 
-            {/* Full screen button toggle */}
-            <button
-              onClick={toggleFullScreen}
-              className="absolute z-30 p-2 text-white transition-all border rounded-lg top-4 right-4 bg-dark-900/60 hover:bg-dark-800 backdrop-blur-sm border-dark-700/50"
-              title={isFullScreen ? 'Exit Full Screen' : 'Full Screen'}
-            >
-              {isFullScreen ? <Minimize size={20} /> : <Maximize size={20} />}
-            </button>
-
-            {/* Audio Controls */}
-            {tour.backgroundAudioUrl && (
-              <div className="absolute z-30 flex items-center gap-2 top-4 right-16">
-                <div className="flex items-center gap-2 px-3 py-1.5 bg-dark-900/60 hover:bg-dark-800 backdrop-blur-sm border border-dark-700/50 rounded-lg transition-all group/audio">
-                  <button
-                    onClick={togglePlay}
-                    className="text-white hover:text-primary-400 transition-colors"
-                    title={isPlaying ? 'Pause' : 'Play'}
-                  >
-                    {isPlaying ? <Pause size={20} /> : <Play size={20} />}
-                  </button>
-                  
-                  <div className="w-px h-4 bg-dark-700/50 mx-1" />
-                  
-                  <button
-                    onClick={toggleMute}
-                    className="text-white hover:text-primary-400 transition-colors"
-                    title={isMuted ? 'Unmute' : 'Mute'}
-                  >
-                    {isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
-                  </button>
-
-                  <div className="w-0 group-hover/audio:w-20 overflow-hidden transition-all duration-300 flex items-center">
-                    <input
-                      type="range"
-                      min="0"
-                      max="1"
-                      step="0.01"
-                      value={volume}
-                      onChange={(e) => {
-                        setVolume(parseFloat(e.target.value));
-                        if (isMuted) setIsMuted(false);
-                      }}
-                      className="w-full h-1 bg-dark-700 rounded-lg appearance-none cursor-pointer accent-primary-500 ml-2"
-                    />
-                  </div>
-                </div>
-                
-                <audio
-                  ref={audioRef}
-                  src={`/api/uploads/${tour.backgroundAudioUrl}`}
-                  loop
-                  onPlay={() => setIsPlaying(true)}
-                  onPause={() => setIsPlaying(false)}
+            {/* Top Right Controls Group */}
+            <div className="absolute top-4 right-4 z-30 flex items-center gap-2">
+              {/* Scene Menu */}
+              {tour.showSceneMenu !== false && tour.images.length > 1 && (
+                <TopSceneMenu
+                  scenes={tour.images}
+                  currentSceneId={currentSceneId}
+                  onSceneSelect={setCurrentSceneId}
                 />
-              </div>
-            )}
+              )}
 
-            {/* New Scene Navigation with Search */}
-            {tour.showSceneMenu !== false && (
-              <SceneNavigation
-                scenes={tour.images}
-                currentSceneId={currentSceneId}
-                onSceneSelect={setCurrentSceneId}
-                showMenu={true}
-              />
-            )}
+              {/* Audio Controls */}
+              {tour.backgroundAudioUrl && (
+                <>
+                  <div className="flex items-center gap-2 px-3 py-1.5 bg-dark-900/60 hover:bg-dark-800 backdrop-blur-sm border border-dark-700/50 rounded-lg transition-all group/audio">
+                    <button
+                      onClick={togglePlay}
+                      className="text-white hover:text-primary-400 transition-colors"
+                      title={isPlaying ? 'Pause' : 'Play'}
+                    >
+                      {isPlaying ? <Pause size={20} /> : <Play size={20} />}
+                    </button>
 
-            {/* Settings Panel */}
-            <button
-              onClick={() => setIsSettingsOpen(!isSettingsOpen)}
-              className="absolute z-30 p-2 text-white transition-all border rounded-lg top-16 right-4 bg-dark-900/60 hover:bg-dark-800 backdrop-blur-sm border-dark-700/50"
-              title="Viewer Settings"
-            >
-              <Settings size={20} />
-            </button>
+                    <div className="w-px h-4 bg-dark-700/50 mx-1" />
+
+                    <button
+                      onClick={toggleMute}
+                      className="text-white hover:text-primary-400 transition-colors"
+                      title={isMuted ? 'Unmute' : 'Mute'}
+                    >
+                      {isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
+                    </button>
+
+                    <div className="w-0 group-hover/audio:w-20 overflow-hidden transition-all duration-300 flex items-center">
+                      <input
+                        type="range"
+                        min="0"
+                        max="1"
+                        step="0.01"
+                        value={volume}
+                        onChange={(e) => {
+                          setVolume(parseFloat(e.target.value));
+                          if (isMuted) setIsMuted(false);
+                        }}
+                        className="w-full h-1 bg-dark-700 rounded-lg appearance-none cursor-pointer accent-primary-500 ml-2"
+                      />
+                    </div>
+                  </div>
+
+                  <audio
+                    ref={audioRef}
+                    src={`/api/uploads/${tour.backgroundAudioUrl}`}
+                    loop
+                    onPlay={() => setIsPlaying(true)}
+                    onPause={() => setIsPlaying(false)}
+                  />
+                </>
+              )}
+
+              {/* Full screen button toggle */}
+              <button
+                onClick={toggleFullScreen}
+                className="flex items-center justify-center p-2 text-white transition-all border rounded-lg bg-dark-900/60 hover:bg-dark-800 backdrop-blur-sm border-dark-700/50"
+                title={isFullScreen ? 'Exit Full Screen' : 'Full Screen'}
+              >
+                {isFullScreen ? <Minimize size={20} /> : <Maximize size={20} />}
+              </button>
+
+              {/* Settings Panel Button */}
+              <button
+                onClick={() => setIsSettingsOpen(!isSettingsOpen)}
+                className="flex items-center justify-center p-2 text-white transition-all border rounded-lg bg-dark-900/60 hover:bg-dark-800 backdrop-blur-sm border-dark-700/50"
+                title="Viewer Settings"
+              >
+                <Settings size={20} />
+              </button>
+            </div>
 
             {isSettingsOpen && (
-              <div className="absolute top-24 right-4 z-30 w-64 p-4 rounded-xl bg-dark-900/95 backdrop-blur-md border border-dark-700/50 shadow-2xl space-y-4 animate-fade-in">
+              <div className="absolute top-20 right-4 z-30 w-64 p-4 rounded-xl bg-dark-900/95 backdrop-blur-md border border-dark-700/50 shadow-2xl space-y-4 animate-fade-in">
                 <div>
                   <h3 className="text-sm font-semibold text-white mb-3">Display Settings</h3>
                   <div className="space-y-2">
