@@ -15,8 +15,7 @@ import { Save, ChevronLeft, ChevronRight, Image as ImageIcon, Plus, Trash2, X, M
 import * as LucideIcons from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import { ShareModal } from '@/components/dashboard/ShareModal';
-import { HotspotIconPicker } from '@/components/HotspotIconPicker';
-import { HOTSPOT_ICONS, HotspotIconId, getHotspotIconConfig, iconIdToType } from '@/lib/hotspotIcons';
+import { HOTSPOT_ICONS, getHotspotIconConfig, iconIdToType } from '@/lib/hotspotIcons';
 import { logger } from '@/lib/logger';
 import toast from 'react-hot-toast';
 
@@ -43,7 +42,6 @@ export default function TourEditorPage({
   const [newHotspotCoords, setNewHotspotCoords] = useState<{ yaw: number; pitch: number; iconName?: string } | null>(null);
   const [sceneSearchQuery, setSceneSearchQuery] = useState('');
   const [selectionMode, setSelectionMode] = useState<'name' | 'image'>('name');
-  const [isIconPickerOpen, setIsIconPickerOpen] = useState(false);
   const [hotspotForm, setHotspotForm] = useState({
     type: 'LINK',
     title: '',
@@ -241,41 +239,15 @@ export default function TourEditorPage({
 
   const handlePanoramaClick = (yaw: number, pitch: number) => {
     if (addHotspotMode) {
-      logger.debug({ yaw, pitch }, 'Panorama clicked in hotspot mode, opening icon picker');
+      logger.debug({ yaw, pitch }, 'Panorama clicked in hotspot mode, opening config panel');
       setNewHotspotCoords({ yaw, pitch });
-      // Show icon picker instead of config panel
-      setIsIconPickerOpen(true);
-    }
-  };
-
-  const handleIconSelected = (iconId: HotspotIconId) => {
-    logger.debug({ iconId }, 'Hotspot icon selected');
-    setIsIconPickerOpen(false);
-
-    // Update form with selected icon
-    setHotspotForm({
-      ...hotspotForm,
-      iconName: iconId,
-      targetImageId: tour?.images.find((img: TourImage) => img.id !== tour.images[currentSceneIndex].id)?.id || '',
-    });
-
-    // Update temp hotspot to show the selected icon
-    if (newHotspotCoords) {
-      setNewHotspotCoords({
-        ...newHotspotCoords,
-        iconName: iconId,
+      setHotspotForm({
+        ...hotspotForm,
+        targetImageId: tour?.images.find((img: TourImage) => img.id !== tour.images[currentSceneIndex].id)?.id || '',
       });
+      // Open config panel directly
+      setIsHotspotPanelOpen(true);
     }
-
-    // Open config panel
-    setIsHotspotPanelOpen(true);
-  };
-
-  const handleIconPickerCancel = () => {
-    logger.debug('Icon picker cancelled');
-    setIsIconPickerOpen(false);
-    setNewHotspotCoords(null);
-    setAddHotspotMode(false);
   };
 
   const uploadHotspotIcon = async (file: File) => {
@@ -1135,13 +1107,6 @@ export default function TourEditorPage({
         {/* Portaled Panel Content */}
         {renderHotspotPanel()}
       </div>
-
-      {/* Icon Picker Modal */}
-      <HotspotIconPicker
-        isOpen={isIconPickerOpen}
-        onSelect={handleIconSelected}
-        onCancel={handleIconPickerCancel}
-      />
 
       <Modal
         isOpen={isUploadModalOpen}
