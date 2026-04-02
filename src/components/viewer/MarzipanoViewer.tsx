@@ -108,26 +108,6 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
           setCurrentSceneId(initialSceneId || scenes[0].id);
         }
 
-        // Add ResizeObserver to handle container size changes
-        // When the panel opens/closes, the container dimensions change
-        // We need to notify Marzipano to re-render at the new dimensions
-        if (containerRef.current) {
-          const resizeObserver = new ResizeObserver(() => {
-            if (viewerRef.current) {
-              const scene = viewerRef.current.scene();
-              if (scene) {
-                // Force Marzipano to re-render at new canvas dimensions
-                scene.render();
-              }
-              logger.debug('Marzipano viewer re-rendered after container resize');
-            }
-          });
-          resizeObserver.observe(containerRef.current);
-
-          // Store the observer for cleanup
-          (viewer as any)._resizeObserver = resizeObserver;
-        }
-
         return true;
       } catch (err) {
         console.error('Marzipano initialization error:', err);
@@ -144,11 +124,6 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
     return () => {
       if (retryInterval) clearInterval(retryInterval);
       if (viewerRef.current) {
-        // Clean up ResizeObserver
-        const observer = (viewerRef.current as any)._resizeObserver;
-        if (observer) {
-          observer.disconnect();
-        }
         viewerRef.current.destroy();
         viewerRef.current = null;
       }
