@@ -88,3 +88,20 @@ export const getHotspotIconConfig = (iconId: string) => {
 export const getHotspotIconNames = () => {
   return HOTSPOT_ICONS.map(icon => icon.iconName);
 };
+
+// Map icon ID to hotspot type for database compatibility
+export const iconIdToType = (iconId: string): 'LINK' | 'INFO' | 'URL' | 'VIDEO' => {
+  const mapping: Record<string, 'LINK' | 'INFO' | 'URL' | 'VIDEO'> = {
+    'navigation': 'LINK',
+    'info': 'INFO',
+    'external-link': 'URL',
+    'play': 'VIDEO',
+    'message': 'INFO',
+    'camera': 'INFO',
+    'link': 'URL',
+    'map-pin': 'INFO',
+    'star': 'INFO',
+    'help-circle': 'INFO',
+  };
+  return mapping[iconId] || 'INFO';
+};

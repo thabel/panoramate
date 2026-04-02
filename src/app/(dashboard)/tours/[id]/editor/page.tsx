@@ -16,7 +16,7 @@ import * as LucideIcons from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import { ShareModal } from '@/components/dashboard/ShareModal';
 import { HotspotIconPicker } from '@/components/HotspotIconPicker';
-import { HOTSPOT_ICONS, HotspotIconId, getHotspotIconConfig } from '@/lib/hotspotIcons';
+import { HOTSPOT_ICONS, HotspotIconId, getHotspotIconConfig, iconIdToType } from '@/lib/hotspotIcons';
 import { logger } from '@/lib/logger';
 import toast from 'react-hot-toast';
 
@@ -660,10 +660,11 @@ export default function TourEditorPage({
                         <button
                           key={iconConfig.id}
                           onClick={() => {
-                            // Update form with selected icon
+                            // Update form with selected icon and its corresponding type
                             setHotspotForm({
                               ...hotspotForm,
                               iconName: iconConfig.id,
+                              type: iconIdToType(iconConfig.id),
                             });
                             // Update temp hotspot to show the selected icon in viewer
                             if (newHotspotCoords) {
