@@ -147,24 +147,6 @@ export default function DashboardLayout({
         </nav>
 
         <div className="p-4 space-y-3 border-t border-dark-700">
-          {/* User Info */}
-          {!isSidebarCollapsed && (
-            <div className="p-3 rounded-lg bg-dark-700">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="flex items-center justify-center w-8 h-8 text-xs font-bold text-white rounded-full bg-primary-600">
-                  {user.firstName.charAt(0)}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-medium text-white truncate">
-                    {user.firstName} {user.lastName}
-                  </p>
-                  <p className="text-[10px] text-dark-400 truncate">{user.role}</p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Plan Badge */}
           {!isSidebarCollapsed && (
             <div className="p-3 rounded-lg bg-dark-700">
               <Badge variant="plan" className="block mb-2 text-center text-[10px] uppercase tracking-wider">
@@ -194,20 +176,34 @@ export default function DashboardLayout({
       {/* Main Content */}
       <div className="flex flex-col flex-1 overflow-hidden">
         {/* Header */}
-        <header className="flex items-center justify-between h-12 px-4 border-b bg-dark-800 border-dark-700">
+        <header className="flex items-center justify-between p-4 border-b bg-dark-800 border-dark-700">
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
             className="p-2 rounded-lg lg:hidden hover:bg-dark-700"
           >
-            {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
+            {sidebarOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
 
           <div className="flex-1" />
 
-          <button className="relative p-2 rounded-lg hover:bg-dark-700">
-            <Bell size={18} className="text-dark-300" />
-            <div className="absolute w-2 h-2 rounded-full top-1 right-1 bg-primary-600" />
-          </button>
+          <div className="flex items-center gap-4">
+            <button className="relative p-2 rounded-lg hover:bg-dark-700">
+              <Bell size={20} className="text-dark-300" />
+              <div className="absolute w-2 h-2 rounded-full top-1 right-1 bg-primary-600" />
+            </button>
+
+            <div className="flex items-center gap-3 pl-4 border-l border-dark-700">
+              <div className="text-right">
+                <p className="text-sm font-medium text-white">
+                  {user.firstName} {user.lastName}
+                </p>
+                <p className="text-xs text-dark-400">{user.role}</p>
+              </div>
+              <div className="flex items-center justify-center w-8 h-8 text-sm font-bold text-white rounded-full bg-primary-600">
+                {user.firstName.charAt(0)}
+              </div>
+            </div>
+          </div>
         </header>
 
         {/* Content Area */}

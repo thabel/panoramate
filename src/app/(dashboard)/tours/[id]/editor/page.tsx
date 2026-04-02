@@ -888,50 +888,55 @@ export default function TourEditorPage({
   return (
     <div className="flex flex-col h-full overflow-hidden bg-dark-900">
       {/* Header */}
-      <div className="z-20 flex items-center justify-between flex-shrink-0 h-12 px-4 py-2 border-b bg-dark-800 border-dark-700">
-        <div className="flex items-center gap-3">
-          <h1 className="text-sm font-semibold text-white truncate max-w-[250px]">{tour.title}</h1>
-          <Badge variant="default" className="text-xs">
-            {currentSceneIndex + 1} / {tour.images.length}
-          </Badge>
+      <div className="z-20 flex items-center justify-between flex-shrink-0 h-16 px-6 py-4 border-b bg-dark-800 border-dark-700">
+        <div className="flex items-center gap-4">
+          <div className="text-xl font-bold text-transparent bg-gradient-to-r from-primary-400 to-primary-600 bg-clip-text">
+            Panoramate
+          </div>
+          <div className="w-px h-6 bg-dark-700" />
+          <h1 className="text-lg font-semibold text-white truncate max-w-[200px]">{tour.title}</h1>
+          <div className="w-px h-6 bg-dark-700" />
+          <div className="flex items-center gap-2">
+         
+            <Badge variant="default" className="ml-2">
+              {currentSceneIndex + 1} / {tour.images.length}
+            </Badge>
+          </div>
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex gap-3">
           <Button
             variant="secondary"
-            size="sm"
             onClick={() => setIsUploadModalOpen(true)}
-            title="Add Scene"
-            className="px-3 py-1"
+            className="flex items-center gap-2"
           >
-            <Plus size={16} />
+            <Plus size={18} />
+            Add Scene
           </Button>
           <Button
             variant="secondary"
-            size="sm"
             onClick={() => setIsShareModalOpen(true)}
-            title="Share"
-            className="px-3 py-1"
+            className="flex items-center gap-2"
           >
-            <Share2 size={16} />
+            <Share2 size={18} />
+            Share
           </Button>
           <Button
             variant="secondary"
-            size="sm"
             onClick={() => window.history.back()}
-            title="Back"
-            className="px-3 py-1"
+            className="flex items-center gap-2"
           >
-            <ChevronLeft size={16} />
+            <ChevronLeft size={18} />
+            Back
           </Button>
           <Button
             variant="primary"
-            size="sm"
             onClick={handleSave}
             isLoading={isSaving}
-            className="px-4 py-1"
+            className="flex items-center gap-2 px-6"
           >
-            <Save size={16} />
+            <Save size={18} />
+            Save
           </Button>
         </div>
       </div>
