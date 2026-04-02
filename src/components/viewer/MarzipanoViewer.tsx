@@ -214,8 +214,9 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
 
     // 2. The Visual element: This is where we put our styles, size and centering.
     const visual = document.createElement('div');
-    const baseSize = type === 'TEMP' ? 32 : 42;
-    const scale = options?.scale || 1.0;
+    // Fixed size for TEMP hotspots (48px), apply scale only to non-TEMP hotspots
+    const baseSize = type === 'TEMP' ? 48 : 42;
+    const scale = type === 'TEMP' ? 1.0 : (options?.scale || 1.0);
     const size = baseSize * scale;
 
     let animationClass = '';
@@ -263,15 +264,17 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
       // Use selected icon or default to info
       const iconName = options?.iconName || 'Info';
       const iconSvg = getHotspotIconSvg(iconName);
-      const bgColor = options?.color || '#6366f1';
+      // Fixed styling: dark gray background with white icon
+      const bgColor = '#3b3b3b';
+      const iconColor = '#ffffff';
 
       visual.style.borderRadius = '50%';
-      visual.style.backgroundColor = `${bgColor}40`;
-      visual.style.border = `2px solid ${bgColor}`;
-      visual.style.boxShadow = `0 0 12px ${bgColor}80`;
-      visual.className += ' animate-pulse';
+      visual.style.backgroundColor = bgColor;
+      visual.style.border = 'none';
+      visual.style.boxShadow = 'none';
+      visual.className += ' link-hotspot__inner__icon__rotate';
 
-      iconContainer.style.color = bgColor;
+      iconContainer.style.color = iconColor;
       iconContainer.innerHTML = iconSvg;
     } else if (type === 'LINK') {
       // Use custom icon URL if provided, otherwise use default
@@ -435,6 +438,30 @@ useEffect(() => {
           0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.7); }
           70% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(99, 102, 241, 0); }
           100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(99, 102, 241, 0); }
+        }
+        @keyframes hotspot-pulse {
+          0% {
+            box-shadow: 0 0 0 0 rgba(0, 0, 0, 0.35);
+            transform: scale(1);
+          }
+          70% {
+            box-shadow: 0 0 0 18px rgba(0, 0, 0, 0);
+            transform: scale(1.04);
+          }
+          100% {
+            box-shadow: 0 0 0 0 rgba(0, 0, 0, 0);
+            transform: scale(1);
+          }
+        }
+        .link-hotspot__inner__icon__rotate {
+          animation: hotspot-pulse 1.9s ease-in-out infinite;
+          transition: background-color 220ms ease, transform 220ms ease;
+        }
+        .link-hotspot__inner__icon__rotate:hover {
+          background-color: #000000;
+        }
+        .link-hotspot__inner__icon__rotate svg {
+          display: block;
         }
         .animate-pulse {
           animation: pulse 2s infinite;

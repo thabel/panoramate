@@ -624,11 +624,71 @@ export default function TourEditorPage({
               <div className="space-y-4">
                 <div>
                   <label className="block mb-3 text-sm font-medium text-dark-300">Hotspot Icon</label>
-                  <div className="grid grid-cols-3 gap-2">
-                    <InfoIcon size={10} color="white" className="hover-effect" />
-                    <Bed size={30} color="white" className="hover-effect" />
-                    <CardIcon size={30} color="white" className="hover-effect" />
-                    <DoubleArrow size={30} color="white" className="hover-effect" />
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      onClick={() => {
+                        setHotspotForm({ ...hotspotForm, iconName: 'info' });
+                        if (newHotspotCoords) {
+                          setNewHotspotCoords({ ...newHotspotCoords, iconName: 'info' });
+                        }
+                      }}
+                      className={`flex items-center justify-center p-3 rounded-lg transition-all ${
+                        hotspotForm.iconName === 'info'
+                          ? 'bg-primary-500/30 border border-primary-500'
+                          : 'bg-dark-700 border border-dark-600 hover:border-dark-500'
+                      }`}
+                      title="Info Icon"
+                    >
+                      <InfoIcon size={24} color="white" />
+                    </button>
+                    <button
+                      onClick={() => {
+                        setHotspotForm({ ...hotspotForm, iconName: 'bed' });
+                        if (newHotspotCoords) {
+                          setNewHotspotCoords({ ...newHotspotCoords, iconName: 'bed' });
+                        }
+                      }}
+                      className={`flex items-center justify-center p-3 rounded-lg transition-all ${
+                        hotspotForm.iconName === 'bed'
+                          ? 'bg-primary-500/30 border border-primary-500'
+                          : 'bg-dark-700 border border-dark-600 hover:border-dark-500'
+                      }`}
+                      title="Bed Icon"
+                    >
+                      <Bed size={24} color="white" />
+                    </button>
+                    <button
+                      onClick={() => {
+                        setHotspotForm({ ...hotspotForm, iconName: 'card' });
+                        if (newHotspotCoords) {
+                          setNewHotspotCoords({ ...newHotspotCoords, iconName: 'card' });
+                        }
+                      }}
+                      className={`flex items-center justify-center p-3 rounded-lg transition-all ${
+                        hotspotForm.iconName === 'card'
+                          ? 'bg-primary-500/30 border border-primary-500'
+                          : 'bg-dark-700 border border-dark-600 hover:border-dark-500'
+                      }`}
+                      title="Card Icon"
+                    >
+                      <CardIcon size={24} color="white" />
+                    </button>
+                    <button
+                      onClick={() => {
+                        setHotspotForm({ ...hotspotForm, iconName: 'doublearrow' });
+                        if (newHotspotCoords) {
+                          setNewHotspotCoords({ ...newHotspotCoords, iconName: 'doublearrow' });
+                        }
+                      }}
+                      className={`flex items-center justify-center p-3 rounded-lg transition-all ${
+                        hotspotForm.iconName === 'doublearrow'
+                          ? 'bg-primary-500/30 border border-primary-500'
+                          : 'bg-dark-700 border border-dark-600 hover:border-dark-500'
+                      }`}
+                      title="Double Arrow Icon"
+                    >
+                      <DoubleArrow size={24} color="white" />
+                    </button>
                   </div>
                 </div>
 
