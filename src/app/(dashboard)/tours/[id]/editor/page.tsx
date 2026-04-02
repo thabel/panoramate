@@ -244,7 +244,7 @@ export default function TourEditorPage({
   const handlePanoramaClick = (yaw: number, pitch: number) => {
     if (addHotspotMode) {
       logger.debug({ yaw, pitch }, 'Panorama clicked in hotspot mode, opening config panel');
-      setNewHotspotCoords({ yaw, pitch });
+      setNewHotspotCoords({ yaw, pitch, iconName: hotspotForm.iconName });
       setHotspotForm({
         ...hotspotForm,
         targetImageId: tour?.images.find((img: TourImage) => img.id !== tour.images[currentSceneIndex].id)?.id || '',
