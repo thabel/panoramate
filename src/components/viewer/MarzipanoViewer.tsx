@@ -109,12 +109,17 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
         }
 
         // Add ResizeObserver to handle container size changes
-        // This ensures Marzipano updates its viewport when the panel opens/closes
+        // When the panel opens/closes, the container dimensions change
+        // We need to notify Marzipano to re-render at the new dimensions
         if (containerRef.current) {
           const resizeObserver = new ResizeObserver(() => {
             if (viewerRef.current) {
-              viewerRef.current.resize();
-              logger.debug('Marzipano viewer resized due to container change');
+              const scene = viewerRef.current.scene();
+              if (scene) {
+                // Force Marzipano to re-render at new canvas dimensions
+                scene.render();
+              }
+              logger.debug('Marzipano viewer re-rendered after container resize');
             }
           });
           resizeObserver.observe(containerRef.current);
