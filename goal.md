@@ -42,3 +42,8 @@ Sur le hoststop info on peut mettre
 * une formations en ligne & presentiel & hybirde
 * La formation en ligne .
 * 
+
+
+### Please note later:
+branch: gemini-solution-for-temphotspots
+: feat: improve hotspot handling with enhanced coordinate calculations and resize synchronization

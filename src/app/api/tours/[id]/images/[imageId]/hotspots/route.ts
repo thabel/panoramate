@@ -16,7 +16,6 @@ export async function GET(
     const image = await db.tourImage.findUnique({
       where: { id: params.imageId },
       include: {
-        tour: true,
         hotspots: {
           orderBy: { createdAt: 'asc' },
         },
@@ -55,6 +54,7 @@ export async function POST(
     }
 
     const body = await request.json();
+    logger.info({ body, imageId: params.imageId }, 'Creating hotspot with body');
     const { type, yaw, pitch, rotation, targetImageId, title, content, url, videoUrl, imageUrl, animationType, iconUrl, color, scale } = body;
 
     if (!type || yaw === undefined || pitch === undefined) {
@@ -66,7 +66,6 @@ export async function POST(
 
     const image = await db.tourImage.findUnique({
       where: { id: params.imageId },
-      include: { tour: true },
     });
 
     if (!image) {
@@ -81,9 +80,9 @@ export async function POST(
       data: {
         imageId: params.imageId,
         type,
-        yaw,
-        pitch,
-        rotation: rotation || 0,
+        yaw: parseFloat(yaw),
+        pitch: parseFloat(pitch),
+        rotation: rotation !== undefined && rotation !== null ? parseFloat(rotation) : 0,
         targetImageId: targetImageId || null,
         title: title || null,
         content: content || null,
@@ -93,7 +92,7 @@ export async function POST(
         animationType: animationType || 'NONE',
         iconUrl: iconUrl || null,
         color: color || null,
-        scale: scale || 1.0,
+        scale: scale !== undefined && scale !== null ? parseFloat(scale) : 1.0,
       },
     });
 
@@ -103,10 +102,20 @@ export async function POST(
       { success: true, data: hotspot },
       { status: 201 }
     );
-  } catch (error) {
-    logger.error({ error, tourId: params.id, imageId: params.imageId }, 'Create hotspot error');
+  } catch (error: any) {
+    logger.error({ 
+      error: {
+        name: error.name,
+        message: error.message,
+        stack: error.stack,
+        code: error.code,
+        meta: error.meta
+      }, 
+      tourId: params.id, 
+      imageId: params.imageId 
+    }, 'Create hotspot error');
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Internal server error', details: error.message },
       { status: 500 }
     );
   }
@@ -134,11 +143,6 @@ export async function PATCH(
 
     const hotspot = await db.hotspot.findUnique({
       where: { id: hotspotId },
-      include: {
-        image: {
-          include: { tour: true },
-        },
-      },
     });
 
     if (!hotspot) {
@@ -153,19 +157,19 @@ export async function PATCH(
       where: { id: hotspotId },
       data: {
         ...(type && { type }),
-        ...(yaw !== undefined && { yaw }),
-        ...(pitch !== undefined && { pitch }),
-        ...(rotation !== undefined && { rotation }),
-        ...(targetImageId !== undefined && { targetImageId }),
-        ...(title !== undefined && { title }),
-        ...(content !== undefined && { content }),
-        ...(url !== undefined && { url }),
-        ...(videoUrl !== undefined && { videoUrl }),
-        ...(imageUrl !== undefined && { imageUrl }),
+        ...(yaw !== undefined && yaw !== null && { yaw: parseFloat(yaw) }),
+        ...(pitch !== undefined && pitch !== null && { pitch: parseFloat(pitch) }),
+        ...(rotation !== undefined && rotation !== null && { rotation: parseFloat(rotation) }),
+        ...(targetImageId !== undefined && { targetImageId: targetImageId || null }),
+        ...(title !== undefined && { title: title || null }),
+        ...(content !== undefined && { content: content || null }),
+        ...(url !== undefined && { url: url || null }),
+        ...(videoUrl !== undefined && { videoUrl: videoUrl || null }),
+        ...(imageUrl !== undefined && { imageUrl: imageUrl || null }),
         ...(animationType && { animationType }),
-        ...(iconUrl !== undefined && { iconUrl }),
-        ...(color !== undefined && { color }),
-        ...(scale !== undefined && { scale }),
+        ...(iconUrl !== undefined && { iconUrl: iconUrl || null }),
+        ...(color !== undefined && { color: color || null }),
+        ...(scale !== undefined && scale !== null && { scale: parseFloat(scale) }),
       },
     });
 
@@ -204,11 +208,6 @@ export async function DELETE(
 
     const hotspot = await db.hotspot.findUnique({
       where: { id: hotspotId },
-      include: {
-        image: {
-          include: { tour: true },
-        },
-      },
     });
 
     if (!hotspot) {
