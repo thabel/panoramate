@@ -707,60 +707,6 @@ export default function TourEditorPage({
                 </div>
               </div>
 
-              {/* Customization Options */}
-              <div className="pt-4 space-y-4 border-t border-dark-700">
-                <div className="flex items-center gap-2 p-3 border rounded-lg bg-primary-500/10 border-primary-500/20">
-                  <Zap size={18} className="flex-shrink-0 text-primary-400" />
-                  <div>
-                    <p className="text-xs font-semibold text-primary-400">Customize Appearance</p>
-                    <p className="text-[11px] text-primary-300">Animations & Colors</p>
-                  </div>
-                </div>
-
-                {/* Animation Type */}
-                <div>
-                  <label className="block mb-2 text-sm font-medium text-dark-300">Animation</label>
-                  <select
-                    value={hotspotForm.animationType || 'NONE'}
-                    onChange={(e) => setHotspotForm({ ...hotspotForm, animationType: e.target.value })}
-                    className="w-full px-3 py-2 text-sm text-white transition-all border rounded-lg outline-none bg-dark-700 border-dark-600 focus:border-primary-500"
-                  >
-                    <option value="NONE">None</option>
-                    <option value="PULSE">Pulse</option>
-                    <option value="GLOW">Glow</option>
-                    <option value="BOUNCE">Bounce</option>
-                    <option value="FLOAT">Float</option>
-                  </select>
-                </div>
-
-                {/* Color Picker */}
-                <div>
-                  <label className="block mb-2 text-sm font-medium text-dark-300">Color</label>
-                  <input
-                    type="color"
-                    value={hotspotForm.color || '#6366f1'}
-                    onChange={(e) => setHotspotForm({ ...hotspotForm, color: e.target.value })}
-                    className="w-full h-10 transition-all border rounded-lg cursor-pointer border-dark-600"
-                  />
-                </div>
-
-                {/* Scale/Size */}
-                <div>
-                  <label className="block mb-2 text-sm font-medium text-dark-300">
-                    Size: {(hotspotForm.scale || 1.0).toFixed(1)}x
-                  </label>
-                  <input
-                    type="range"
-                    min="0.5"
-                    max="2"
-                    step="0.1"
-                    value={hotspotForm.scale || 1.0}
-                    onChange={(e) => setHotspotForm({ ...hotspotForm, scale: parseFloat(e.target.value) })}
-                    className="w-full h-2 rounded-lg appearance-none cursor-pointer bg-dark-700"
-                  />
-                </div>
-              </div>
-
               {/* Link to Scene */}
               {hotspotForm.type === 'LINK' && (
                 <div className="pt-4 space-y-4 border-t border-dark-700">
