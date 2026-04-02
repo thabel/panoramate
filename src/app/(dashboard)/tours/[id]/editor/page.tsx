@@ -14,6 +14,8 @@ import { Badge } from '@/components/ui/Badge';
 import { Save, ChevronLeft, ChevronRight, Image as ImageIcon, Plus, Trash2, X, MapPin, Share2, Edit2, Search, Settings, Music, Volume2, Link as LinkIcon, Info, ExternalLink, Video, FileText, ArrowRight, Zap } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import { ShareModal } from '@/components/dashboard/ShareModal';
+import { HotspotIconPicker } from '@/components/HotspotIconPicker';
+import { HOTSPOT_ICONS, HotspotIconId, getHotspotIconConfig } from '@/lib/hotspotIcons';
 import { logger } from '@/lib/logger';
 import toast from 'react-hot-toast';
 
@@ -37,9 +39,10 @@ export default function TourEditorPage({
   const [newSceneTitle, setNewSceneTitle] = useState('');
   const [selectedHotspot, setSelectedHotspot] = useState<any | null>(null);
   const [isHotspotActionModalOpen, setIsHotspotActionModalOpen] = useState(false);
-  const [newHotspotCoords, setNewHotspotCoords] = useState<{ yaw: number; pitch: number } | null>(null);
+  const [newHotspotCoords, setNewHotspotCoords] = useState<{ yaw: number; pitch: number; iconName?: string } | null>(null);
   const [sceneSearchQuery, setSceneSearchQuery] = useState('');
   const [selectionMode, setSelectionMode] = useState<'name' | 'image'>('name');
+  const [isIconPickerOpen, setIsIconPickerOpen] = useState(false);
   const [hotspotForm, setHotspotForm] = useState({
     type: 'LINK',
     title: '',
@@ -52,6 +55,7 @@ export default function TourEditorPage({
     color: '#6366f1',
     scale: 1.0,
     iconUrl: '',
+    iconName: 'info',
   });
   const [showSceneMenu, setShowSceneMenu] = useState(true);
   const [showHotspotTitles, setShowHotspotTitles] = useState(true);
@@ -236,16 +240,41 @@ export default function TourEditorPage({
 
   const handlePanoramaClick = (yaw: number, pitch: number) => {
     if (addHotspotMode) {
-      console.log("thabel/trying adding ahost stop", { yaw, pitch });
-      logger.debug({ yaw, pitch }, 'Panorama clicked in hotspot mode, setting coordinates');
+      logger.debug({ yaw, pitch }, 'Panorama clicked in hotspot mode, opening icon picker');
       setNewHotspotCoords({ yaw, pitch });
-      setHotspotForm({
-        ...hotspotForm,
-        targetImageId: tour?.images.find((img: TourImage) => img.id !== tour.images[currentSceneIndex].id)?.id || '',
-      });
-      setIsHotspotPanelOpen(true);
-      // We keep addHotspotMode true until it's actually created or cancelled
+      // Show icon picker instead of config panel
+      setIsIconPickerOpen(true);
     }
+  };
+
+  const handleIconSelected = (iconId: HotspotIconId) => {
+    logger.debug({ iconId }, 'Hotspot icon selected');
+    setIsIconPickerOpen(false);
+
+    // Update form with selected icon
+    setHotspotForm({
+      ...hotspotForm,
+      iconName: iconId,
+      targetImageId: tour?.images.find((img: TourImage) => img.id !== tour.images[currentSceneIndex].id)?.id || '',
+    });
+
+    // Update temp hotspot to show the selected icon
+    if (newHotspotCoords) {
+      setNewHotspotCoords({
+        ...newHotspotCoords,
+        iconName: iconId,
+      });
+    }
+
+    // Open config panel
+    setIsHotspotPanelOpen(true);
+  };
+
+  const handleIconPickerCancel = () => {
+    logger.debug('Icon picker cancelled');
+    setIsIconPickerOpen(false);
+    setNewHotspotCoords(null);
+    setAddHotspotMode(false);
   };
 
   const uploadHotspotIcon = async (file: File) => {
@@ -326,6 +355,7 @@ export default function TourEditorPage({
           color: '#6366f1',
           scale: 1.0,
           iconUrl: '',
+          iconName: 'info',
         });
         toast.success('Hotspot created');
       } else {
@@ -1076,6 +1106,13 @@ export default function TourEditorPage({
         {/* Portaled Panel Content */}
         {renderHotspotPanel()}
       </div>
+
+      {/* Icon Picker Modal */}
+      <HotspotIconPicker
+        isOpen={isIconPickerOpen}
+        onSelect={handleIconSelected}
+        onCancel={handleIconPickerCancel}
+      />
 
       <Modal
         isOpen={isUploadModalOpen}

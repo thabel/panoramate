@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { TourImage, Hotspot as HotspotType } from '@/types';
 import { logger } from '@/lib/logger';
 import { HotspotPopover } from './HotspotPopover';
+import { getHotspotIconSvg } from '@/lib/hotspotIconsSvg';
 
 declare global {
   interface Window {
@@ -17,7 +18,7 @@ interface MarzipanoViewerProps {
   initialSceneId?: string;
   editorMode?: boolean;
   addHotspotMode?: boolean;
-  tempHotspot?: { yaw: number; pitch: number } | null;
+  tempHotspot?: { yaw: number; pitch: number; iconName?: string } | null;
   showHotspotTitles?: boolean;
   onHotspotClick?: (hotspot: HotspotType) => void;
   onPanoramaClick?: (yaw: number, pitch: number) => void;
@@ -199,6 +200,7 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
       scale?: number;
       animationType?: string;
       iconUrl?: string;
+      iconName?: string;
     },
     onHover?: (hotspot: HotspotType | null, position: { x: number; y: number } | null) => void,
     hotspotData?: HotspotType
@@ -258,12 +260,19 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
     iconContainer.style.height = '100%';
 
     if (type === 'TEMP') {
-      visual.className += ' text-white border-2 border-white rounded-full shadow-lg bg-primary-500 animate-pulse';
-      iconContainer.innerHTML = `
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M12 5v14M5 12h14"></path>
-        </svg>
-      `;
+      // Use selected icon or default to info
+      const iconName = options?.iconName || 'Info';
+      const iconSvg = getHotspotIconSvg(iconName);
+      const bgColor = options?.color || '#6366f1';
+
+      visual.style.borderRadius = '50%';
+      visual.style.backgroundColor = `${bgColor}40`;
+      visual.style.border = `2px solid ${bgColor}`;
+      visual.style.boxShadow = `0 0 12px ${bgColor}80`;
+      visual.className += ' animate-pulse';
+
+      iconContainer.style.color = bgColor;
+      iconContainer.innerHTML = iconSvg;
     } else if (type === 'LINK') {
       // Use custom icon URL if provided, otherwise use default
       const iconUrl = options?.iconUrl ? `/api/uploads/${options.iconUrl}` : '/icons/link.png';
@@ -383,7 +392,10 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
     if (tempHotspot && currentSceneId) {
       const scene = scenesRef.current[currentSceneId];
       if (scene) {
-        const element = createHotspotElement('TEMP');
+        const element = createHotspotElement('TEMP', undefined, undefined, undefined, {
+          iconName: tempHotspot.iconName,
+          color: '#6366f1',
+        });
         scene.hotspotContainer().createHotspot(element, {
           yaw: tempHotspot.yaw,
           pitch: tempHotspot.pitch,

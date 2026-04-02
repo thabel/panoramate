@@ -154,6 +154,7 @@ model Hotspot {
   imageUrl      String?         @db.Text
   animationType AnimationType   @default(NONE)
   iconUrl       String?         @db.Text
+  iconName      String?         @default("info")
   color         String?
   scale         Float           @default(1.0)
   createdAt     DateTime        @default(now())
