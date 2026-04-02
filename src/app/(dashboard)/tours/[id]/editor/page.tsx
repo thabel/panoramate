@@ -708,7 +708,7 @@ export default function TourEditorPage({
               </div>
 
               {/* Link to Scene */}
-              {hotspotForm.type === 'LINK' && (
+              {hotspotForm.iconName === 'doublearrow' && (
                 <div className="pt-4 space-y-4 border-t border-dark-700">
                   <div className="flex flex-col gap-3">
                     <label className="flex items-center gap-2 text-sm font-semibold text-white">
