@@ -28,6 +28,7 @@ Sur le hoststop info on peut mettre
     Quand on hover le hoststop , il faut montrer le titre 
     * Rajouter une musique dans le background et un btn on off [Vue publique]
     *  Rajouter des assest multimédia dans le viewer.
+    * Rajouter à la vue publique les directioin et fleches.
 
 ## A discuter
     [Fonctionnalité]: Plan 2D interractive

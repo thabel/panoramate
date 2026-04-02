@@ -18,6 +18,10 @@ import { ShareModal } from '@/components/dashboard/ShareModal';
 import { HOTSPOT_ICONS, getHotspotIconConfig, iconIdToType } from '@/lib/hotspotIcons';
 import { logger } from '@/lib/logger';
 import toast from 'react-hot-toast';
+import InfoIcon from '@/components/icons/info';
+import Bed from '@/components/icons/bed';
+import CardIcon from '@/components/icons/card';
+import DoubleArrow from '@/components/icons/doublearrow';
 
 export default function TourEditorPage({
   params,
@@ -577,7 +581,7 @@ export default function TourEditorPage({
     return createPortal(
       <div className="flex flex-col h-full overflow-hidden text-white">
         {isHotspotPanelCollapsed ? (
-          <div className="flex flex-col items-center py-6 gap-6">
+          <div className="flex flex-col items-center gap-6 py-6">
              <button
               onClick={() => setIsHotspotPanelCollapsed(false)}
               className="p-2 transition-colors rounded-lg hover:bg-dark-700 text-primary-400"
@@ -621,53 +625,10 @@ export default function TourEditorPage({
                 <div>
                   <label className="block mb-3 text-sm font-medium text-dark-300">Hotspot Icon</label>
                   <div className="grid grid-cols-3 gap-2">
-                    {HOTSPOT_ICONS.map((iconConfig) => {
-                      // Dynamically import icon from lucide-react
-                      const IconComponent = (LucideIcons as Record<string, any>)[iconConfig.iconName];
-                      if (!IconComponent) return null;
-
-                      const isSelected = hotspotForm.iconName === iconConfig.id;
-
-                      return (
-                        <button
-                          key={iconConfig.id}
-                          onClick={() => {
-                            // Update form with selected icon and its corresponding type
-                            setHotspotForm({
-                              ...hotspotForm,
-                              iconName: iconConfig.id,
-                              type: iconIdToType(iconConfig.id),
-                            });
-                            // Update temp hotspot to show the selected icon in viewer
-                            if (newHotspotCoords) {
-                              setNewHotspotCoords({
-                                ...newHotspotCoords,
-                                iconName: iconConfig.id,
-                              });
-                            }
-                          }}
-                          className={`flex flex-col items-center gap-1 p-3 rounded-lg text-xs font-medium transition-all border-2 ${
-                            isSelected
-                              ? 'border-primary-500 bg-primary-500/20 text-white shadow-lg'
-                              : 'border-transparent bg-dark-700 text-dark-400 hover:text-white hover:bg-dark-600'
-                          }`}
-                          title={iconConfig.description}
-                        >
-                          <div
-                            className="p-2 rounded-lg transition-colors"
-                            style={{
-                              backgroundColor: isSelected ? `${iconConfig.color}40` : 'transparent',
-                            }}
-                          >
-                            <IconComponent
-                              size={20}
-                              style={{ color: iconConfig.color }}
-                            />
-                          </div>
-                          <span>{iconConfig.name}</span>
-                        </button>
-                      );
-                    })}
+                    <InfoIcon size={10} color="white" className="hover-effect" />
+                    <Bed size={30} color="white" className="hover-effect" />
+                    <CardIcon size={30} color="white" className="hover-effect" />
+                    <DoubleArrow size={30} color="white" className="hover-effect" />
                   </div>
                 </div>
 
@@ -688,8 +649,8 @@ export default function TourEditorPage({
 
               {/* Customization Options */}
               <div className="pt-4 space-y-4 border-t border-dark-700">
-                <div className="flex items-center gap-2 p-3 rounded-lg bg-primary-500/10 border border-primary-500/20">
-                  <Zap size={18} className="text-primary-400 flex-shrink-0" />
+                <div className="flex items-center gap-2 p-3 border rounded-lg bg-primary-500/10 border-primary-500/20">
+                  <Zap size={18} className="flex-shrink-0 text-primary-400" />
                   <div>
                     <p className="text-xs font-semibold text-primary-400">Customize Appearance</p>
                     <p className="text-[11px] text-primary-300">Animations & Colors</p>
@@ -719,7 +680,7 @@ export default function TourEditorPage({
                     type="color"
                     value={hotspotForm.color || '#6366f1'}
                     onChange={(e) => setHotspotForm({ ...hotspotForm, color: e.target.value })}
-                    className="w-full h-10 rounded-lg cursor-pointer transition-all border border-dark-600"
+                    className="w-full h-10 transition-all border rounded-lg cursor-pointer border-dark-600"
                   />
                 </div>
 
@@ -735,7 +696,7 @@ export default function TourEditorPage({
                     step="0.1"
                     value={hotspotForm.scale || 1.0}
                     onChange={(e) => setHotspotForm({ ...hotspotForm, scale: parseFloat(e.target.value) })}
-                    className="w-full h-2 bg-dark-700 rounded-lg cursor-pointer appearance-none"
+                    className="w-full h-2 rounded-lg appearance-none cursor-pointer bg-dark-700"
                   />
                 </div>
               </div>
