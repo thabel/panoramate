@@ -12,6 +12,7 @@ import { UploadZone } from '@/components/dashboard/UploadZone';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { Badge } from '@/components/ui/Badge';
 import { Save, ChevronLeft, ChevronRight, Image as ImageIcon, Plus, Trash2, X, MapPin, Share2, Edit2, Search, Settings, Music, Volume2, Link as LinkIcon, Info, ExternalLink, Video, FileText, ArrowRight, Zap } from 'lucide-react';
+import * as LucideIcons from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import { ShareModal } from '@/components/dashboard/ShareModal';
 import { HotspotIconPicker } from '@/components/HotspotIconPicker';
@@ -646,27 +647,54 @@ export default function TourEditorPage({
             <div className="flex-1 p-6 space-y-6 overflow-y-auto scrollbar-hide">
               <div className="space-y-4">
                 <div>
-                  <label className="block mb-2 text-sm font-medium text-dark-300">Hotspot Type</label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {[
-                      { value: 'LINK', label: 'Link to Scene', icon: LinkIcon, color: 'from-blue-500 to-blue-600' },
-                      { value: 'INFO', label: 'Information', icon: Info, color: 'from-indigo-500 to-indigo-600' },
-                      { value: 'URL', label: 'External Link', icon: ExternalLink, color: 'from-green-500 to-green-600' },
-                      { value: 'VIDEO', label: 'Video', icon: Video, color: 'from-red-500 to-red-600' },
-                    ].map(({ value, label, icon: IconComponent, color }) => (
-                      <button
-                        key={value}
-                        onClick={() => setHotspotForm({ ...hotspotForm, type: value })}
-                        className={`flex items-center gap-2 px-3 py-2.5 rounded-lg text-xs font-medium transition-all border ${
-                          hotspotForm.type === value
-                            ? `bg-gradient-to-r ${color} text-white border-transparent shadow-lg scale-105`
-                            : 'bg-dark-700 text-dark-300 border-dark-600 hover:border-dark-500 hover:text-white'
-                        }`}
-                      >
-                        <IconComponent size={16} />
-                        <span>{label}</span>
-                      </button>
-                    ))}
+                  <label className="block mb-3 text-sm font-medium text-dark-300">Hotspot Icon</label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {HOTSPOT_ICONS.map((iconConfig) => {
+                      // Dynamically import icon from lucide-react
+                      const IconComponent = (LucideIcons as Record<string, any>)[iconConfig.iconName];
+                      if (!IconComponent) return null;
+
+                      const isSelected = hotspotForm.iconName === iconConfig.id;
+
+                      return (
+                        <button
+                          key={iconConfig.id}
+                          onClick={() => {
+                            // Update form with selected icon
+                            setHotspotForm({
+                              ...hotspotForm,
+                              iconName: iconConfig.id,
+                            });
+                            // Update temp hotspot to show the selected icon in viewer
+                            if (newHotspotCoords) {
+                              setNewHotspotCoords({
+                                ...newHotspotCoords,
+                                iconName: iconConfig.id,
+                              });
+                            }
+                          }}
+                          className={`flex flex-col items-center gap-1 p-3 rounded-lg text-xs font-medium transition-all border-2 ${
+                            isSelected
+                              ? 'border-primary-500 bg-primary-500/20 text-white shadow-lg'
+                              : 'border-transparent bg-dark-700 text-dark-400 hover:text-white hover:bg-dark-600'
+                          }`}
+                          title={iconConfig.description}
+                        >
+                          <div
+                            className="p-2 rounded-lg transition-colors"
+                            style={{
+                              backgroundColor: isSelected ? `${iconConfig.color}40` : 'transparent',
+                            }}
+                          >
+                            <IconComponent
+                              size={20}
+                              style={{ color: iconConfig.color }}
+                            />
+                          </div>
+                          <span>{iconConfig.name}</span>
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
 
