@@ -5,7 +5,7 @@ import { useEffect, useState, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useUI } from '@/context/UIContext';
 import { useSearchParams } from 'next/navigation';
-import { TourWithImages } from '@/types';
+import { TourWithImages, TourImage } from '@/types';
 import { MarzipanoViewer } from '@/components/viewer/MarzipanoViewer';
 import { Button } from '@/components/ui/Button';
 import { UploadZone } from '@/components/dashboard/UploadZone';
@@ -212,7 +212,7 @@ export default function TourEditorPage({
       });
 
       if (response.ok) {
-        const updatedImages = tour!.images.filter((img) => img.id !== imageId);
+        const updatedImages = tour!.images.filter((img: TourImage) => img.id !== imageId);
         setTour({
           ...tour!,
           images: updatedImages,
@@ -241,7 +241,7 @@ export default function TourEditorPage({
       setNewHotspotCoords({ yaw, pitch });
       setHotspotForm({
         ...hotspotForm,
-        targetImageId: tour?.images.find(img => img.id !== tour.images[currentSceneIndex].id)?.id || '',
+        targetImageId: tour?.images.find((img: TourImage) => img.id !== tour.images[currentSceneIndex].id)?.id || '',
       });
       setIsHotspotPanelOpen(true);
       // We keep addHotspotMode true until it's actually created or cancelled
@@ -303,8 +303,8 @@ export default function TourEditorPage({
         
         setTour({
           ...tour,
-          images: tour.images.map(img => 
-            img.id === currentImageId 
+          images: tour.images.map((img: TourImage) =>
+            img.id === currentImageId
               ? { ...img, hotspots: [...((img as any).hotspots || []), newHotspot] }
               : img
           )
@@ -360,8 +360,8 @@ export default function TourEditorPage({
       if (response.ok) {
         setTour({
           ...tour,
-          images: tour.images.map(img => 
-            img.id === currentImageId 
+          images: tour.images.map((img: TourImage) =>
+            img.id === currentImageId
               ? { ...img, hotspots: (img as any).hotspots.filter((h: any) => h.id !== selectedHotspot.id) }
               : img
           )
@@ -379,8 +379,8 @@ export default function TourEditorPage({
 
   const goToTargetScene = () => {
     if (!selectedHotspot || selectedHotspot.type !== 'LINK' || !selectedHotspot.targetImageId) return;
-    
-    const index = tour!.images.findIndex(img => img.id === selectedHotspot.targetImageId);
+
+    const index = tour!.images.findIndex((img: TourImage) => img.id === selectedHotspot.targetImageId);
     if (index !== -1) {
       setCurrentSceneIndex(index);
       setIsHotspotActionModalOpen(false);
@@ -411,7 +411,7 @@ export default function TourEditorPage({
       if (response.ok) {
         setTour({
           ...tour,
-          images: tour.images.map((img, idx) =>
+          images: tour.images.map((img: TourImage, idx: number) =>
             idx === currentSceneIndex ? { ...img, title: newSceneTitle.trim() } : img
           ),
         });
@@ -750,11 +750,11 @@ export default function TourEditorPage({
                       </div>
                       <div className="pr-1 space-y-1 overflow-y-auto max-h-48 scrollbar-thin">
                         {tour.images
-                          .filter(img =>
+                          .filter((img: TourImage) =>
                             img.id !== tour.images[currentSceneIndex].id &&
                             (img.title || `Scene ${img.order + 1}`).toLowerCase().includes(sceneSearchQuery.toLowerCase())
                           )
-                          .map(img => (
+                          .map((img: TourImage) => (
                             <button
                               key={img.id}
                               onClick={() => setHotspotForm({ ...hotspotForm, targetImageId: img.id })}
@@ -773,8 +773,8 @@ export default function TourEditorPage({
                   ) : (
                     <div className="grid grid-cols-2 gap-2 pr-1 overflow-y-auto max-h-48 scrollbar-thin">
                       {tour.images
-                        .filter(img => img.id !== tour.images[currentSceneIndex].id)
-                        .map(img => (
+                        .filter((img: TourImage) => img.id !== tour.images[currentSceneIndex].id)
+                        .map((img: TourImage) => (
                           <button
                             key={img.id}
                             onClick={() => setHotspotForm({ ...hotspotForm, targetImageId: img.id })}
@@ -1020,7 +1020,7 @@ export default function TourEditorPage({
             </button>
 
             <div className="flex items-center flex-1 gap-4 py-1 overflow-x-auto no-scrollbar scroll-smooth">
-              {tour.images.map((image, index) => (
+              {tour.images.map((image: TourImage, index: number) => (
                 <div key={image.id} className="relative flex-shrink-0 group">
                   <button
                     onClick={() => setCurrentSceneIndex(index)}

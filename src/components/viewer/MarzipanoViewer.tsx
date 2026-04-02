@@ -108,6 +108,21 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
           setCurrentSceneId(initialSceneId || scenes[0].id);
         }
 
+        // Add ResizeObserver to handle container size changes
+        // This ensures Marzipano updates its viewport when the panel opens/closes
+        if (containerRef.current) {
+          const resizeObserver = new ResizeObserver(() => {
+            if (viewerRef.current) {
+              viewerRef.current.resize();
+              logger.debug('Marzipano viewer resized due to container change');
+            }
+          });
+          resizeObserver.observe(containerRef.current);
+
+          // Store the observer for cleanup
+          (viewer as any)._resizeObserver = resizeObserver;
+        }
+
         return true;
       } catch (err) {
         console.error('Marzipano initialization error:', err);
@@ -124,6 +139,11 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
     return () => {
       if (retryInterval) clearInterval(retryInterval);
       if (viewerRef.current) {
+        // Clean up ResizeObserver
+        const observer = (viewerRef.current as any)._resizeObserver;
+        if (observer) {
+          observer.disconnect();
+        }
         viewerRef.current.destroy();
         viewerRef.current = null;
       }
@@ -288,7 +308,7 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
     // Title label (only if showHotspotTitles and title exists)
     if (showHotspotTitles && title && type !== 'TEMP') {
       const titleLabel = document.createElement('div');
-      const size = type === 'TEMP' ? 32 : 42;
+      const size = 42;
       titleLabel.style.position = 'absolute';
       titleLabel.style.top = `${size + 4}px`;
       titleLabel.style.whiteSpace = 'nowrap';
