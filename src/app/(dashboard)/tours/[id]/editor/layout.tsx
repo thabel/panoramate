@@ -34,20 +34,20 @@ export default function EditorLayout({
   }
 
   return (
-    <div className="flex h-full overflow-hidden bg-dark-900">
-      {/* Editor Main Content Area */}
-      <div className="flex-1 overflow-hidden transition-all duration-300">
-       {children}
+    <div className="flex h-full overflow-hidden bg-dark-900 relative">
+      {/* Editor Main Content Area - Always Full Width */}
+      <div className="flex-1 overflow-hidden">
+        {children}
       </div>
 
-      {/* Right Side Panel Area (Outside of Editor Page) */}
-      {/* We keep the slot always in DOM but with 0 width if not open to avoid Portal errors */}
-      <aside 
-        id="hotspot-panel-slot" 
-        className={`flex-shrink-0 h-full bg-dark-800 transition-all duration-300 shadow-2xl z-50 ${
-          !isHotspotPanelOpen 
-            ? 'w-0 border-l-0 overflow-hidden invisible' 
-            : (isHotspotPanelCollapsed ? 'w-12 border-l border-dark-700 visible' : 'w-80 border-l border-dark-700 visible')
+      {/* Floating Hotspot Panel - Overlay on top right */}
+      {/* Panel floats over content without reducing viewer width */}
+      <aside
+        id="hotspot-panel-slot"
+        className={`fixed right-0 top-0 h-full bg-dark-800 shadow-2xl z-50 border-l border-dark-700 transition-all duration-300 ${
+          !isHotspotPanelOpen
+            ? 'translate-x-full invisible'
+            : (isHotspotPanelCollapsed ? 'w-12 visible' : 'w-80 visible')
         }`}
       />
     </div>
