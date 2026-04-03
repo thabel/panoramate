@@ -15,7 +15,7 @@ Sur le hoststop info on peut mettre
     du texte 
     une image
     une video 
-    ou lien externe (iframe qui t'ouvre une page) .
+    ou lien externe (iframe qui t'ouvre une page) .p
 
 * Menu de navigation
     ( possibilité de l'afficher ou pas au niveau du parametre)

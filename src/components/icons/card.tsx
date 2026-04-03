@@ -1,7 +1,7 @@
 const CardIcon = ({ size = 21, color = "black", className = "" }) => (
   <svg
     width={size}
-    height={(size * 20) / 21}
+    height={size}
     viewBox="0 0 21 20"
     fill="none"
     xmlns="http://www.w3.org/2000/svg"

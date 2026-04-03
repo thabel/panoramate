@@ -11,17 +11,15 @@ import { Button } from '@/components/ui/Button';
 import { UploadZone } from '@/components/dashboard/UploadZone';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { Badge } from '@/components/ui/Badge';
-import { Save, ChevronLeft, ChevronRight, Image as ImageIcon, Plus, Trash2, X, MapPin, Share2, Edit2, Search, Settings, Music, Volume2, Link as LinkIcon, Info, ExternalLink, Video, FileText, ArrowRight, Zap } from 'lucide-react';
+import { Save, ChevronLeft, ChevronRight, Image as ImageIcon, Plus, Trash2, X, Share2, Edit2, Search, Settings, Music, Volume2, Link as LinkIcon, Info, ExternalLink, Video, FileText, ArrowRight, Zap } from 'lucide-react';
 import * as LucideIcons from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import { ShareModal } from '@/components/dashboard/ShareModal';
 import { HOTSPOT_ICONS, getHotspotIconConfig, iconIdToType } from '@/lib/hotspotIcons';
+import { HOTSPOT_ICONS_SVG } from '@/lib/hotspotIconsSvg';
 import { logger } from '@/lib/logger';
 import toast from 'react-hot-toast';
-import InfoIcon from '@/components/icons/info';
-import Bed from '@/components/icons/bed';
-import CardIcon from '@/components/icons/card';
-import DoubleArrow from '@/components/icons/doublearrow';
+import { MapPin as MapPinIcon } from 'lucide-react';
 
 export default function TourEditorPage({
   params,
@@ -54,8 +52,7 @@ export default function TourEditorPage({
     url: '',
     videoUrl: '',
     imageUrl: '',
-    animationType: 'NONE',
-    color: '#6366f1',
+    animationType: 'PULSE',
     scale: 1.0,
     iconUrl: '',
     iconName: 'info',
@@ -321,7 +318,7 @@ export default function TourEditorPage({
         setNewHotspotCoords(null);
         setSceneSearchQuery('');
         setHotspotForm({
-          type: 'LINK',
+          type: 'LINK', // TODO: the type of hostpot depend on the icon being selected it's not always a link one .
           title: '',
           targetImageId: '',
           content: '',
@@ -329,7 +326,7 @@ export default function TourEditorPage({
           videoUrl: '',
           imageUrl: '',
           animationType: 'NONE',
-          color: '#6366f1',
+          color: '#3b3b3b',
           scale: 1.0,
           iconUrl: '',
           iconName: 'info',
@@ -571,6 +568,19 @@ export default function TourEditorPage({
   }
 
   const currentScene = tour.images[currentSceneIndex];
+  const renderIconBoxer = (size: number, iconName: string) => {
+    // Map doublearrow to MapPin as requested
+    const effectiveIconName = iconName === 'doublearrow' ? 'MapPin' : iconName;
+    const svgString = HOTSPOT_ICONS_SVG[effectiveIconName] || HOTSPOT_ICONS_SVG['info'];
+    
+    return (
+      <div 
+        style={{ width: size, height: size, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+        className="text-white [&>svg]:w-full [&>svg]:h-full"
+        dangerouslySetInnerHTML={{ __html: svgString }}
+      />
+    );
+  };
 
   const renderHotspotPanel = () => {
     if (!isHotspotPanelOpen || !mounted) return null;
@@ -624,71 +634,59 @@ export default function TourEditorPage({
               <div className="space-y-4">
                 <div>
                   <label className="block mb-3 text-sm font-medium text-dark-300">Hotspot Icon</label>
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      onClick={() => {
-                        setHotspotForm({ ...hotspotForm, iconName: 'info' });
-                        if (newHotspotCoords) {
-                          setNewHotspotCoords({ ...newHotspotCoords, iconName: 'info' });
-                        }
-                      }}
-                      className={`flex items-center justify-center p-3 rounded-lg transition-all ${
-                        hotspotForm.iconName === 'info'
-                          ? 'bg-primary-500/30 border border-primary-500'
-                          : 'bg-dark-700 border border-dark-600 hover:border-dark-500'
-                      }`}
-                      title="Info Icon"
-                    >
-                      <InfoIcon size={24} color="white" />
-                    </button>
-                    <button
-                      onClick={() => {
-                        setHotspotForm({ ...hotspotForm, iconName: 'bed' });
-                        if (newHotspotCoords) {
-                          setNewHotspotCoords({ ...newHotspotCoords, iconName: 'bed' });
-                        }
-                      }}
-                      className={`flex items-center justify-center p-3 rounded-lg transition-all ${
-                        hotspotForm.iconName === 'bed'
-                          ? 'bg-primary-500/30 border border-primary-500'
-                          : 'bg-dark-700 border border-dark-600 hover:border-dark-500'
-                      }`}
-                      title="Bed Icon"
-                    >
-                      <Bed size={24} color="white" />
-                    </button>
-                    <button
-                      onClick={() => {
-                        setHotspotForm({ ...hotspotForm, iconName: 'card' });
-                        if (newHotspotCoords) {
-                          setNewHotspotCoords({ ...newHotspotCoords, iconName: 'card' });
-                        }
-                      }}
-                      className={`flex items-center justify-center p-3 rounded-lg transition-all ${
-                        hotspotForm.iconName === 'card'
-                          ? 'bg-primary-500/30 border border-primary-500'
-                          : 'bg-dark-700 border border-dark-600 hover:border-dark-500'
-                      }`}
-                      title="Card Icon"
-                    >
-                      <CardIcon size={24} color="white" />
-                    </button>
-                    <button
-                      onClick={() => {
-                        setHotspotForm({ ...hotspotForm, iconName: 'doublearrow' });
-                        if (newHotspotCoords) {
-                          setNewHotspotCoords({ ...newHotspotCoords, iconName: 'doublearrow' });
-                        }
-                      }}
-                      className={`flex items-center justify-center p-3 rounded-lg transition-all ${
-                        hotspotForm.iconName === 'doublearrow'
-                          ? 'bg-primary-500/30 border border-primary-500'
-                          : 'bg-dark-700 border border-dark-600 hover:border-dark-500'
-                      }`}
-                      title="Double Arrow Icon"
-                    >
-                      <DoubleArrow size={24} color="white" />
-                    </button>
+                  
+                  {/* Primary Icons Group */}
+                  <div className="mb-4">
+                    <p className="mb-2 text-[10px] font-bold text-dark-500 uppercase tracking-wider">Main Actions</p>
+                    <div className="grid grid-cols-4 gap-2">
+                      {['info', 'MapPin'].map((iconName) => (
+                        <button
+                          key={iconName}
+                          onClick={() => {
+                            setHotspotForm({ ...hotspotForm, iconName });
+                            if (newHotspotCoords) {
+                              setNewHotspotCoords({ ...newHotspotCoords, iconName });
+                            }
+                          }}
+                          className={`flex items-center justify-center p-2 rounded-lg transition-all ${
+                            hotspotForm.iconName === iconName
+                              ? 'bg-primary-500/30 border border-primary-500'
+                              : 'bg-dark-700 border border-dark-600 hover:border-dark-500'
+                          }`}
+                          title={`${iconName} Icon`}
+                        >
+                          {renderIconBoxer(20, iconName)}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Other Icons Group */}
+                  <div>
+                    <p className="mb-2 text-[10px] font-bold text-dark-500 uppercase tracking-wider">Other Icons</p>
+                    <div className="grid grid-cols-4 gap-2">
+                      {Object.keys(HOTSPOT_ICONS_SVG)
+                        .filter(name => !['info', 'MapPin'].includes(name))
+                        .map((iconName) => (
+                          <button
+                            key={iconName}
+                            onClick={() => {
+                              setHotspotForm({ ...hotspotForm, iconName });
+                              if (newHotspotCoords) {
+                                setNewHotspotCoords({ ...newHotspotCoords, iconName });
+                              }
+                            }}
+                            className={`flex items-center justify-center p-2 rounded-lg transition-all ${
+                              hotspotForm.iconName === iconName
+                                ? 'bg-primary-500/30 border border-primary-500'
+                                : 'bg-dark-700 border border-dark-600 hover:border-dark-500'
+                            }`}
+                            title={`${iconName} Icon`}
+                          >
+                            {renderIconBoxer(20, iconName)}
+                          </button>
+                        ))}
+                    </div>
                   </div>
                 </div>
 
@@ -708,7 +706,7 @@ export default function TourEditorPage({
               </div>
 
               {/* Link to Scene */}
-              {hotspotForm.iconName === 'doublearrow' && (
+              {hotspotForm.iconName === 'MapPin' && (
                 <div className="pt-4 space-y-4 border-t border-dark-700">
                   <div className="flex flex-col gap-3">
                     <label className="flex items-center gap-2 text-sm font-semibold text-white">
@@ -958,7 +956,7 @@ export default function TourEditorPage({
                 : 'text-dark-400 hover:text-white hover:bg-dark-700'
             }`}
           >
-            <MapPin size={22} />
+            <MapPinIcon size={22} />
             <span className="text-[10px] font-medium">Hotspot</span>
           </button>
           

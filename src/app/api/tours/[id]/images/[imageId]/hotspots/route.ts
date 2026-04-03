@@ -55,7 +55,7 @@ export async function POST(
     }
 
     const body = await request.json();
-    const { type, yaw, pitch, rotation, targetImageId, title, content, url, videoUrl, imageUrl, animationType, iconUrl, color, scale } = body;
+    const { type, yaw, pitch, rotation, targetImageId, title, content, url, videoUrl, imageUrl, animationType, iconUrl, iconName, color, scale } = body;
 
     if (!type || yaw === undefined || pitch === undefined) {
       return NextResponse.json(
@@ -92,6 +92,7 @@ export async function POST(
         imageUrl: imageUrl || null,
         animationType: animationType || 'NONE',
         iconUrl: iconUrl || null,
+        iconName: iconName || 'info',
         color: color || null,
         scale: scale || 1.0,
       },
@@ -105,6 +106,7 @@ export async function POST(
     );
   } catch (error) {
     logger.error({ error, tourId: params.id, imageId: params.imageId }, 'Create hotspot error');
+    console.error('Create hotspot error:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -123,7 +125,7 @@ export async function PATCH(
     }
 
     const body = await request.json();
-    const { hotspotId, type, yaw, pitch, rotation, targetImageId, title, content, url, videoUrl, imageUrl, animationType, iconUrl, color, scale } = body;
+    const { hotspotId, type, yaw, pitch, rotation, targetImageId, title, content, url, videoUrl, imageUrl, animationType, iconUrl, iconName, color, scale } = body;
 
     if (!hotspotId) {
       return NextResponse.json(
@@ -164,6 +166,7 @@ export async function PATCH(
         ...(imageUrl !== undefined && { imageUrl }),
         ...(animationType && { animationType }),
         ...(iconUrl !== undefined && { iconUrl }),
+        ...(iconName !== undefined && { iconName }),
         ...(color !== undefined && { color }),
         ...(scale !== undefined && { scale }),
       },

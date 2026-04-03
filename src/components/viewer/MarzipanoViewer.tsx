@@ -260,39 +260,29 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
     iconContainer.style.width = '100%';
     iconContainer.style.height = '100%';
 
-    if (type === 'TEMP') {
-      // Use selected icon or default to info
-      const iconName = options?.iconName || 'Info';
-      const iconSvg = getHotspotIconSvg(iconName);
-      // Fixed styling: dark gray background with white icon
-      const bgColor = '#3b3b3b';
-      const iconColor = '#ffffff';
+    const iconName = options?.iconName || (type === 'LINK' ? 'MapPin' : 'info');
+    const iconSvg = getHotspotIconSvg(iconName);
+    
+    // Default styling for all hotspots
+    visual.style.borderRadius = '50%';
+    visual.style.backgroundColor = options?.color || '#3b3b3b';
+    visual.style.border = '2px solid rgba(255, 255, 255, 0.3)';
+    visual.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.3)';
 
-      visual.style.borderRadius = '50%';
-      visual.style.backgroundColor = bgColor;
-      visual.style.border = 'none';
-      visual.style.boxShadow = 'none';
+    // Hot spot general stylings 
+   
+      visual.style.backgroundColor = '#3b3b3b';
       visual.className += ' link-hotspot__inner__icon__rotate';
+   
 
-      iconContainer.style.color = iconColor;
-      iconContainer.innerHTML = iconSvg;
-    } else if (type === 'LINK') {
-      // Use custom icon URL if provided, otherwise use default
-      const iconUrl = options?.iconUrl ? `/api/uploads/${options.iconUrl}` : '/icons/link.png';
-      iconContainer.innerHTML = `<img src="${iconUrl}" style="width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));" alt="Link" />`;
-    } else {
-      visual.style.borderRadius = '50%';
-      const bgColor = options?.color || 'rgba(255, 255, 255, 0.9)';
-      const borderColor = options?.color || '#6366f1';
-      visual.style.backgroundColor = bgColor;
-      visual.style.border = `2px solid ${borderColor}`;
-      visual.style.opacity = '0.9';
-      iconContainer.innerHTML = '<span style="color: inherit; font-weight: bold; font-size: 18px;">i</span>';
-      if (options?.color) {
-        iconContainer.style.color = options.color;
-      } else {
-        iconContainer.style.color = '#6366f1';
-      }
+    iconContainer.style.color = '#ffffff';
+    iconContainer.innerHTML = iconSvg;
+    
+    // Ensure the SVG inside the container is properly sized
+    const svgElement = iconContainer.querySelector('svg');
+    if (svgElement) {
+      svgElement.style.width = '60%';
+      svgElement.style.height = '60%';
     }
 
     visual.appendChild(iconContainer);
@@ -348,6 +338,15 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
   useEffect(() => {
     if (!viewerRef.current) return;
 
+    // Clear hoveredHotspot if it's no longer in the current hotspots list
+    if (hoveredHotspot) {
+      const isStillExists = hotspots.some(h => h.id === hoveredHotspot.id);
+      if (!isStillExists) {
+        setHoveredHotspot(null);
+        setPopoverPosition(null);
+      }
+    }
+
     // Clear all hotspots first (Marzipano keeps them per scene)
     Object.values(scenesRef.current).forEach(scene => {
       const container = scene.hotspotContainer();
@@ -375,6 +374,7 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
           scale: hotspot.scale || 1.0,
           animationType: hotspot.animationType || undefined,
           iconUrl: hotspot.iconUrl || undefined,
+          iconName: hotspot.iconName || undefined,
         },
         (h, pos) => {
           setHoveredHotspot(h);
@@ -397,7 +397,7 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
       if (scene) {
         const element = createHotspotElement('TEMP', undefined, undefined, undefined, {
           iconName: tempHotspot.iconName,
-          color: '#6366f1',
+          color: '#3b3b3b',
         });
         scene.hotspotContainer().createHotspot(element, {
           yaw: tempHotspot.yaw,
