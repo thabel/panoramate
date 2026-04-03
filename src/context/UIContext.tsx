@@ -9,6 +9,8 @@ interface UIContextType {
   setIsHotspotPanelOpen: (open: boolean | ((prev: boolean) => boolean)) => void;
   isHotspotPanelCollapsed: boolean;
   setIsHotspotPanelCollapsed: (collapsed: boolean | ((prev: boolean) => boolean)) => void;
+  activeHotspotId: string | null;
+  setActiveHotspotId: (id: string | null) => void;
   toggleSidebar: () => void;
   toggleHotspotPanel: () => void;
 }
@@ -19,6 +21,7 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
   const [isSidebarCollapsed, setIsSidebarCollapsedState] = useState(false);
   const [isHotspotPanelOpen, setIsHotspotPanelOpenState] = useState(false);
   const [isHotspotPanelCollapsed, setIsHotspotPanelCollapsed] = useState(false);
+  const [activeHotspotId, setActiveHotspotId] = useState<string | null>(null);
 
   const setIsSidebarCollapsed = useCallback((collapsed: boolean | ((prev: boolean) => boolean)) => {
     setIsSidebarCollapsedState((prev) => {
@@ -59,6 +62,8 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
         setIsHotspotPanelOpen,
         isHotspotPanelCollapsed,
         setIsHotspotPanelCollapsed,
+        activeHotspotId,
+        setActiveHotspotId,
         toggleSidebar,
         toggleHotspotPanel,
       }}

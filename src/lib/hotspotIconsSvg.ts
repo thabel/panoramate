@@ -50,6 +50,25 @@ export const HOTSPOT_ICONS_SVG: Record<string, string> = {
   </svg>`,
 };
 
+export const HOTSPOT_ICON_TYPE: Record<string, string> = {
+  // Built-in icons
+  'info': 'INFO',
+  'arrow-right': 'LINK',
+  'external-link': 'URL',
+  'play': 'VIDEO',
+  'video': 'VIDEO',
+  'message-circle': 'TEXT',
+  'camera': 'IMAGE',
+  'ExternalLink': 'LINK',
+  'MapPin': 'LINK'
+};
+
+
+
 export const getHotspotIconSvg = (iconName: string): string => {
   return HOTSPOT_ICONS_SVG[iconName] || HOTSPOT_ICONS_SVG['info'];
 };
+
+export const getHostpotIconType = (iconName: string): string => {
+  return HOTSPOT_ICON_TYPE[iconName] || HOTSPOT_ICON_TYPE['info'];
+}

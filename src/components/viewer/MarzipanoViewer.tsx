@@ -178,6 +178,11 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
   useEffect(() => {
     if (viewerRef.current && initialSceneId && initialSceneId !== currentSceneId) {
       console.log('Detected scene change request to:', initialSceneId);
+      
+      // Clear hover states immediately on scene change to prevent stuck popovers
+      setHoveredHotspot(null);
+      setPopoverPosition(null);
+
       const scene = scenesRef.current[initialSceneId];
       if (scene) {
         console.log('Switching to scene:', initialSceneId);
@@ -366,6 +371,9 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
         hotspot.type as any,
         hotspot.id,
         () => {
+          // Clear hover state on click to avoid stuck popovers
+          setHoveredHotspot(null);
+          setPopoverPosition(null);
           if (onHotspotClick) onHotspotClick(hotspot);
         },
         hotspot.title,

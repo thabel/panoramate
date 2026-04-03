@@ -16,7 +16,7 @@ import * as LucideIcons from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import { ShareModal } from '@/components/dashboard/ShareModal';
 import { HOTSPOT_ICONS, getHotspotIconConfig, iconIdToType } from '@/lib/hotspotIcons';
-import { HOTSPOT_ICONS_SVG } from '@/lib/hotspotIconsSvg';
+import { getHostpotIconType, HOTSPOT_ICONS_SVG } from '@/lib/hotspotIconsSvg';
 import { logger } from '@/lib/logger';
 import toast from 'react-hot-toast';
 import { MapPin as MapPinIcon } from 'lucide-react';
@@ -244,6 +244,7 @@ export default function TourEditorPage({
       setNewHotspotCoords({ yaw, pitch, iconName: hotspotForm.iconName });
       setHotspotForm({
         ...hotspotForm,
+        type: getHostpotIconType(hotspotForm.iconName),
         targetImageId: tour?.images.find((img: TourImage) => img.id !== tour.images[currentSceneIndex].id)?.id || '',
       });
       // Open config panel directly
@@ -312,13 +313,14 @@ export default function TourEditorPage({
               : img
           )
         });
+        const hotspotType = getHostpotIconType(hotspotForm.iconName);
         
         setIsHotspotPanelOpen(false);
         setAddHotspotMode(false);
         setNewHotspotCoords(null);
         setSceneSearchQuery('');
         setHotspotForm({
-          type: 'LINK', // TODO: the type of hostpot depend on the icon being selected it's not always a link one .
+          type: hotspotType,
           title: '',
           targetImageId: '',
           content: '',
