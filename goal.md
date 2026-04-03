@@ -23,6 +23,9 @@ Sur le hoststop info on peut mettre
     * Rajouter une possibilité de recherche sur les titres 
     des images 360.
 
+* Objectif: Rendre le hoover to 
+hotspot disponible.
+
 ## Fonctionalités
     * Rajouter une option afficher ou pas le title sur le hoststpot
     Quand on hover le hoststop , il faut montrer le titre 
