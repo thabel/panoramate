@@ -42,6 +42,7 @@ export interface Hotspot {
   imageUrl?: string;
   animationType: AnimationType;
   iconUrl?: string;
+  iconName?: string;
   color?: string;
   scale: number;
   createdAt: Date;

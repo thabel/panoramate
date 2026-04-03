@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { TourImage, Hotspot as HotspotType } from '@/types';
 import { logger } from '@/lib/logger';
 import { HotspotPopover } from './HotspotPopover';
+import { InfoHotspot } from './InfoHotspot';
 import { getHotspotIconSvg } from '@/lib/hotspotIconsSvg';
 
 declare global {
@@ -43,6 +44,7 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
   const hotspotElementsRef = useRef<{ [key: string]: any }>({});
   const [hoveredHotspot, setHoveredHotspot] = useState<HotspotType | null>(null);
   const [popoverPosition, setPopoverPosition] = useState<{ x: number; y: number } | null>(null);
+  const [openedInfoHotspot, setOpenedInfoHotspot] = useState<{ hotspot: HotspotType; position: { x: number; y: number } } | null>(null);
 
   // Store hotspots in a ref to access latest values in handlers without re-binding
   const hotspotsRef = useRef(hotspots);
@@ -193,7 +195,7 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
   const createHotspotElement = (
     type: 'LINK' | 'INFO' | 'TEMP',
     hotspotId?: string,
-    onClick?: () => void,
+    onClick?: (element: HTMLElement) => void,
     title?: string,
     options?: {
       color?: string;
@@ -312,7 +314,7 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
     if (onClick) {
       visual.onmousedown = (e: MouseEvent) => {
         e.stopPropagation();
-        onClick();
+        onClick(visual);
       };
 
       visual.onmouseover = (e: MouseEvent) => {
@@ -365,8 +367,20 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
       const element = createHotspotElement(
         hotspot.type as any,
         hotspot.id,
-        () => {
-          if (onHotspotClick) onHotspotClick(hotspot);
+        (clickElement) => {
+          // For INFO hotspots, show the expandable component instead of calling onHotspotClick
+          if (hotspot.type === 'INFO') {
+            const rect = clickElement.getBoundingClientRect();
+            setOpenedInfoHotspot({
+              hotspot,
+              position: {
+                x: rect.left + rect.width / 2,
+                y: rect.top + rect.height / 2,
+              },
+            });
+          } else {
+            if (onHotspotClick) onHotspotClick(hotspot);
+          }
         },
         hotspot.title,
         {
@@ -428,6 +442,13 @@ useEffect(() => {
           visible={true}
           position={popoverPosition}
           scenes={scenes.map(s => ({ id: s.id, title: s.title }))}
+        />
+      )}
+      {openedInfoHotspot && (
+        <InfoHotspot
+          hotspot={openedInfoHotspot.hotspot}
+          position={openedInfoHotspot.position}
+          onClose={() => setOpenedInfoHotspot(null)}
         />
       )}
       <style jsx global>{`
