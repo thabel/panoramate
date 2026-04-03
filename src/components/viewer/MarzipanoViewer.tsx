@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from 'react';
 import { TourImage, Hotspot as HotspotType } from '@/types';
 import { logger } from '@/lib/logger';
 import { HotspotPopover } from './HotspotPopover';
-import { InfoHotspot } from './InfoHotspot';
 import { getHotspotIconSvg } from '@/lib/hotspotIconsSvg';
 
 declare global {
@@ -44,7 +43,6 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
   const hotspotElementsRef = useRef<{ [key: string]: any }>({});
   const [hoveredHotspot, setHoveredHotspot] = useState<HotspotType | null>(null);
   const [popoverPosition, setPopoverPosition] = useState<{ x: number; y: number } | null>(null);
-  const [openedInfoHotspot, setOpenedInfoHotspot] = useState<{ hotspot: HotspotType; position: { x: number; y: number } } | null>(null);
 
   // Store hotspots in a ref to access latest values in handlers without re-binding
   const hotspotsRef = useRef(hotspots);
@@ -254,83 +252,227 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
     visual.style.willChange = 'transform';
     visual.style.flexDirection = 'column';
 
-    // Icon container
-    const iconContainer = document.createElement('div');
-    iconContainer.style.display = 'flex';
-    iconContainer.style.alignItems = 'center';
-    iconContainer.style.justifyContent = 'center';
-    iconContainer.style.width = '100%';
-    iconContainer.style.height = '100%';
-
     const iconName = options?.iconName || (type === 'LINK' ? 'MapPin' : 'info');
     const iconSvg = getHotspotIconSvg(iconName);
-    
-    // Default styling for all hotspots
-    visual.style.borderRadius = '50%';
-    visual.style.backgroundColor = options?.color || '#3b3b3b';
-    visual.style.border = '2px solid rgba(255, 255, 255, 0.3)';
-    visual.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.3)';
 
-    // Hot spot general stylings 
-   
+    // INFO hotspots get special DOM structure for Marzipano-style animations
+    if (type === 'INFO') {
+      visual.className = 'info-hotspot no-touch';
+      visual.style.position = 'relative';
+      visual.style.width = '40px';
+      visual.style.height = '40px';
+      visual.style.borderRadius = '50%';
+      visual.style.backgroundColor = '#3b3b3b';
+      visual.style.border = '2px solid rgba(255, 255, 255, 0.3)';
+      visual.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.3)';
+      visual.style.cursor = 'pointer';
+      visual.style.display = 'flex';
+      visual.style.alignItems = 'center';
+      visual.style.justifyContent = 'center';
+
+      // Header (small circle by default, expands on hover)
+      const header = document.createElement('div');
+      header.className = 'info-hotspot-header';
+      header.style.position = 'absolute';
+      header.style.width = '40px';
+      header.style.height = '40px';
+      header.style.borderRadius = '50%';
+      header.style.backgroundColor = '#3b3b3b';
+      header.style.border = '2px solid rgba(255, 255, 255, 0.3)';
+      header.style.display = 'flex';
+      header.style.alignItems = 'center';
+      header.style.justifyContent = 'center';
+      header.style.gap = '8px';
+      header.style.padding = '0 12px';
+      header.style.transition = 'width 0.3s ease-in-out, border-radius 0.3s ease-in-out';
+      header.style.zIndex = '10';
+      header.style.cursor = 'pointer';
+
+      // Icon inside header
+      const iconContainer = document.createElement('div');
+      iconContainer.style.display = 'flex';
+      iconContainer.style.alignItems = 'center';
+      iconContainer.style.justifyContent = 'center';
+      iconContainer.style.width = '24px';
+      iconContainer.style.height = '24px';
+      iconContainer.style.flexShrink = '0';
+      iconContainer.style.color = '#ffffff';
+      iconContainer.innerHTML = iconSvg;
+      const svgElement = iconContainer.querySelector('svg');
+      if (svgElement) {
+        svgElement.style.width = '20px';
+        svgElement.style.height = '20px';
+      }
+      header.appendChild(iconContainer);
+
+      // Title wrapper (hidden by default, reveals on hover)
+      const titleWrapper = document.createElement('div');
+      titleWrapper.className = 'info-hotspot-title-wrapper';
+      titleWrapper.style.width = '0px';
+      titleWrapper.style.overflow = 'hidden';
+      titleWrapper.style.transition = 'width 0s 0.4s';
+      titleWrapper.style.whiteSpace = 'nowrap';
+      const titleSpan = document.createElement('span');
+      titleSpan.style.color = 'white';
+      titleSpan.style.fontSize = '13px';
+      titleSpan.style.fontWeight = '500';
+      titleSpan.textContent = title || 'Info';
+      titleWrapper.appendChild(titleSpan);
+      header.appendChild(titleWrapper);
+
+      // Close button (hidden by default, rotates on hover)
+      const closeBtn = document.createElement('button');
+      closeBtn.className = 'info-hotspot-close';
+      closeBtn.innerHTML = '×';
+      closeBtn.style.position = 'absolute';
+      closeBtn.style.right = '4px';
+      closeBtn.style.top = '50%';
+      closeBtn.style.transform = 'translateY(-50%) perspective(200px) rotateY(90deg)';
+      closeBtn.style.transition = 'transform 0.4s ease-in-out 0.2s';
+      closeBtn.style.width = '28px';
+      closeBtn.style.height = '28px';
+      closeBtn.style.border = 'none';
+      closeBtn.style.backgroundColor = 'transparent';
+      closeBtn.style.color = 'white';
+      closeBtn.style.fontSize = '20px';
+      closeBtn.style.cursor = 'pointer';
+      closeBtn.style.padding = '0';
+      closeBtn.style.zIndex = '11';
+      closeBtn.style.opacity = '0';
+      closeBtn.style.transition = 'opacity 0.3s, transform 0.4s ease-in-out 0.2s';
+      header.appendChild(closeBtn);
+
+      // Content panel (hidden by default, appears on click)
+      const contentPanel = document.createElement('div');
+      contentPanel.className = 'info-hotspot-content';
+      contentPanel.style.position = 'absolute';
+      contentPanel.style.top = '48px';
+      contentPanel.style.left = '0';
+      contentPanel.style.width = '260px';
+      contentPanel.style.maxHeight = '200px';
+      contentPanel.style.backgroundColor = '#1f2937';
+      contentPanel.style.border = '1px solid rgba(255, 255, 255, 0.1)';
+      contentPanel.style.borderRadius = '0 0 5px 5px';
+      contentPanel.style.padding = '12px';
+      contentPanel.style.color = 'white';
+      contentPanel.style.fontSize = '12px';
+      contentPanel.style.overflowY = 'auto';
+      contentPanel.style.transformOrigin = 'top';
+      contentPanel.style.transform = 'rotateX(-89.999deg)';
+      contentPanel.style.transition = 'transform 0.5s ease-in-out 0.3s';
+      contentPanel.style.opacity = '0';
+      contentPanel.style.pointerEvents = 'none';
+      contentPanel.textContent = hotspotData?.content || 'No content';
+      visual.appendChild(contentPanel);
+
+      visual.appendChild(header);
+
+      // Event listeners
+      let isOpen = false;
+
+      header.addEventListener('mouseenter', () => {
+        // Expand header
+        header.style.width = '260px';
+        header.style.borderRadius = '5px';
+        // Show title
+        titleWrapper.style.width = '180px';
+        // Show close button
+        closeBtn.style.opacity = '1';
+        closeBtn.style.transform = 'translateY(-50%) perspective(200px) rotateY(0deg)';
+      });
+
+      header.addEventListener('mouseleave', () => {
+        if (!isOpen) {
+          // Collapse header
+          header.style.width = '40px';
+          header.style.borderRadius = '50%';
+          // Hide title
+          titleWrapper.style.width = '0px';
+          // Hide close button
+          closeBtn.style.opacity = '0';
+          closeBtn.style.transform = 'translateY(-50%) perspective(200px) rotateY(90deg)';
+          // Hide content
+          contentPanel.style.transform = 'rotateX(-89.999deg)';
+          contentPanel.style.opacity = '0';
+          contentPanel.style.pointerEvents = 'none';
+        }
+      });
+
+      header.addEventListener('click', (e) => {
+        e.stopPropagation();
+        isOpen = !isOpen;
+        if (isOpen) {
+          contentPanel.style.transform = 'rotateX(0deg)';
+          contentPanel.style.opacity = '1';
+          contentPanel.style.pointerEvents = 'auto';
+        } else {
+          contentPanel.style.transform = 'rotateX(-89.999deg)';
+          contentPanel.style.opacity = '0';
+          contentPanel.style.pointerEvents = 'none';
+        }
+      });
+
+      closeBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        isOpen = false;
+        header.style.width = '40px';
+        header.style.borderRadius = '50%';
+        titleWrapper.style.width = '0px';
+        closeBtn.style.opacity = '0';
+        closeBtn.style.transform = 'translateY(-50%) perspective(200px) rotateY(90deg)';
+        contentPanel.style.transform = 'rotateX(-89.999deg)';
+        contentPanel.style.opacity = '0';
+        contentPanel.style.pointerEvents = 'none';
+      });
+
+      host.appendChild(visual);
+    } else {
+      // LINK and TEMP hotspots - keep original implementation
+      // Icon container
+      const iconContainer = document.createElement('div');
+      iconContainer.style.display = 'flex';
+      iconContainer.style.alignItems = 'center';
+      iconContainer.style.justifyContent = 'center';
+      iconContainer.style.width = '100%';
+      iconContainer.style.height = '100%';
+
+      iconContainer.style.color = '#ffffff';
+      iconContainer.innerHTML = iconSvg;
+
+      const svgElement = iconContainer.querySelector('svg');
+      if (svgElement) {
+        svgElement.style.width = '60%';
+        svgElement.style.height = '60%';
+      }
+
+      visual.appendChild(iconContainer);
+
+      visual.style.borderRadius = '50%';
       visual.style.backgroundColor = '#3b3b3b';
       visual.className += ' link-hotspot__inner__icon__rotate';
-   
 
-    iconContainer.style.color = '#ffffff';
-    iconContainer.innerHTML = iconSvg;
-    
-    // Ensure the SVG inside the container is properly sized
-    const svgElement = iconContainer.querySelector('svg');
-    if (svgElement) {
-      svgElement.style.width = '60%';
-      svgElement.style.height = '60%';
-    }
+      host.appendChild(visual);
 
-    visual.appendChild(iconContainer);
+      if (onClick) {
+        visual.onmousedown = (e: MouseEvent) => {
+          e.stopPropagation();
+          onClick(visual);
+        };
 
-    // Title label (only if showHotspotTitles and title exists)
-    if (showHotspotTitles && title && type !== 'TEMP') {
-      const titleLabel = document.createElement('div');
-      const size = 42;
-      titleLabel.style.position = 'absolute';
-      titleLabel.style.top = `${size + 4}px`;
-      titleLabel.style.whiteSpace = 'nowrap';
-      titleLabel.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
-      titleLabel.style.color = 'white';
-      titleLabel.style.padding = '2px 8px';
-      titleLabel.style.borderRadius = '4px';
-      titleLabel.style.fontSize = '12px';
-      titleLabel.style.fontWeight = '500';
-      titleLabel.style.zIndex = '10';
-      titleLabel.style.pointerEvents = 'none';
-      titleLabel.style.border = '1px solid rgba(255, 255, 255, 0.2)';
-      titleLabel.textContent = title;
-      visual.appendChild(titleLabel);
-    }
-
-    host.appendChild(visual);
-
-    if (onClick) {
-      visual.onmousedown = (e: MouseEvent) => {
-        e.stopPropagation();
-        onClick(visual);
-      };
-
-      visual.onmouseover = (e: MouseEvent) => {
-        visual.style.transform = 'translate(-50%, -50%) scale(1.15)';
-        // Show popover on hover
-        if (onHover && hotspotData) {
-          const rect = visual.getBoundingClientRect();
-          onHover(hotspotData, { x: rect.left, y: rect.top });
-        }
-      };
-      visual.onmouseout = () => {
-        visual.style.transform = 'translate(-50%, -50%)';
-        if (onHover) {
-          onHover(null, null);
-        }
-      };
+        visual.onmouseover = (e: MouseEvent) => {
+          visual.style.transform = 'translate(-50%, -50%) scale(1.15)';
+          if (onHover && hotspotData) {
+            const rect = visual.getBoundingClientRect();
+            onHover(hotspotData, { x: rect.left, y: rect.top });
+          }
+        };
+        visual.onmouseout = () => {
+          visual.style.transform = 'translate(-50%, -50%)';
+          if (onHover) {
+            onHover(null, null);
+          }
+        };
+      }
     }
 
     return host;
@@ -367,21 +509,9 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
       const element = createHotspotElement(
         hotspot.type as any,
         hotspot.id,
-        (clickElement) => {
-          // For INFO hotspots, show the expandable component instead of calling onHotspotClick
-          if (hotspot.type === 'INFO') {
-            const rect = clickElement.getBoundingClientRect();
-            setOpenedInfoHotspot({
-              hotspot,
-              position: {
-                x: rect.left + rect.width / 2,
-                y: rect.top + rect.height / 2,
-              },
-            });
-          } else {
-            if (onHotspotClick) onHotspotClick(hotspot);
-          }
-        },
+        hotspot.type === 'INFO' ? undefined : ((clickElement) => {
+          if (onHotspotClick) onHotspotClick(hotspot);
+        }),
         hotspot.title,
         {
           color: hotspot.color || undefined,
@@ -442,13 +572,6 @@ useEffect(() => {
           visible={true}
           position={popoverPosition}
           scenes={scenes.map(s => ({ id: s.id, title: s.title }))}
-        />
-      )}
-      {openedInfoHotspot && (
-        <InfoHotspot
-          hotspot={openedInfoHotspot.hotspot}
-          position={openedInfoHotspot.position}
-          onClose={() => setOpenedInfoHotspot(null)}
         />
       )}
       <style jsx global>{`
