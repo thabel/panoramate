@@ -297,9 +297,11 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
       closeIcon.src = '/icons/close.png';
       closeIcon.classList.add('info-hotspot-close-icon');
       closeWrapper.appendChild(closeIcon);
-      closeWrapper.addEventListener("click",  () => {
-        TextAndIcon.classList.toggle("visible");
-        console.log("visible")
+      closeWrapper.addEventListener("click",  (e) => {
+        e.stopPropagation();
+        TextAndIcon.classList.remove("visible");
+        visual.classList.add("hotspot-closed");
+        console.log("Hotspot closed")
       }
       )
       // TextAndIcon adding 2 childrens

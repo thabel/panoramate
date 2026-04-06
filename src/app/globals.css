@@ -221,7 +221,20 @@ select:focus {
   transition: width 0s 0.4s,
               padding 0s 0.4s;
   animation: none !important;
-              
+
+}
+
+/* Override hover when hotspot is closed */
+.marzipano-hotspot-visual.hotspot-closed:hover .hotspot-title-icon {
+  opacity: 0;
+  width: 0;
+  padding: 0;
+}
+
+.marzipano-hotspot-visual.hotspot-closed .hotspot-title-icon {
+  opacity: 0 !important;
+  width: 0 !important;
+  padding: 0 !important;
 }
 
 img.info-hotspot-close-icon{
