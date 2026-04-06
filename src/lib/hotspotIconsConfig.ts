@@ -11,7 +11,8 @@ export type HotspotIconType =
   | 'Camera'
   | 'Link'
   | 'MapPin'
-  | 'Video';
+  | 'Video'
+  | 'info';
 
 export type HotspotFieldType = 'title' | 'targetImageId' | 'url' | 'content' | 'videoUrl' | 'imageUrls';
 
@@ -208,6 +209,29 @@ export const HOTSPOT_ICON_CONFIG: Record<HotspotIconType, IconConfig> = {
         type: 'file-upload',
         required: true,
         description: 'Upload a video file or provide a video URL'
+      }
+    ]
+  },
+
+  'info': {
+    label: 'Information Box',
+    description: 'Display information text',
+    fields: [
+      {
+        name: 'title',
+        label: 'Hotspot Title',
+        type: 'text',
+        required: true,
+        placeholder: 'e.g., Info',
+        description: 'The label shown when hovering over this hotspot'
+      },
+      {
+        name: 'content',
+        label: 'Information Text',
+        type: 'textarea',
+        required: true,
+        placeholder: 'Enter your information here...',
+        description: 'The text content shown in the information box'
       }
     ]
   }
