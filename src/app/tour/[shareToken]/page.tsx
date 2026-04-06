@@ -7,7 +7,7 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { SceneNavigation } from '@/components/viewer/SceneNavigation';
 import { TopSceneMenu } from '@/components/viewer/TopSceneMenu';
 import { HotspotContentPanel } from '@/components/viewer/HotspotContentPanel';
-import { Maximize, Minimize, ChevronLeft, ChevronRight, Volume2, VolumeX, Play, Pause, Settings } from 'lucide-react';
+import { Maximize, Minimize, ChevronLeft, ChevronRight, Volume2, VolumeX, Play, Pause, Settings , ChevronDown  } from 'lucide-react';
 
 export default function PublicTourPage({
   params,
@@ -26,6 +26,7 @@ export default function PublicTourPage({
   const [volume, setVolume] = useState(0.5);
   const [showHotspotTitles, setShowHotspotTitles] = useState(true);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isCarouselVisible, setIsCarouselVisible] = useState(true);
   const [activeHotspot, setActiveHotspot] = useState<any | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -158,19 +159,8 @@ export default function PublicTourPage({
   }
 
   return (
-    <div ref={containerRef} className="flex flex-col h-screen overflow-hidden bg-black">
-      {/* Header - Hidden in embed mode */}
-      {!isEmbed && !isFullScreen && (
-        <div className="z-20 px-4 py-4 border-b bg-dark-900 border-dark-700">
-          <h1 className="text-xl font-bold text-white">{tour.title}</h1>
-          <p className="text-sm text-dark-400">
-            {tour.viewCount} views
-            {tour.organization && ` • ${tour.organization.name}`}
-          </p>
-        </div>
-      )}
-
-      {/* Viewer */}
+    <div ref={containerRef} className="relative flex flex-col h-screen overflow-hidden font-sans bg-black">
+      {/* Viewer Container */}
       <div className="relative flex-1 group/viewer">
         {tour.images.length > 0 ? (
           <>
@@ -183,18 +173,32 @@ export default function PublicTourPage({
               showHotspotTitles={showHotspotTitles}
             />
 
+            {/* Floating Minimal Header */}
+            {!isEmbed && !isFullScreen && (
+              <div className="absolute z-40 max-w-xs pointer-events-none top-6 left-6 animate-fade-in">
+                <div className="p-4 border shadow-2xl pointer-events-auto rounded-2xl bg-dark-900/40 backdrop-blur-md border-white/10">
+                  <h1 className="text-lg font-bold leading-tight text-white truncate">{tour.title}</h1>
+                  {tour.organization && (
+                    <p className="text-[10px] font-medium text-dark-400 uppercase tracking-widest mt-1">
+                      {tour.organization.name}
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Custom Logo overlay */}
             {tour.customLogoUrl && (
-              <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 max-w-[120px] max-h-[120px] pointer-events-none drop-shadow-2xl opacity-80">
+              <div className="absolute top-6 left-1/2 -translate-x-1/2 z-30 max-w-[100px] max-h-[100px] pointer-events-none drop-shadow-2xl opacity-90 transition-opacity hover:opacity-100">
                 <img
                   src={`/api/uploads/${tour.customLogoUrl}`}
                   alt="Logo"
-                  className="object-contain w-full h-full filter drop-shadow-[0_4px_8px_rgba(0,0,0,0.6)]"
+                  className="object-contain w-full h-full filter drop-shadow-[0_4px_12px_rgba(0,0,0,0.5)]"
                 />
               </div>
             )}
 
-            {/* Main Carousel Navigation */}
+            {/* Main Navigation Arrows (Side) */}
             {tour.images.length > 1 && (
               <>
                 <button
@@ -202,26 +206,26 @@ export default function PublicTourPage({
                     const id = getPrevSceneId();
                     if (id) setCurrentSceneId(id);
                   }}
-                  className="absolute z-30 p-3 text-white transition-all -translate-y-1/2 border rounded-full opacity-0 left-4 top-1/2 bg-dark-900/40 hover:bg-dark-800 backdrop-blur-md border-dark-700/50 group-hover/viewer:opacity-100 active:scale-90"
+                  className="absolute z-30 p-4 text-white transition-all -translate-y-1/2 border rounded-full shadow-2xl opacity-0 left-6 top-1/2 bg-dark-900/40 hover:bg-primary-600/80 backdrop-blur-md border-white/10 group-hover/viewer:opacity-100 active:scale-90"
                   title="Previous Scene"
                 >
-                  <ChevronLeft size={32} />
+                  <ChevronLeft size={28} />
                 </button>
                 <button
                   onClick={() => {
                     const id = getNextSceneId();
                     if (id) setCurrentSceneId(id);
                   }}
-                  className="absolute z-30 p-3 text-white transition-all -translate-y-1/2 border rounded-full opacity-0 right-4 top-1/2 bg-dark-900/40 hover:bg-dark-800 backdrop-blur-md border-dark-700/50 group-hover/viewer:opacity-100 active:scale-90"
+                  className="absolute z-30 p-4 text-white transition-all -translate-y-1/2 border rounded-full shadow-2xl opacity-0 right-6 top-1/2 bg-dark-900/40 hover:bg-primary-600/80 backdrop-blur-md border-white/10 group-hover/viewer:opacity-100 active:scale-90"
                   title="Next Scene"
                 >
-                  <ChevronRight size={32} />
+                  <ChevronRight size={28} />
                 </button>
               </>
             )}
 
             {/* Top Right Controls Group */}
-            <div className="absolute z-30 flex items-center gap-2 top-4 right-4">
+            <div className="absolute z-30 flex items-center gap-3 top-6 right-6">
               {/* Scene Menu */}
               {tour.showSceneMenu !== false && tour.images.length > 1 && (
                 <TopSceneMenu
@@ -233,23 +237,23 @@ export default function PublicTourPage({
 
               {/* Audio Controls */}
               {tour.backgroundAudioUrl && (
-                <div className="flex items-center gap-2 px-3 py-1.5 bg-dark-900/60 hover:bg-dark-800 backdrop-blur-sm border border-dark-700/50 rounded-lg transition-all group/audio">
+                <div className="flex items-center gap-2 px-3 py-2 transition-all border shadow-xl bg-dark-900/40 hover:bg-dark-900/60 backdrop-blur-md border-white/10 rounded-xl group/audio">
                   <button
                     onClick={togglePlay}
                     className="text-white transition-colors hover:text-primary-400"
                     title={isPlaying ? 'Pause' : 'Play'}
                   >
-                    {isPlaying ? <Pause size={20} /> : <Play size={20} />}
+                    {isPlaying ? <Pause size={18} /> : <Play size={18} />}
                   </button>
                   
-                  <div className="w-px h-4 mx-1 bg-dark-700/50" />
+                  <div className="w-px h-4 mx-1 bg-white/10" />
                   
                   <button
                     onClick={toggleMute}
                     className="text-white transition-colors hover:text-primary-400"
                     title={isMuted ? 'Unmute' : 'Mute'}
                   >
-                    {isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
+                    {isMuted ? <VolumeX size={18} /> : <Volume2 size={18} />}
                   </button>
 
                   <div className="flex items-center w-0 overflow-hidden transition-all duration-300 group-hover/audio:w-20">
@@ -280,45 +284,65 @@ export default function PublicTourPage({
               {/* Full screen button toggle */}
               <button
                 onClick={toggleFullScreen}
-                className="flex items-center justify-center p-2 text-white transition-all border rounded-lg bg-dark-900/60 hover:bg-dark-800 backdrop-blur-sm border-dark-700/50"
+                className="flex items-center justify-center p-2.5 text-white transition-all border rounded-xl bg-dark-900/40 hover:bg-dark-900/60 backdrop-blur-md border-white/10 shadow-xl"
                 title={isFullScreen ? 'Exit Full Screen' : 'Full Screen'}
               >
-                {isFullScreen ? <Minimize size={20} /> : <Maximize size={20} />}
+                {isFullScreen ? <Minimize size={18} /> : <Maximize size={18} />}
               </button>
 
               {/* Settings Panel Button */}
               <button
                 onClick={() => setIsSettingsOpen(!isSettingsOpen)}
-                className="flex items-center justify-center p-2 text-white transition-all border rounded-lg bg-dark-900/60 hover:bg-dark-800 backdrop-blur-sm border-dark-700/50"
+                className="flex items-center justify-center p-2.5 text-white transition-all border rounded-xl bg-dark-900/40 hover:bg-dark-900/60 backdrop-blur-md border-white/10 shadow-xl"
                 title="Viewer Settings"
               >
-                <Settings size={20} />
+                <Settings size={18} />
               </button>
             </div>
 
-            {/* Bottom Scene Navigation Grid */}
+            {/* Bottom Scene Navigation Carousel Toggle Button */}
+            {tour.showSceneMenu !== false && tour.images.length > 1 && (
+              <div className="absolute bottom-0 z-40 pb-6 transition-transform duration-500 ease-in-out -translate-x-1/2 left-1/2" 
+                   style={{ transform: `translateX(-50%) translateY(${isCarouselVisible ? '-110px' : '0'})` }}>
+                <button
+                  onClick={() => setIsCarouselVisible(!isCarouselVisible)}
+                  className={`flex items-center justify-center w-12 h-12 text-white transition-all border rounded-full shadow-2xl backdrop-blur-md ${
+                    isCarouselVisible 
+                      ? 'bg-primary-600 border-primary-500 rotate-180' 
+                      : 'bg-dark-900/60 border-white/10 hover:bg-dark-900/80'
+                  }`}
+                  title={isCarouselVisible ? 'Hide Scenes' : 'Show Scenes'}
+                >
+                  <ChevronDown size={24} />
+                </button>
+              </div>
+            )}
+
+            {/* Bottom Scene Navigation Carousel */}
             {tour.showSceneMenu !== false && (
-              <SceneNavigation
-                scenes={tour.images}
-                currentSceneId={currentSceneId}
-                onSceneSelect={setCurrentSceneId}
-                showMenu={true}
-              />
+              <div className={`transition-all duration-500 ease-in-out ${isCarouselVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-full pointer-events-none'}`}>
+                <SceneNavigation
+                  scenes={tour.images}
+                  currentSceneId={currentSceneId}
+                  onSceneSelect={setCurrentSceneId}
+                  showMenu={true}
+                />
+              </div>
             )}
 
             {isSettingsOpen && (
-              <div className="absolute z-30 w-64 p-4 space-y-4 border shadow-2xl top-20 right-4 rounded-xl bg-dark-900/95 backdrop-blur-md border-dark-700/50 animate-fade-in">
+              <div className="absolute z-30 w-64 p-5 space-y-4 border shadow-2xl top-24 right-6 rounded-2xl bg-dark-900/90 backdrop-blur-xl border-white/10 animate-fade-in">
                 <div>
-                  <h3 className="mb-3 text-sm font-semibold text-white">Display Settings</h3>
+                  <h3 className="mb-4 text-xs font-bold tracking-widest uppercase text-dark-400">Display Settings</h3>
                   <div className="space-y-2">
-                    <label className="flex items-center gap-2 p-2 transition-all rounded cursor-pointer hover:bg-dark-800">
+                    <label className="flex items-center gap-3 p-3 transition-all border border-transparent cursor-pointer rounded-xl bg-white/5 hover:bg-white/10 hover:border-white/10">
                       <input
                         type="checkbox"
                         checked={showHotspotTitles}
                         onChange={(e) => setShowHotspotTitles(e.target.checked)}
                         className="w-4 h-4 rounded accent-primary-500"
                       />
-                      <span className="text-sm text-dark-300">Show hotspot titles</span>
+                      <span className="text-sm font-medium text-white">Show titles</span>
                     </label>
                   </div>
                 </div>
@@ -332,10 +356,10 @@ export default function PublicTourPage({
         )}
       </div>
 
-      {/* Footer - Hidden in embed mode */}
+      {/* Footer Branding - Floating Bottom Right */}
       {!isEmbed && !isFullScreen && (
-        <div className="z-20 px-4 py-3 text-sm text-center border-t bg-dark-900 border-dark-700 text-dark-400">
-          Powered by <span className="font-semibold text-primary-400">Panoramate</span>
+        <div className="absolute bottom-6 right-6 z-20 px-3 py-1.5 rounded-full text-[10px] font-bold text-white uppercase tracking-widest bg-dark-900/40 backdrop-blur-md border border-white/10 shadow-xl opacity-60 hover:opacity-100 transition-opacity">
+          Powered by <span className="text-primary-400">Panoramate</span>
         </div>
       )}
 
