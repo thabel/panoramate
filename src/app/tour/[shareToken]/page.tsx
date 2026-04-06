@@ -209,9 +209,16 @@ export default function PublicTourPage({
                   <ChevronLeft size={24} />
                 </button>
 
-                {/* Scene Counter */}
-                <div className="px-4 py-2 text-sm font-medium text-white bg-dark-900/50 rounded-full backdrop-blur-md border border-dark-700/50">
-                  {tour.images.findIndex((img: any) => img.id === currentSceneId) + 1} / {tour.images.length}
+                {/* Scene Info - Counter & Title */}
+                <div className="px-4 py-2 max-w-xs bg-dark-900/50 rounded-full backdrop-blur-md border border-dark-700/50">
+                  <div className="text-sm font-medium text-white">
+                    {tour.images.find((img: any) => img.id === currentSceneId)?.title ||
+                     tour.images.find((img: any) => img.id === currentSceneId)?.originalName ||
+                     'Untitled Scene'}
+                  </div>
+                  <div className="text-xs text-dark-400">
+                    {tour.images.findIndex((img: any) => img.id === currentSceneId) + 1} / {tour.images.length}
+                  </div>
                 </div>
 
                 {/* Next Scene Button */}
