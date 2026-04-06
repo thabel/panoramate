@@ -28,7 +28,7 @@ export default function PublicTourPage({
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [activeHotspot, setActiveHotspot] = useState<any | null>(null);
   const [showSceneNavigation, setShowSceneNavigation] = useState(true);
-  const [isAutoRotating, setIsAutoRotating] = useState(false);
+  const [isAutoRotating, setIsAutoRotating] = useState(true);
   const containerRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
 
@@ -163,7 +163,7 @@ export default function PublicTourPage({
     <div ref={containerRef} className="flex flex-col h-screen overflow-hidden bg-black">
       {/* Compact Header - Top Left Corner */}
       {!isEmbed && !isFullScreen && (
-        <div className="absolute top-4 left-4 z-30 max-w-xs">
+        <div className="absolute z-30 max-w-xs top-4 left-4">
           <h1 className="text-sm font-semibold text-white truncate">{tour.title}</h1>
           <p className="text-xs text-dark-400">
             {tour.viewCount} views {tour.organization && `• ${tour.organization.name}`}
@@ -198,7 +198,7 @@ export default function PublicTourPage({
 
             {/* Bottom Navigation Controls */}
             {tour.images.length > 1 && (
-              <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 flex items-center gap-3">
+              <div className="absolute z-30 flex items-center gap-3 -translate-x-1/2 bottom-6 left-1/2">
                 {/* Previous Scene Button */}
                 <button
                   onClick={() => {
@@ -212,7 +212,7 @@ export default function PublicTourPage({
                 </button>
 
                 {/* Scene Info - Counter & Title */}
-                <div className="px-4 py-2 max-w-xs bg-dark-900/50 rounded-full backdrop-blur-md border border-dark-700/50">
+                <div className="max-w-xs px-4 py-2 border rounded-full bg-dark-900/50 backdrop-blur-md border-dark-700/50">
                   <div className="text-sm font-medium text-white">
                     {tour.images.find((img: any) => img.id === currentSceneId)?.title ||
                      tour.images.find((img: any) => img.id === currentSceneId)?.originalName ||
@@ -375,7 +375,7 @@ export default function PublicTourPage({
 
       {/* Compact Footer - Bottom Right Corner */}
       {!isEmbed && !isFullScreen && (
-        <div className="absolute bottom-4 right-4 z-20 text-xs text-dark-400">
+        <div className="absolute z-20 text-xs bottom-4 right-4 text-dark-400">
           Powered by <span className="font-semibold text-primary-400">Panoramate</span>
         </div>
       )}
