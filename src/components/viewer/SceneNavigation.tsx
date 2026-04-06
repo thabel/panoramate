@@ -32,29 +32,40 @@ export const SceneNavigation: React.FC<SceneNavigationProps> = ({
   };
 
   return (
-    <div className="absolute bottom-24 left-1/2 -translate-x-1/2 z-30 w-full max-w-4xl px-4 animate-fade-in">
-      <div className="relative group/grid bg-dark-900/50 backdrop-blur-md p-3 rounded-2xl border border-white/10 shadow-2xl">
+    <div className="absolute bottom-24 left-1/2 -translate-x-1/2 z-30 w-full max-w-6xl px-4 animate-fade-in">
+      <div className="relative bg-dark-900/60 backdrop-blur-md p-4 rounded-2xl border border-white/10 shadow-2xl group/grid">
+        {/* Navigation Buttons */}
         {scenes.length > 4 && (
-          <button
-            onClick={() => scrollThumbnails('left')}
-            className="absolute -left-4 z-40 p-2 text-white transition-all -translate-y-1/2 border rounded-full shadow-xl opacity-0 top-1/2 bg-dark-900/80 hover:bg-primary-600 border-dark-700/50 active:scale-90 group-hover/grid:opacity-100"
-          >
-            <ChevronLeft size={20} />
-          </button>
+          <>
+            <button
+              onClick={() => scrollThumbnails('left')}
+              className="absolute left-2 top-1/2 -translate-y-1/2 z-50 p-2.5 text-white transition-all border rounded-full shadow-xl opacity-0 bg-primary-600 hover:bg-primary-700 border-primary-500 active:scale-90 group-hover/grid:opacity-100"
+              title="Scroll left"
+            >
+              <ChevronLeft size={24} />
+            </button>
+            <button
+              onClick={() => scrollThumbnails('right')}
+              className="absolute right-2 top-1/2 -translate-y-1/2 z-50 p-2.5 text-white transition-all border rounded-full shadow-xl opacity-0 bg-primary-600 hover:bg-primary-700 border-primary-500 active:scale-90 group-hover/grid:opacity-100"
+              title="Scroll right"
+            >
+              <ChevronRight size={24} />
+            </button>
+          </>
         )}
 
         <div
           ref={scrollContainerRef}
-          className="flex gap-3 overflow-x-auto scrollbar-hide snap-x"
+          className="flex gap-4 overflow-x-auto scrollbar-hide snap-x px-12"
         >
           {scenes.map((scene) => (
             <button
               key={scene.id}
               onClick={() => onSceneSelect(scene.id)}
-              className={`relative flex-shrink-0 w-28 h-20 rounded-xl overflow-hidden border-2 transition-all group snap-start ${
+              className={`relative flex-shrink-0 w-40 h-28 rounded-xl overflow-hidden border-2 transition-all group snap-start cursor-pointer ${
                 currentSceneId === scene.id
-                  ? 'border-primary-500 ring-2 ring-primary-500/20 shadow-[0_0_15px_rgba(99,102,241,0.5)]'
-                  : 'border-white/10 hover:border-white/30'
+                  ? 'border-primary-500 ring-2 ring-primary-500/30 shadow-[0_0_20px_rgba(99,102,241,0.6)]'
+                  : 'border-dark-600 hover:border-primary-400'
               }`}
             >
               <img
@@ -62,25 +73,16 @@ export const SceneNavigation: React.FC<SceneNavigationProps> = ({
                 alt={scene.title || scene.originalName}
                 className="object-cover w-full h-full transition-transform duration-500 group-hover:scale-110"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-60 group-hover:opacity-80 transition-opacity" />
-              <div className="absolute bottom-0 left-0 right-0 p-2 text-[10px] font-medium text-white truncate text-center leading-tight">
+              <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent opacity-70 group-hover:opacity-80 transition-opacity" />
+              <div className="absolute bottom-0 left-0 right-0 p-2.5 text-xs font-semibold text-white truncate text-center leading-tight">
                 {scene.title || scene.originalName}
               </div>
               {currentSceneId === scene.id && (
-                <div className="absolute top-1 right-1 w-2 h-2 bg-primary-500 rounded-full shadow-[0_0_8px_rgba(99,102,241,0.8)]" />
+                <div className="absolute top-2 right-2 w-3 h-3 bg-primary-400 rounded-full shadow-[0_0_10px_rgba(99,102,241,1)]" />
               )}
             </button>
           ))}
         </div>
-
-        {scenes.length > 4 && (
-          <button
-            onClick={() => scrollThumbnails('right')}
-            className="absolute -right-4 z-40 p-2 text-white transition-all -translate-y-1/2 border rounded-full shadow-xl opacity-0 top-1/2 bg-dark-900/80 hover:bg-primary-600 border-dark-700/50 active:scale-90 group-hover/grid:opacity-100"
-          >
-            <ChevronRight size={20} />
-          </button>
-        )}
       </div>
     </div>
   );
