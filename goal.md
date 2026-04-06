@@ -26,6 +26,8 @@ Sur le hoststop info on peut mettre
 * Objectif: Rendre le hoover to 
 hotspot disponible.
 
+* 2eme objectif : Rendre le tour public comme sur marzipano tester:
+
 ## Fonctionalités
     * Rajouter une option afficher ou pas le title sur le hoststpot
     Quand on hover le hoststop , il faut montrer le titre 
@@ -36,8 +38,28 @@ hotspot disponible.
 ## A discuter
     [Fonctionnalité]: Plan 2D interractive
     Quand , on va 
+    *
 
-    * 
+### Viewer comparatif 
+comparitif à patir d'un plan
+
+Uploader un plan
+[Pas par defaut que pour les traveaux.]
+
+On a un plan 360  d'une chambre on , voit la date 
+capturer et comparer cette mm vue à une autre 
+date , cette fonctionnalité
+
+Avant et Apres
+
+Comparer un espace , avec une autre espace , 
+j'ai une chambre que je veux refaire la peinture 
+meuble , comparer , avant apres.
+comparaison le jour et la nuit.
+
+
+### RICO360...
+
 
 
 ### Offlinked Academy

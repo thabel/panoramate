@@ -69,15 +69,15 @@ export const HotspotPopover: React.FC<HotspotPopoverProps> = ({
 
   return (
     <div
-      className="fixed z-50 p-2 bg-gray-900 border border-gray-700 rounded-lg shadow-lg pointer-events-none"
+      className="fixed p-1 bg-black pointer-events-none"
       style={{
-        left: `${position.x + 10}px`,
-        top: `${position.y + 10}px`,
+        left: `${position.x + 48}px`,
+        top: `${position.y}px`,
         maxWidth: '280px',
       }}
     >
      
-thabel:
+      {getPreviewContent()}
     </div>
   );
 };

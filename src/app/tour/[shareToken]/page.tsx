@@ -114,13 +114,14 @@ export default function PublicTourPage({
   };
 
   const handleHotspotClick = (hotspot: any) => {
-    if (hotspot.type === 'LINK' && hotspot.targetImageId) {
-      setCurrentSceneId(hotspot.targetImageId);
-    } else if (hotspot.type === 'INFO') {
-      if (hotspot.title || hotspot.content) {
-        alert(`${hotspot.title || ''}\n\n${hotspot.content || ''}`);
-      }
-    }
+    // TODO: handle marzipano cliking better.
+    // if (hotspot.type === 'LINK' && hotspot.targetImageId) {
+    //   setCurrentSceneId(hotspot.targetImageId);
+    // } else if (hotspot.type === 'INFO') {
+    //   if (hotspot.title || hotspot.content) {
+    //     alert(`${hotspot.title || ''}\n\n${hotspot.content || ''}`);
+    //   }
+    // }
   };
 
   const toggleFullScreen = () => {

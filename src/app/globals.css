@@ -108,7 +108,7 @@ body {
 }
 
 .hotspot-animate-pulse {
-  animation: hotspotPulse 2s infinite;
+  /* animation: hotspotPulse 2s infinite; */
 }
 
 .hotspot-animate-glow {
@@ -134,4 +134,97 @@ select:focus {
 /* Dark mode - already applied globally */
 .dark {
   color-scheme: dark;
+}
+
+
+.marzipano-hotspot-visual{
+  /* contient les icons et les titres */
+  position: absolute;
+  width: 42px;
+  height: 42px;
+
+  left: 0;
+  top: 0;
+
+  transform: translate(-50%, -50%);
+  transition: transform 0.2s ease-out;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+
+  will-change: transform;
+
+  border-radius: 20px;
+  animation: hotspot-pulse 1.9s ease-in-out infinite;
+
+  cursor: pointer;
+  -webkit-transition: width 0.3s ease-in-out 0.5s,
+                      border-radius 0.3s ease-in-out 0.5s;
+  transition: width 0.3s ease-in-out 0.5s,
+              border-radius 0.3s ease-in-out 0.5s;
+
+  /* border: 2px solid red !important; */
+}
+
+ @keyframes hotspot-pulse-hover {
+          0% {
+            box-shadow: 0 0 0 0 rgba(0, 0, 0, 0.35);
+            transform: scale(1);
+          }
+         
+          100% {
+            box-shadow: 0 0 0 0 rgba(0, 0, 0, 0);
+            transform: scale(1);
+          }
+        }
+
+.marzipano-hotspot-visual .hotspot-title:before {
+  content: '';
+  display: inline-block;
+  vertical-align: middle;
+  height: 100%;
+}
+
+.marzipano-hotspot-visual .hotspot-title-icon.visible{
+  opacity: 1;
+}
+.marzipano-hotspot-visual .hotspot-title-icon{
+   position: absolute;
+   display: flex;
+   justify-content: space-between;
+   align-items: center;
+  left: 45px;
+  top: 40;
+    opacity: 0;
+  width: 0;
+   background-color: inherit;
+  height: 40px;
+  padding: 0;
+  overflow: hidden;
+  -webkit-transition: width 0s 0.4s,
+                      padding 0s 0.4s;
+  transition: width 0s 0.4s,
+              padding 0s 0.4s
+}
+.marzipano-hotspot-visual:hover{
+ animation: hotspot-pulse-hover 1.9s ease-in-out infinite;
+  background-color: red;
+}
+.marzipano-hotspot-visual:hover .hotspot-title-icon{
+   width: 220px;
+  padding: 0 5px;
+    opacity: 1;
+  -webkit-transition: width 0s 0.4s,
+                      padding 0s 0.4s;
+  transition: width 0s 0.4s,
+              padding 0s 0.4s;
+  animation: none !important;
+              
+}
+
+img.info-hotspot-close-icon{
+  height: 24px;
+  width: 24px;
 }
