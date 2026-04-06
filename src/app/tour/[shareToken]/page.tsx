@@ -7,7 +7,7 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { SceneNavigation } from '@/components/viewer/SceneNavigation';
 import { TopSceneMenu } from '@/components/viewer/TopSceneMenu';
 import { HotspotContentPanel } from '@/components/viewer/HotspotContentPanel';
-import { Maximize, Minimize, ChevronLeft, ChevronRight, Volume2, VolumeX, Play, Pause, Settings , ChevronDown  } from 'lucide-react';
+import { Maximize, Minimize, ChevronLeft, ChevronRight, Volume2, VolumeX, Play, Pause, Settings, ChevronDown, ZoomIn, ZoomOut, RotateCcw, RotateCw, RefreshCw } from 'lucide-react';
 
 export default function PublicTourPage({
   params,
@@ -28,7 +28,9 @@ export default function PublicTourPage({
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isCarouselVisible, setIsCarouselVisible] = useState(true);
   const [activeHotspot, setActiveHotspot] = useState<any | null>(null);
+  const [autoRotate, setAutoRotate] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const viewerRef = useRef<any>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
 
   useEffect(() => {
@@ -165,13 +167,64 @@ export default function PublicTourPage({
         {tour.images.length > 0 ? (
           <>
             <MarzipanoViewer
+              ref={viewerRef}
               scenes={tour.images}
               hotspots={tour.images.flatMap((img: any) => img.hotspots || [])}
               initialSceneId={currentSceneId || undefined}
               onHotspotClick={handleHotspotClick}
               editorMode={false}
               showHotspotTitles={showHotspotTitles}
+              autoRotate={autoRotate}
             />
+
+            {/* View Controls - Floating Bottom Left */}
+            <div className="absolute z-40 flex items-center gap-2 bottom-6 left-6">
+              <div className="flex items-center gap-1 p-1.5 bg-dark-900/40 backdrop-blur-md border border-white/10 rounded-2xl shadow-2xl">
+                <button
+                  onClick={() => viewerRef.current?.rotateLeft()}
+                  className="p-2 text-white transition-all rounded-xl hover:bg-white/10 active:scale-90"
+                  title="Rotate Left"
+                >
+                  <RotateCcw size={20} />
+                </button>
+                <button
+                  onClick={() => viewerRef.current?.rotateRight()}
+                  className="p-2 text-white transition-all rounded-xl hover:bg-white/10 active:scale-90"
+                  title="Rotate Right"
+                >
+                  <RotateCw size={20} />
+                </button>
+                
+                <div className="w-px h-6 mx-1 bg-white/10" />
+                
+                <button
+                  onClick={() => viewerRef.current?.zoomIn()}
+                  className="p-2 text-white transition-all rounded-xl hover:bg-white/10 active:scale-90"
+                  title="Zoom In"
+                >
+                  <ZoomIn size={20} />
+                </button>
+                <button
+                  onClick={() => viewerRef.current?.zoomOut()}
+                  className="p-2 text-white transition-all rounded-xl hover:bg-white/10 active:scale-90"
+                  title="Zoom Out"
+                >
+                  <ZoomOut size={20} />
+                </button>
+                
+                <div className="w-px h-6 mx-1 bg-white/10" />
+                
+                <button
+                  onClick={() => setAutoRotate(!autoRotate)}
+                  className={`p-2 transition-all rounded-xl active:scale-90 ${
+                    autoRotate ? 'text-primary-400 bg-primary-400/10' : 'text-white hover:bg-white/10'
+                  }`}
+                  title={autoRotate ? 'Stop Auto-Rotate' : 'Start Auto-Rotate'}
+                >
+                  <RefreshCw size={20} className={autoRotate ? 'animate-spin-slow' : ''} />
+                </button>
+              </div>
+            </div>
 
             {/* Floating Minimal Header */}
             {!isEmbed && !isFullScreen && (

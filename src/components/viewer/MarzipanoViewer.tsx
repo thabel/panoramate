@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useImperativeHandle, forwardRef } from 'react';
 import { TourImage, Hotspot as HotspotType } from '@/types';
 import { logger } from '@/lib/logger';
 import { HotspotPopover } from './HotspotPopover';
@@ -21,11 +21,12 @@ interface MarzipanoViewerProps {
   addHotspotMode?: boolean;
   tempHotspot?: { yaw: number; pitch: number; iconName?: string } | null;
   showHotspotTitles?: boolean;
+  autoRotate?: boolean;
   onHotspotClick?: (hotspot: HotspotType) => void;
   onPanoramaClick?: (yaw: number, pitch: number) => void;
 }
 
-export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
+export const MarzipanoViewer = forwardRef<any, MarzipanoViewerProps>(({
   scenes,
   hotspots = [],
   initialSceneId,
@@ -33,9 +34,10 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
   addHotspotMode = false,
   tempHotspot = null,
   showHotspotTitles = true,
+  autoRotate = false,
   onHotspotClick,
   onPanoramaClick,
-}) => {
+}, ref) => {
 
   const containerRef = useRef<HTMLDivElement>(null);
   const viewerRef = useRef<any>(null);
@@ -45,6 +47,63 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
   const [hoveredHotspot, setHoveredHotspot] = useState<HotspotType | null>(null);
   const [popoverPosition, setPopoverPosition] = useState<{ x: number; y: number } | null>(null);
   const [openedInfoHotspot, setOpenedInfoHotspot] = useState<{ hotspot: HotspotType; position: { x: number; y: number } } | null>(null);
+
+  // Expose controls via ref
+  useImperativeHandle(ref, () => ({
+    zoomIn: () => {
+      if (!viewerRef.current) return;
+      const scene = viewerRef.current.scene();
+      if (!scene) return;
+      const view = scene.view();
+      view.setFov(view.fov() * 0.9);
+    },
+    zoomOut: () => {
+      if (!viewerRef.current) return;
+      const scene = viewerRef.current.scene();
+      if (!scene) return;
+      const view = scene.view();
+      view.setFov(view.fov() * 1.1);
+    },
+    rotateLeft: () => {
+      if (!viewerRef.current) return;
+      const scene = viewerRef.current.scene();
+      if (!scene) return;
+      const view = scene.view();
+      view.setYaw(view.yaw() - 0.1);
+    },
+    rotateRight: () => {
+      if (!viewerRef.current) return;
+      const scene = viewerRef.current.scene();
+      if (!scene) return;
+      const view = scene.view();
+      view.setYaw(view.yaw() + 0.1);
+    }
+  }));
+
+  // Handle auto-rotation
+  useEffect(() => {
+    if (!viewerRef.current) return;
+
+    const Marzipano = window.Marzipano;
+    if (!Marzipano) return;
+
+    let autorotate: any = null;
+
+    if (autoRotate) {
+      autorotate = Marzipano.autorotate({
+        yawSpeed: 0.1,
+        targetPitch: 0,
+        targetFov: Math.PI/4
+      });
+      viewerRef.current.startAutorotate(autorotate);
+    } else {
+      viewerRef.current.stopAutorotate();
+    }
+
+    return () => {
+      if (viewerRef.current) viewerRef.current.stopAutorotate();
+    };
+  }, [autoRotate]);
 
   // Store hotspots in a ref to access latest values in handlers without re-binding
   const hotspotsRef = useRef(hotspots);
@@ -483,4 +542,6 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
       `}</style>
     </div>
   );
-};
+});
+
+MarzipanoViewer.displayName = 'MarzipanoViewer';
