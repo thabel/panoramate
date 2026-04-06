@@ -6,6 +6,7 @@ import { MarzipanoViewer } from '@/components/viewer/MarzipanoViewer';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { SceneNavigation } from '@/components/viewer/SceneNavigation';
 import { TopSceneMenu } from '@/components/viewer/TopSceneMenu';
+import { HotspotContentPanel } from '@/components/viewer/HotspotContentPanel';
 import { Maximize, Minimize, ChevronLeft, ChevronRight, Volume2, VolumeX, Play, Pause, Settings } from 'lucide-react';
 
 export default function PublicTourPage({
@@ -25,6 +26,7 @@ export default function PublicTourPage({
   const [volume, setVolume] = useState(0.5);
   const [showHotspotTitles, setShowHotspotTitles] = useState(true);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [activeHotspot, setActiveHotspot] = useState<any | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
 
@@ -116,8 +118,9 @@ export default function PublicTourPage({
   const handleHotspotClick = (hotspot: any) => {
     if ((hotspot.type === 'LINK' || hotspot.type === 'LINK_SCENE') && hotspot.targetImageId) {
       setCurrentSceneId(hotspot.targetImageId);
-    } else if (hotspot.type === 'INFO') {
-      // INFO hotspots might be handled by InfoHotspot component or popover
+      setActiveHotspot(null);
+    } else {
+      setActiveHotspot(hotspot);
     }
   };
 
@@ -335,6 +338,11 @@ export default function PublicTourPage({
           Powered by <span className="font-semibold text-primary-400">Panoramate</span>
         </div>
       )}
+
+      <HotspotContentPanel
+        hotspot={activeHotspot}
+        onClose={() => setActiveHotspot(null)}
+      />
     </div>
   );
 }
