@@ -198,7 +198,7 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
 
   // Helper function to create consistent hotspot elements
   const createHotspotElement = (
-    type: 'LINK' | 'INFO' | 'TEMP',
+    type: 'LINK_SCENE' | 'INFO' | 'TEMP',
     hotspotId?: string,
     onClick?: (element: HTMLElement) => void,
     title?: string,
@@ -256,7 +256,7 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
     iconContainer.style.width = '100%';
     iconContainer.style.height = '100%';
 
-    const iconName = options?.iconName || (type === 'LINK' ? 'MapPin' : 'info');
+    const iconName = options?.iconName || (type === 'LINK_SCENE' ? 'MapPin' : 'info');
     const iconSvg = getHotspotIconSvg(iconName);
 
     // Default styling for all hotspots

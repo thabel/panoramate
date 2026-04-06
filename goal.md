@@ -32,7 +32,7 @@ hotspot disponible.
     * Rajouter une option afficher ou pas le title sur le hoststpot
     Quand on hover le hoststop , il faut montrer le titre 
     * Rajouter une musique dans le background et un btn on off [Vue publique]
-    *  Rajouter des assest multimédia dans le viewer.
+    * Rajouter des assest multimédia dans le viewer.
     * Rajouter à la vue publique les directioin et fleches.
 
 ## A discuter
@@ -57,10 +57,14 @@ j'ai une chambre que je veux refaire la peinture
 meuble , comparer , avant apres.
 comparaison le jour et la nuit.
 
+Exemple: RICO360...
 
-### RICO360...
+### Versions Freeweer:
 
+une petite version payantes
+Quand on aura les fonctionnalités
 
+la versioin Freeweer.
 
 ### Offlinked Academy
 
@@ -96,3 +100,7 @@ Lors de l'ajout d'un hotspot temporaire dans l'éditeur de tour, un problème vi
 - ⚠️ Problème cosmétique possible à améliorer
 
 ---
+
+## Personnalisation:
+* Permeetre d'utiliser son propre icon
+* 

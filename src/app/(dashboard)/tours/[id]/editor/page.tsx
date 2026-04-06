@@ -43,7 +43,7 @@ export default function TourEditorPage({
   const [isHotspotActionModalOpen, setIsHotspotActionModalOpen] = useState(false);
   const [newHotspotCoords, setNewHotspotCoords] = useState<{ yaw: number; pitch: number; iconName?: string } | null>(null);
   const [sceneSearchQuery, setSceneSearchQuery] = useState('');
-  const [selectionMode, setSelectionMode] = useState<'name' | 'image'>('name');
+  const [selectionMode, setSelectionMode] = useState<'name' | 'image'>('image');
   const [hotspotForm, setHotspotForm] = useState({
     type: 'LINK',
     title: '',
@@ -384,11 +384,11 @@ export default function TourEditorPage({
   };
 
   const goToTargetScene = () => {
-    if (!selectedHotspot || selectedHotspot.type !== 'LINK' || !selectedHotspot.targetImageId) return;
+    if (!selectedHotspot || (selectedHotspot.type !== 'LINK' && selectedHotspot.type !== 'LINK_SCENE') || !selectedHotspot.targetImageId) return;
 
     const index = tour!.images.findIndex((img: TourImage) => img.id === selectedHotspot.targetImageId);
     if (index !== -1) {
-      setCurrentSceneIndex(index);
+      setCurrentSceneId(index);
       setIsHotspotActionModalOpen(false);
       setSelectedHotspot(null);
     } else {
@@ -584,9 +584,53 @@ export default function TourEditorPage({
     );
   };
 
+  const handleHotspotFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, field: 'videoUrl' | 'imageUrls') => {
+    const files = e.target.files;
+    if (!files || files.length === 0 || !tour) return;
+
+    setIsSaving(true);
+    const formData = new FormData();
+    Array.from(files).forEach(file => {
+      formData.append('files', file);
+    });
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/tours/${tour.id}/hotspot-uploads`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token || ''}`,
+        },
+        body: formData,
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const uploadedUrls = data.data.urls;
+        
+        if (field === 'videoUrl') {
+          // For video, we take the first one
+          setHotspotForm({ ...hotspotForm, videoUrl: uploadedUrls[0] });
+        } else if (field === 'imageUrls') {
+          // For images, we can have multiple
+          const currentUrls = hotspotForm.imageUrls ? JSON.parse(hotspotForm.imageUrls) : [];
+          const newUrls = JSON.stringify([...currentUrls, ...uploadedUrls]);
+          setHotspotForm({ ...hotspotForm, imageUrls: newUrls });
+        }
+        toast.success('Files uploaded');
+      } else {
+        toast.error('Failed to upload files');
+      }
+    } catch (error) {
+      toast.error('Error uploading files');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const renderHotspotPanel = () => {
     if (!isHotspotPanelOpen || !mounted) return null;
-
+    console.log("selected icon",hotspotForm);
     const slot = document.getElementById('hotspot-panel-slot');
     if (!slot) return null;
 
@@ -641,11 +685,11 @@ export default function TourEditorPage({
                   <div className="mb-4">
                     <p className="mb-2 text-[10px] font-bold text-dark-500 uppercase tracking-wider">Main Actions</p>
                     <div className="grid grid-cols-4 gap-2">
-                      {['info', 'MapPin'].map((iconName) => (
+                      {[ 'MapPin','info'].map((iconName) => (
                         <button
                           key={iconName}
                           onClick={() => {
-                            setHotspotForm({ ...hotspotForm, iconName });
+                            setHotspotForm({ ...hotspotForm, iconName ,   type: getHostpotIconType(iconName) });
                             if (newHotspotCoords) {
                               setNewHotspotCoords({ ...newHotspotCoords, iconName });
                             }
@@ -673,7 +717,7 @@ export default function TourEditorPage({
                           <button
                             key={iconName}
                             onClick={() => {
-                              setHotspotForm({ ...hotspotForm, iconName });
+                              setHotspotForm({ ...hotspotForm, iconName , type: getHostpotIconType(iconName) });
                               if (newHotspotCoords) {
                                 setNewHotspotCoords({ ...newHotspotCoords, iconName });
                               }
@@ -715,14 +759,7 @@ export default function TourEditorPage({
                       Target Scene
                     </label>
                     <div className="flex w-full p-1 border rounded-lg bg-dark-900 border-dark-700">
-                      <button
-                        onClick={() => setSelectionMode('name')}
-                        className={`flex-1 py-1.5 px-2 text-xs font-medium rounded-md transition-all flex items-center justify-center gap-1 ${
-                          selectionMode === 'name' ? 'bg-primary-600 text-white' : 'text-dark-400'
-                        }`}
-                      >
-                        By name
-                      </button>
+                     
                       <button
                         onClick={() => setSelectionMode('image')}
                         className={`flex-1 py-1.5 px-2 text-xs font-medium rounded-md transition-all flex items-center justify-center gap-1 ${
@@ -731,6 +768,16 @@ export default function TourEditorPage({
                       >
                         By image
                       </button>
+                      
+                      <button
+                        onClick={() => setSelectionMode('name')}
+                        className={`flex-1 py-1.5 px-2 text-xs font-medium rounded-md transition-all flex items-center justify-center gap-1 ${
+                          selectionMode === 'name' ? 'bg-primary-600 text-white' : 'text-dark-400'
+                        }`}
+                      >
+                        By name
+                      </button>
+                     
                     </div>
                   </div>
 
@@ -787,7 +834,9 @@ export default function TourEditorPage({
                               alt={img.title || 'Scene'}
                               className="object-cover w-full h-16"
                             />
+                            
                           </button>
+                          // TODO: add image name on the bottom of the thumbnail .
                         ))
                       }
                     </div>
@@ -818,7 +867,7 @@ export default function TourEditorPage({
                 <div className="pt-4 space-y-4 border-t border-dark-700">
                   <div>
                     <label className="flex items-center block gap-2 mb-2 text-sm font-medium text-dark-300">
-                      Website URL
+                      URL
                     </label>
                     <input
                       type="url"
@@ -834,17 +883,127 @@ export default function TourEditorPage({
               {/* Video */}
               {hotspotForm.type === 'VIDEO' && (
                 <div className="pt-4 space-y-4 border-t border-dark-700">
-                  <div>
-                    <label className="flex items-center block gap-2 mb-2 text-sm font-medium text-dark-300">
-                      Video URL
-                    </label>
-                    <input
-                      type="url"
-                      value={hotspotForm.videoUrl}
-                      onChange={(e) => setHotspotForm({ ...hotspotForm, videoUrl: e.target.value })}
-                      placeholder="YouTube or Vimeo URL"
-                      className="w-full px-3 py-2 text-sm text-white transition-all border rounded-lg outline-none bg-dark-700 border-dark-600 focus:border-primary-500"
-                    />
+                  <div className="space-y-4">
+                    <div>
+                      <label className="flex items-center block gap-2 mb-2 text-sm font-medium text-dark-300">
+                        Video URL (YouTube/Vimeo)
+                      </label>
+                      <input
+                        type="url"
+                        value={hotspotForm.videoUrl}
+                        onChange={(e) => setHotspotForm({ ...hotspotForm, videoUrl: e.target.value })}
+                        placeholder="https://youtube.com/..."
+                        className="w-full px-3 py-2 text-sm text-white transition-all border rounded-lg outline-none bg-dark-700 border-dark-600 focus:border-primary-500"
+                      />
+                    </div>
+                    
+                    <div className="relative">
+                      <div className="absolute inset-0 flex items-center" aria-hidden="true">
+                        <div className="w-full border-t border-dark-700"></div>
+                      </div>
+                      <div className="relative flex justify-center text-xs uppercase">
+                        <span className="px-2 text-dark-400 bg-dark-800">Or Upload Video</span>
+                      </div>
+                    </div>
+
+                    <div>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => document.getElementById('hotspot-video-upload')?.click()}
+                        className="w-full text-xs"
+                      >
+                        <Video size={14} className="mr-2" />
+                        {hotspotForm.videoUrl && !hotspotForm.videoUrl.startsWith('http') ? 'Change Video' : 'Upload Video File'}
+                      </Button>
+                      <input
+                        id="hotspot-video-upload"
+                        type="file"
+                        className="hidden"
+                        accept="video/*"
+                        onChange={(e) => handleHotspotFileUpload(e, 'videoUrl')}
+                      />
+                      {hotspotForm.videoUrl && !hotspotForm.videoUrl.startsWith('http') && (
+                        <p className="mt-1 text-[10px] text-primary-400 truncate">
+                          File: {hotspotForm.videoUrl.split('/').pop()}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Image Gallery */}
+              {hotspotForm.type === 'IMAGE' && (
+                <div className="pt-4 space-y-4 border-t border-dark-700">
+                  <div className="space-y-4">
+                    <div>
+                      <label className="flex items-center block gap-2 mb-2 text-sm font-medium text-dark-300">
+                        Image URL
+                      </label>
+                      <input
+                        type="url"
+                        value={hotspotForm.imageUrl}
+                        onChange={(e) => setHotspotForm({ ...hotspotForm, imageUrl: e.target.value })}
+                        placeholder="https://example.com/image.jpg"
+                        className="w-full px-3 py-2 text-sm text-white transition-all border rounded-lg outline-none bg-dark-700 border-dark-600 focus:border-primary-500"
+                      />
+                    </div>
+
+                    <div className="relative">
+                      <div className="absolute inset-0 flex items-center" aria-hidden="true">
+                        <div className="w-full border-t border-dark-700"></div>
+                      </div>
+                      <div className="relative flex justify-center text-xs uppercase">
+                        <span className="px-2 text-dark-400 bg-dark-800">Or Upload Images</span>
+                      </div>
+                    </div>
+
+                    <div>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => document.getElementById('hotspot-images-upload')?.click()}
+                        className="w-full text-xs"
+                      >
+                        <LucideIcons.Image size={14} className="mr-2" />
+                        Upload Gallery Images
+                      </Button>
+                      <input
+                        id="hotspot-images-upload"
+                        type="file"
+                        multiple
+                        className="hidden"
+                        accept="image/*"
+                        onChange={(e) => handleHotspotFileUpload(e, 'imageUrls')}
+                      />
+                      
+                      {hotspotForm.imageUrls && (
+                        <div className="mt-3 space-y-2">
+                          <p className="text-[10px] font-bold text-dark-500 uppercase">Gallery Items ({JSON.parse(hotspotForm.imageUrls).length})</p>
+                          <div className="grid grid-cols-4 gap-2">
+                            {JSON.parse(hotspotForm.imageUrls).map((url: string, idx: number) => (
+                              <div key={idx} className="relative group aspect-square">
+                                <img 
+                                  src={`/api/uploads/${url}`} 
+                                  className="object-cover w-full h-full border rounded border-dark-600"
+                                />
+                                <button 
+                                  onClick={() => {
+                                    const urls = JSON.parse(hotspotForm.imageUrls);
+                                    urls.splice(idx, 1);
+                                    setHotspotForm({ ...hotspotForm, imageUrls: JSON.stringify(urls) });
+                                  }}
+                                  className="absolute p-0.5 text-white bg-red-500 rounded-full -top-1 -right-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                >
+                                  <X size={10} />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               )}
@@ -867,10 +1026,12 @@ export default function TourEditorPage({
                 onClick={handleCreateHotspot}
                 className="flex-1 text-xs"
                 disabled={
-                  (hotspotForm.type === 'LINK' && !hotspotForm.targetImageId) ||
+                  isSaving ||
+                  (hotspotForm.type === 'LINK_SCENE' && !hotspotForm.targetImageId) ||
                   (hotspotForm.type === 'INFO' && !hotspotForm.content) ||
                   (hotspotForm.type === 'URL' && !hotspotForm.url) ||
-                  (hotspotForm.type === 'VIDEO' && !hotspotForm.videoUrl)
+                  (hotspotForm.type === 'VIDEO' && !hotspotForm.videoUrl) ||
+                  (hotspotForm.type === 'IMAGE' && !hotspotForm.imageUrl && (!hotspotForm.imageUrls || JSON.parse(hotspotForm.imageUrls).length === 0))
                 }
               >
                 Create
@@ -1099,12 +1260,12 @@ export default function TourEditorPage({
               {selectedHotspot?.title || 'Unnamed Hotspot'}
             </h3>
             <p className="mt-1 text-sm text-dark-400">
-              Type: {selectedHotspot?.type === 'LINK' ? 'Scene Link' : 'Information'}
+              Type: {selectedHotspot?.type === 'LINK_SCENE' ? 'Scene Link' : 'Information'}
             </p>
           </div>
 
           <div className="flex flex-col gap-3">
-            {selectedHotspot?.type === 'LINK' && (
+            {selectedHotspot?.type === 'LINK_SCENE' && (
               <Button
                 variant="primary"
                 onClick={goToTargetScene}

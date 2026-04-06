@@ -239,6 +239,10 @@ enum HotspotType {
   INFO
   URL
   VIDEO
+  LINK_SCENE  // added this for better clarity, represents a hotspot that links to another scene/image
+  IMAGE
+  TEXT
+  OTHER
 }
 
 enum AnimationType {

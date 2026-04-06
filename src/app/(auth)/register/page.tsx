@@ -90,14 +90,14 @@ export default function RegisterPage() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <h1 className="text-2xl font-bold text-white mb-2">Create Account</h1>
-      <p className="text-dark-400 text-sm mb-6">
+      <h1 className="mb-2 text-2xl font-bold text-white">Create Account</h1>
+      {/* <p className="mb-6 text-sm text-dark-400">
         14-day free trial • No credit card required
-      </p>
+      </p> */}
 
-      <Alert variant="info">
+      {/* <Alert variant="info">
         Start your free trial and create your first 360° virtual tour today!
-      </Alert>
+      </Alert> */}
 
       <div className="grid grid-cols-2 gap-4">
         <Input
@@ -160,7 +160,7 @@ export default function RegisterPage() {
         Create Account
       </Button>
 
-      <p className="text-center text-dark-400 text-sm">
+      <p className="text-sm text-center text-dark-400">
         Already have an account?{' '}
         <Link href="/login" className="text-primary-400 hover:text-primary-300">
           Sign in

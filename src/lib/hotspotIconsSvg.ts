@@ -53,14 +53,17 @@ export const HOTSPOT_ICONS_SVG: Record<string, string> = {
 export const HOTSPOT_ICON_TYPE: Record<string, string> = {
   // Built-in icons
   'info': 'INFO',
-  'arrow-right': 'LINK',
+  'arrow-right': 'LINK-SCENE',// LINK means 
+  'ArrowRight': 'LINK_SCENE',
   'external-link': 'URL',
-  'play': 'VIDEO',
-  'video': 'VIDEO',
+  'Play': 'VIDEO',
+  'Video': 'VIDEO',
   'message-circle': 'TEXT',
-  'camera': 'IMAGE',
-  'ExternalLink': 'LINK',
-  'MapPin': 'LINK'
+  'Camera': 'IMAGE',
+  'ExternalLink': 'URL',
+  'MapPin': 'LINK_SCENE',
+  'bed': 'OTHER',
+  'card': 'OTHER',
 };
 
 
@@ -70,5 +73,7 @@ export const getHotspotIconSvg = (iconName: string): string => {
 };
 
 export const getHostpotIconType = (iconName: string): string => {
+  console.log("Getting icon type for:", iconName);
+  console.log("Available icon types:", HOTSPOT_ICON_TYPE[iconName]);
   return HOTSPOT_ICON_TYPE[iconName] || HOTSPOT_ICON_TYPE['info'];
 }

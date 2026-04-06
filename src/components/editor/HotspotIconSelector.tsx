@@ -54,9 +54,9 @@ export const HotspotIconSelector: React.FC<HotspotIconSelectorProps> = ({
               <div className="flex items-center justify-center mb-2">
                 {renderIcon(iconName, 24)}
               </div>
-              <span className="text-[10px] font-medium text-center text-dark-300 group-hover:text-primary-300 line-clamp-2">
+              {/* <span className="text-[10px] font-medium text-center text-dark-300 group-hover:text-primary-300 line-clamp-2">
                 {config.label}
-              </span>
+              </span> */}
             </button>
           );
         })}
