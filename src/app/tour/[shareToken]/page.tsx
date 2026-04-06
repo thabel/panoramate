@@ -7,7 +7,7 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { SceneNavigation } from '@/components/viewer/SceneNavigation';
 import { TopSceneMenu } from '@/components/viewer/TopSceneMenu';
 import { HotspotContentPanel } from '@/components/viewer/HotspotContentPanel';
-import { Maximize, Minimize, ChevronLeft, ChevronRight, Volume2, VolumeX, Play, Pause, Settings, Grid3x3, ChevronDown } from 'lucide-react';
+import { Maximize, Minimize, ChevronLeft, ChevronRight, Volume2, VolumeX, Play, Pause, Settings, Grid3x3, ChevronDown, RotateCw } from 'lucide-react';
 
 export default function PublicTourPage({
   params,
@@ -28,6 +28,7 @@ export default function PublicTourPage({
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [activeHotspot, setActiveHotspot] = useState<any | null>(null);
   const [showSceneNavigation, setShowSceneNavigation] = useState(true);
+  const [isAutoRotating, setIsAutoRotating] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
 
@@ -181,6 +182,7 @@ export default function PublicTourPage({
               onHotspotClick={handleHotspotClick}
               editorMode={false}
               showHotspotTitles={showHotspotTitles}
+              autorotate={isAutoRotating}
             />
 
             {/* Custom Logo overlay */}
@@ -302,6 +304,19 @@ export default function PublicTourPage({
                   />
                 </div>
               )}
+
+              {/* Autorotate button toggle */}
+              <button
+                onClick={() => setIsAutoRotating(!isAutoRotating)}
+                className={`flex items-center justify-center p-2 transition-all border rounded-lg backdrop-blur-sm border-dark-700/50 ${
+                  isAutoRotating
+                    ? 'bg-primary-600/80 text-white hover:bg-primary-700'
+                    : 'bg-dark-900/60 text-white hover:bg-dark-800'
+                }`}
+                title={isAutoRotating ? 'Stop rotation' : 'Start rotation'}
+              >
+                <RotateCw size={20} className={isAutoRotating ? 'animate-spin' : ''} />
+              </button>
 
               {/* Full screen button toggle */}
               <button

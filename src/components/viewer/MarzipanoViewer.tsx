@@ -21,6 +21,7 @@ interface MarzipanoViewerProps {
   addHotspotMode?: boolean;
   tempHotspot?: { yaw: number; pitch: number; iconName?: string } | null;
   showHotspotTitles?: boolean;
+  autorotate?: boolean;
   onHotspotClick?: (hotspot: HotspotType) => void;
   onPanoramaClick?: (yaw: number, pitch: number) => void;
 }
@@ -33,6 +34,7 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
   addHotspotMode = false,
   tempHotspot = null,
   showHotspotTitles = true,
+  autorotate = false,
   onHotspotClick,
   onPanoramaClick,
 }) => {
@@ -421,6 +423,47 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
       logger.debug({ parentClass }, 'Container cursor class update');
     }
   }, [addHotspotMode]);
+
+  // Autorotate effect
+  useEffect(() => {
+    if (!viewerRef.current || !autorotate) return;
+
+    let animationFrameId: number;
+    const rotationSpeed = 0.0005; // radians per frame
+
+    const rotate = () => {
+      const viewer = viewerRef.current;
+      if (!viewer) return;
+
+      const scenes = viewer.listScenes();
+      if (scenes.length === 0) return;
+
+      const currentScene = viewer.scene();
+      if (!currentScene) return;
+
+      const view = currentScene.view();
+      if (!view) return;
+
+      const currentParams = view.parameters();
+      const newYaw = currentParams.yaw + rotationSpeed;
+
+      view.setParameters({
+        yaw: newYaw,
+        pitch: currentParams.pitch,
+        fov: currentParams.fov,
+      });
+
+      animationFrameId = requestAnimationFrame(rotate);
+    };
+
+    animationFrameId = requestAnimationFrame(rotate);
+
+    return () => {
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+      }
+    };
+  }, [autorotate]);
 
   return (
     <div className={`w-full h-full min-h-[400px] bg-black relative ${addHotspotMode ? 'hotspot-cursor' : ''}`}>
