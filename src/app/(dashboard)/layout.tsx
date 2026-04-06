@@ -55,12 +55,6 @@ export default function DashboardLayout({
   }
 
   const isTrialing = organization.plan === 'FREE_TRIAL';
-  const trialDaysLeft = isTrialing
-    ? Math.ceil(
-        (new Date(organization.trialEndsAt).getTime() - Date.now()) /
-          (1000 * 60 * 60 * 24)
-      )
-    : 0;
 
   const navItems = [
     {
@@ -154,11 +148,6 @@ export default function DashboardLayout({
                   ? 'Free Trial'
                   : organization.plan}
               </Badge>
-              {isTrialing && (
-                <p className="text-[10px] text-dark-400 text-center">
-                  {trialDaysLeft} days left
-                </p>
-              )}
             </div>
           )}
 
@@ -209,19 +198,6 @@ export default function DashboardLayout({
         {/* Content Area */}
         <div className="flex flex-1 overflow-hidden">
           <main className="flex-1 overflow-auto">
-            {/* Trial Warning */}
-            {isTrialing && trialDaysLeft <= 7 && trialDaysLeft > 0 && (
-              <div className="p-4 border-b bg-dark-800 border-dark-700">
-                <Alert variant="warning" title="Trial Ending Soon">
-                  Your free trial ends in {trialDaysLeft} days.{' '}
-                  <Link href="/billing" className="font-semibold text-primary-400 hover:text-primary-300">
-                    Upgrade now
-                  </Link>
-                  {' '}to continue using Panoramate.
-                </Alert>
-              </div>
-            )}
-
             <div className={isEditor ? 'h-full' : 'p-4 md:p-8'}>
               {children}
             </div>
