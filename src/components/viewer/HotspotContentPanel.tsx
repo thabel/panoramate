@@ -17,9 +17,9 @@ export const HotspotContentPanel: React.FC<HotspotContentPanelProps> = ({ hotspo
       // Small delay to trigger animation
       const timer = setTimeout(() => setIsOpen(true), 10);
       return () => clearTimeout(timer);
-    } else {
-      setIsOpen(false);
     }
+    setIsOpen(false);
+    return undefined;
   }, [hotspot]);
 
   if (!hotspot && !isOpen) return null;

@@ -52,6 +52,7 @@ export default function TourEditorPage({
     url: '',
     videoUrl: '',
     imageUrl: '',
+    imageUrls: '',
     animationType: 'PULSE',
     scale: 1.0,
     iconUrl: '',
@@ -327,8 +328,8 @@ export default function TourEditorPage({
           url: '',
           videoUrl: '',
           imageUrl: '',
+          imageUrls: '',
           animationType: 'NONE',
-          color: '#3b3b3b',
           scale: 1.0,
           iconUrl: '',
           iconName: 'info',
@@ -388,7 +389,7 @@ export default function TourEditorPage({
 
     const index = tour!.images.findIndex((img: TourImage) => img.id === selectedHotspot.targetImageId);
     if (index !== -1) {
-      setCurrentSceneId(index);
+      setCurrentSceneIndex(index);
       setIsHotspotActionModalOpen(false);
       setSelectedHotspot(null);
     } else {
@@ -607,7 +608,7 @@ export default function TourEditorPage({
       if (response.ok) {
         const data = await response.json();
         const uploadedUrls = data.data.urls;
-        
+
         if (field === 'videoUrl') {
           // For video, we take the first one
           setHotspotForm({ ...hotspotForm, videoUrl: uploadedUrls[0] });

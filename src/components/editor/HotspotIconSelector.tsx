@@ -32,7 +32,6 @@ export const HotspotIconSelector: React.FC<HotspotIconSelectorProps> = ({
   const navigationIcons: HotspotIconType[] = ['ArrowRight', 'MapPin'];
   const actionIcons: HotspotIconType[] = ['ExternalLink', 'Link', 'Play', 'Video'];
   const contentIcons: HotspotIconType[] = ['MessageCircle', 'Camera'];
-  const otherIcons: HotspotIconType[] = ['info'];
 
   const renderIconGroup = (title: string, icons: HotspotIconType[]) => (
     <div className="space-y-3">
@@ -74,7 +73,6 @@ export const HotspotIconSelector: React.FC<HotspotIconSelectorProps> = ({
       {renderIconGroup('Navigation', navigationIcons)}
       {renderIconGroup('External Links', actionIcons)}
       {renderIconGroup('Content', contentIcons)}
-      {renderIconGroup('Other', otherIcons)}
     </div>
   );
 };

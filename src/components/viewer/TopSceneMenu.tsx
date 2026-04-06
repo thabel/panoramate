@@ -21,17 +21,14 @@ export const TopSceneMenu: React.FC<TopSceneMenuProps> = ({
 
   return (
     <div className="relative">
-      {/* Menu Button */}
+      {/* Menu Button - Compact */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 px-3 py-2 text-white transition-all border rounded-lg bg-dark-900/60 hover:bg-dark-800 backdrop-blur-sm border-dark-700/50"
-        title="Scenes"
+        className="flex items-center justify-center p-2 text-white transition-all border rounded-lg bg-dark-900/60 hover:bg-dark-800 backdrop-blur-sm border-dark-700/50"
+        title={`Scenes: ${currentScene?.title || currentScene?.originalName || 'Scenes'}`}
       >
         <Layers size={18} />
-        <span className="text-sm font-medium hidden sm:inline max-w-[120px] truncate">
-          {currentScene?.title || currentScene?.originalName || 'Scenes'}
-        </span>
-        <ChevronDown size={16} className={`transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+        <ChevronDown size={14} className={`ml-1 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
       {/* Dropdown Menu */}

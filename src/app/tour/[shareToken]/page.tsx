@@ -7,7 +7,7 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { SceneNavigation } from '@/components/viewer/SceneNavigation';
 import { TopSceneMenu } from '@/components/viewer/TopSceneMenu';
 import { HotspotContentPanel } from '@/components/viewer/HotspotContentPanel';
-import { Maximize, Minimize, ChevronLeft, ChevronRight, Volume2, VolumeX, Play, Pause, Settings } from 'lucide-react';
+import { Maximize, Minimize, ChevronLeft, ChevronRight, Volume2, VolumeX, Play, Pause, Settings, Grid3x3, ChevronDown } from 'lucide-react';
 
 export default function PublicTourPage({
   params,
@@ -27,6 +27,7 @@ export default function PublicTourPage({
   const [showHotspotTitles, setShowHotspotTitles] = useState(true);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [activeHotspot, setActiveHotspot] = useState<any | null>(null);
+  const [showSceneNavigation, setShowSceneNavigation] = useState(true);
   const containerRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
 
@@ -159,13 +160,12 @@ export default function PublicTourPage({
 
   return (
     <div ref={containerRef} className="flex flex-col h-screen overflow-hidden bg-black">
-      {/* Header - Hidden in embed mode */}
+      {/* Compact Header - Top Left Corner */}
       {!isEmbed && !isFullScreen && (
-        <div className="z-20 px-4 py-4 border-b bg-dark-900 border-dark-700">
-          <h1 className="text-xl font-bold text-white">{tour.title}</h1>
-          <p className="text-sm text-dark-400">
-            {tour.viewCount} views
-            {tour.organization && ` • ${tour.organization.name}`}
+        <div className="absolute top-4 left-4 z-30 max-w-xs">
+          <h1 className="text-sm font-semibold text-white truncate">{tour.title}</h1>
+          <p className="text-xs text-dark-400">
+            {tour.viewCount} views {tour.organization && `• ${tour.organization.name}`}
           </p>
         </div>
       )}
@@ -194,30 +194,49 @@ export default function PublicTourPage({
               </div>
             )}
 
-            {/* Main Carousel Navigation */}
+            {/* Bottom Navigation Controls */}
             {tour.images.length > 1 && (
-              <>
+              <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 flex items-center gap-3">
+                {/* Previous Scene Button */}
                 <button
                   onClick={() => {
                     const id = getPrevSceneId();
                     if (id) setCurrentSceneId(id);
                   }}
-                  className="absolute z-30 p-3 text-white transition-all -translate-y-1/2 border rounded-full opacity-0 left-4 top-1/2 bg-dark-900/40 hover:bg-dark-800 backdrop-blur-md border-dark-700/50 group-hover/viewer:opacity-100 active:scale-90"
+                  className="p-3 text-white transition-all border rounded-full bg-dark-900/50 hover:bg-dark-800 backdrop-blur-md border-dark-700/50 active:scale-90"
                   title="Previous Scene"
                 >
-                  <ChevronLeft size={32} />
+                  <ChevronLeft size={24} />
                 </button>
+
+                {/* Scene Counter */}
+                <div className="px-4 py-2 text-sm font-medium text-white bg-dark-900/50 rounded-full backdrop-blur-md border border-dark-700/50">
+                  {tour.images.findIndex((img: any) => img.id === currentSceneId) + 1} / {tour.images.length}
+                </div>
+
+                {/* Next Scene Button */}
                 <button
                   onClick={() => {
                     const id = getNextSceneId();
                     if (id) setCurrentSceneId(id);
                   }}
-                  className="absolute z-30 p-3 text-white transition-all -translate-y-1/2 border rounded-full opacity-0 right-4 top-1/2 bg-dark-900/40 hover:bg-dark-800 backdrop-blur-md border-dark-700/50 group-hover/viewer:opacity-100 active:scale-90"
+                  className="p-3 text-white transition-all border rounded-full bg-dark-900/50 hover:bg-dark-800 backdrop-blur-md border-dark-700/50 active:scale-90"
                   title="Next Scene"
                 >
-                  <ChevronRight size={32} />
+                  <ChevronRight size={24} />
                 </button>
-              </>
+
+                {/* Toggle Scene Grid Button */}
+                {tour.showSceneMenu !== false && tour.images.length > 1 && (
+                  <button
+                    onClick={() => setShowSceneNavigation(!showSceneNavigation)}
+                    className="p-3 text-white transition-all border rounded-full bg-dark-900/50 hover:bg-dark-800 backdrop-blur-md border-dark-700/50 active:scale-90"
+                    title={showSceneNavigation ? 'Hide scenes grid' : 'Show scenes grid'}
+                  >
+                    <Grid3x3 size={20} />
+                  </button>
+                )}
+              </div>
             )}
 
             {/* Top Right Controls Group */}
@@ -296,8 +315,8 @@ export default function PublicTourPage({
               </button>
             </div>
 
-            {/* Bottom Scene Navigation Grid */}
-            {tour.showSceneMenu !== false && (
+            {/* Bottom Scene Navigation Grid - Collapsible */}
+            {tour.showSceneMenu !== false && showSceneNavigation && (
               <SceneNavigation
                 scenes={tour.images}
                 currentSceneId={currentSceneId}
@@ -332,9 +351,9 @@ export default function PublicTourPage({
         )}
       </div>
 
-      {/* Footer - Hidden in embed mode */}
+      {/* Compact Footer - Bottom Right Corner */}
       {!isEmbed && !isFullScreen && (
-        <div className="z-20 px-4 py-3 text-sm text-center border-t bg-dark-900 border-dark-700 text-dark-400">
+        <div className="absolute bottom-4 right-4 z-20 text-xs text-dark-400">
           Powered by <span className="font-semibold text-primary-400">Panoramate</span>
         </div>
       )}

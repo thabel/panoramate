@@ -171,7 +171,7 @@ export const HotspotConfigForm: React.FC<HotspotConfigFormProps> = ({
                 className="flex-1 cursor-pointer text-sm text-dark-300 hover:text-primary-400 transition-colors"
               >
                 {uploadedFiles[fieldName] ? (
-                  <span className="text-primary-400">✓ {uploadedFiles[fieldName].name}</span>
+                  <span className="text-primary-400">✓ {uploadedFiles[fieldName]?.name}</span>
                 ) : (
                   <span>Click to upload {fieldName === 'videoUrl' ? 'video' : 'image'}</span>
                 )}
@@ -220,7 +220,7 @@ export const HotspotConfigForm: React.FC<HotspotConfigFormProps> = ({
                 className="flex-1 cursor-pointer text-sm text-dark-300 hover:text-primary-400 transition-colors"
               >
                 {uploadedFiles[fieldName] ? (
-                  <span className="text-primary-400">✓ {uploadedFiles[fieldName].name}</span>
+                  <span className="text-primary-400">✓ {uploadedFiles[fieldName]?.name}</span>
                 ) : (
                   <span>Click to upload 1-2 images</span>
                 )}

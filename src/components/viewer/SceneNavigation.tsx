@@ -32,8 +32,8 @@ export const SceneNavigation: React.FC<SceneNavigationProps> = ({
   };
 
   return (
-    <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 w-full max-w-4xl px-4 animate-fade-in">
-      <div className="relative group/grid bg-dark-900/40 backdrop-blur-md p-3 rounded-2xl border border-white/10 shadow-2xl">
+    <div className="absolute bottom-24 left-1/2 -translate-x-1/2 z-30 w-full max-w-4xl px-4 animate-fade-in">
+      <div className="relative group/grid bg-dark-900/50 backdrop-blur-md p-3 rounded-2xl border border-white/10 shadow-2xl">
         {scenes.length > 4 && (
           <button
             onClick={() => scrollThumbnails('left')}
