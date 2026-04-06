@@ -15,6 +15,8 @@ import { Save, ChevronLeft, ChevronRight, Image as ImageIcon, Plus, Trash2, X, S
 import * as LucideIcons from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import { ShareModal } from '@/components/dashboard/ShareModal';
+import { HotspotConfigPanel } from '@/components/editor/HotspotConfigPanel';
+import { HotspotIconType } from '@/lib/hotspotIconsConfig';
 import { HOTSPOT_ICONS, getHotspotIconConfig, iconIdToType } from '@/lib/hotspotIcons';
 import { getHostpotIconType, HOTSPOT_ICONS_SVG } from '@/lib/hotspotIconsSvg';
 import { logger } from '@/lib/logger';
@@ -590,295 +592,67 @@ export default function TourEditorPage({
     const slot = document.getElementById('hotspot-panel-slot');
     if (!slot) return null;
 
+    const handleSaveHotspot = async (data: Record<string, any>) => {
+      try {
+        const currentImage = tour.images[currentSceneIndex];
+        const payload = {
+          ...data,
+          yaw: newHotspotCoords?.yaw || 0,
+          pitch: newHotspotCoords?.pitch || 0,
+        };
+
+        const token = localStorage.getItem('token');
+        const endpoint = `/api/tours/${params.id}/images/${currentImage.id}/hotspots`;
+        const method = selectedHotspot ? 'PATCH' : 'POST';
+        const body = selectedHotspot
+          ? { ...payload, hotspotId: selectedHotspot.id }
+          : payload;
+
+        const response = await fetch(endpoint, {
+          method,
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token || ''}`,
+          },
+          body: JSON.stringify(body),
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          toast.error(error.details?.join(', ') || error.error || 'Failed to save hotspot');
+          return;
+        }
+
+        toast.success(selectedHotspot ? 'Hotspot updated' : 'Hotspot created');
+        await fetchTour();
+        setIsHotspotPanelOpen(false);
+        setAddHotspotMode(false);
+        setNewHotspotCoords(null);
+        setSelectedHotspot(null);
+      } catch (error) {
+        toast.error('Error saving hotspot');
+        console.error(error);
+      }
+    };
+
+    const currentImage = tour.images[currentSceneIndex];
+
     return createPortal(
-      <div className="flex flex-col h-full overflow-hidden text-white">
-        {isHotspotPanelCollapsed ? (
-          <div className="flex flex-col items-center gap-6 py-6">
-             <button
-              onClick={() => setIsHotspotPanelCollapsed(false)}
-              className="p-2 transition-colors rounded-lg hover:bg-dark-700 text-primary-400"
-              title="Expand Panel"
-            >
-              <ChevronLeft size={20} />
-            </button>
-            <div className="w-px h-12 bg-dark-700" />
-            <div className="vertical-text text-[10px] font-bold text-dark-400 uppercase tracking-[0.2em] whitespace-nowrap select-none" style={{ writingMode: 'vertical-rl' }}>
-              Configuration
-            </div>
-          </div>
-        ) : (
-          <>
-            <div className="flex items-center justify-between px-6 py-4 border-b border-dark-700 bg-dark-900/50">
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setIsHotspotPanelCollapsed(true)}
-                  className="p-1 transition-colors rounded-lg hover:bg-dark-700 text-dark-400"
-                  title="Collapse Panel"
-                >
-                  <ChevronRight size={20} />
-                </button>
-                <h2 className="text-lg font-semibold text-white">Configure Hotspot</h2>
-              </div>
-              <button
-                onClick={() => {
-                  setIsHotspotPanelOpen(false);
-                  setAddHotspotMode(false);
-                  setNewHotspotCoords(null);
-                  setSceneSearchQuery('');
-                }}
-                className="p-1 transition-colors rounded-lg hover:bg-dark-700 text-dark-400"
-              >
-                <X size={20} />
-              </button>
-            </div>
-            
-            <div className="flex-1 p-6 space-y-6 overflow-y-auto scrollbar-hide">
-              <div className="space-y-4">
-                <div>
-                  <label className="block mb-3 text-sm font-medium text-dark-300">Hotspot Icon</label>
-                  
-                  {/* Primary Icons Group */}
-                  <div className="mb-4">
-                    <p className="mb-2 text-[10px] font-bold text-dark-500 uppercase tracking-wider">Main Actions</p>
-                    <div className="grid grid-cols-4 gap-2">
-                      {['info', 'MapPin'].map((iconName) => (
-                        <button
-                          key={iconName}
-                          onClick={() => {
-                            setHotspotForm({ ...hotspotForm, iconName });
-                            if (newHotspotCoords) {
-                              setNewHotspotCoords({ ...newHotspotCoords, iconName });
-                            }
-                          }}
-                          className={`flex items-center justify-center p-2 rounded-lg transition-all ${
-                            hotspotForm.iconName === iconName
-                              ? 'bg-primary-500/30 border border-primary-500'
-                              : 'bg-dark-700 border border-dark-600 hover:border-dark-500'
-                          }`}
-                          title={`${iconName} Icon`}
-                        >
-                          {renderIconBoxer(20, iconName)}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Other Icons Group */}
-                  <div>
-                    <p className="mb-2 text-[10px] font-bold text-dark-500 uppercase tracking-wider">Other Icons</p>
-                    <div className="grid grid-cols-4 gap-2">
-                      {Object.keys(HOTSPOT_ICONS_SVG)
-                        .filter(name => !['info', 'MapPin'].includes(name))
-                        .map((iconName) => (
-                          <button
-                            key={iconName}
-                            onClick={() => {
-                              setHotspotForm({ ...hotspotForm, iconName });
-                              if (newHotspotCoords) {
-                                setNewHotspotCoords({ ...newHotspotCoords, iconName });
-                              }
-                            }}
-                            className={`flex items-center justify-center p-2 rounded-lg transition-all ${
-                              hotspotForm.iconName === iconName
-                                ? 'bg-primary-500/30 border border-primary-500'
-                                : 'bg-dark-700 border border-dark-600 hover:border-dark-500'
-                            }`}
-                            title={`${iconName} Icon`}
-                          >
-                            {renderIconBoxer(20, iconName)}
-                          </button>
-                        ))}
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="flex items-center block gap-2 mb-2 text-sm font-medium text-dark-300">
-                    <Zap size={16} className="text-primary-400" />
-                    Hotspot Title
-                  </label>
-                  <input
-                    type="text"
-                    value={hotspotForm.title}
-                    onChange={(e) => setHotspotForm({ ...hotspotForm, title: e.target.value })}
-                    placeholder="e.g. Living Room"
-                    className="w-full px-3 py-2 text-sm text-white transition-all border rounded-lg outline-none bg-dark-700 border-dark-600 focus:border-primary-500"
-                  />
-                </div>
-              </div>
-
-              {/* Link to Scene */}
-              {hotspotForm.iconName === 'MapPin' && (
-                <div className="pt-4 space-y-4 border-t border-dark-700">
-                  <div className="flex flex-col gap-3">
-                    <label className="flex items-center gap-2 text-sm font-semibold text-white">
-                      Target Scene
-                    </label>
-                    <div className="flex w-full p-1 border rounded-lg bg-dark-900 border-dark-700">
-                      <button
-                        onClick={() => setSelectionMode('name')}
-                        className={`flex-1 py-1.5 px-2 text-xs font-medium rounded-md transition-all flex items-center justify-center gap-1 ${
-                          selectionMode === 'name' ? 'bg-primary-600 text-white' : 'text-dark-400'
-                        }`}
-                      >
-                        By name
-                      </button>
-                      <button
-                        onClick={() => setSelectionMode('image')}
-                        className={`flex-1 py-1.5 px-2 text-xs font-medium rounded-md transition-all flex items-center justify-center gap-1 ${
-                          selectionMode === 'image' ? 'bg-primary-600 text-white' : 'text-dark-400'
-                        }`}
-                      >
-                        By image
-                      </button>
-                    </div>
-                  </div>
-
-                  {selectionMode === 'name' ? (
-                    <div className="space-y-3">
-                      <div className="relative">
-                        <Search className="absolute -translate-y-1/2 left-3 top-1/2 text-dark-400" size={16} />
-                        <input
-                          type="text"
-                          placeholder="Search scene..."
-                          value={sceneSearchQuery}
-                          onChange={(e) => setSceneSearchQuery(e.target.value)}
-                          className="w-full py-2 pl-10 pr-4 text-xs text-white border rounded-lg outline-none bg-dark-900 border-dark-700 focus:border-primary-500"
-                        />
-                      </div>
-                      <div className="pr-1 space-y-1 overflow-y-auto max-h-48 scrollbar-thin">
-                        {tour.images
-                          .filter((img: TourImage) =>
-                            img.id !== tour.images[currentSceneIndex].id &&
-                            (img.title || `Scene ${img.order + 1}`).toLowerCase().includes(sceneSearchQuery.toLowerCase())
-                          )
-                          .map((img: TourImage) => (
-                            <button
-                              key={img.id}
-                              onClick={() => setHotspotForm({ ...hotspotForm, targetImageId: img.id })}
-                              className={`w-full text-left px-3 py-2.5 rounded-lg text-xs transition-all border ${
-                                hotspotForm.targetImageId === img.id
-                                  ? 'bg-primary-600/20 border-primary-500 text-white'
-                                  : 'bg-dark-900/40 border-transparent text-dark-300'
-                              }`}
-                            >
-                              {img.title || `Scene ${img.order + 1}`}
-                            </button>
-                          ))
-                        }
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-2 gap-2 pr-1 overflow-y-auto max-h-48 scrollbar-thin">
-                      {tour.images
-                        .filter((img: TourImage) => img.id !== tour.images[currentSceneIndex].id)
-                        .map((img: TourImage) => (
-                          <button
-                            key={img.id}
-                            onClick={() => setHotspotForm({ ...hotspotForm, targetImageId: img.id })}
-                            className={`relative group rounded-lg overflow-hidden border-2 transition-all ${
-                              hotspotForm.targetImageId === img.id
-                                ? 'border-primary-500'
-                                : 'border-transparent'
-                            }`}
-                          >
-                            <img
-                              src={`/api/uploads/${img.filename}`}
-                              alt={img.title || 'Scene'}
-                              className="object-cover w-full h-16"
-                            />
-                          </button>
-                        ))
-                      }
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Information Box */}
-              {hotspotForm.type === 'INFO' && (
-                <div className="pt-4 space-y-4 border-t border-dark-700">
-                  <div>
-                    <label className="flex items-center block gap-2 mb-2 text-sm font-medium text-dark-300">
-                      Content Text
-                    </label>
-                    <textarea
-                      value={hotspotForm.content}
-                      onChange={(e) => setHotspotForm({ ...hotspotForm, content: e.target.value })}
-                      placeholder="Enter information text..."
-                      rows={4}
-                      className="w-full px-3 py-2 text-sm text-white transition-all border rounded-lg outline-none resize-none bg-dark-700 border-dark-600 focus:border-primary-500"
-                    />
-                  </div>
-                </div>
-              )}
-
-              {/* External Link */}
-              {hotspotForm.type === 'URL' && (
-                <div className="pt-4 space-y-4 border-t border-dark-700">
-                  <div>
-                    <label className="flex items-center block gap-2 mb-2 text-sm font-medium text-dark-300">
-                      Website URL
-                    </label>
-                    <input
-                      type="url"
-                      value={hotspotForm.url}
-                      onChange={(e) => setHotspotForm({ ...hotspotForm, url: e.target.value })}
-                      placeholder="https://example.com"
-                      className="w-full px-3 py-2 text-sm text-white transition-all border rounded-lg outline-none bg-dark-700 border-dark-600 focus:border-primary-500"
-                    />
-                  </div>
-                </div>
-              )}
-
-              {/* Video */}
-              {hotspotForm.type === 'VIDEO' && (
-                <div className="pt-4 space-y-4 border-t border-dark-700">
-                  <div>
-                    <label className="flex items-center block gap-2 mb-2 text-sm font-medium text-dark-300">
-                      Video URL
-                    </label>
-                    <input
-                      type="url"
-                      value={hotspotForm.videoUrl}
-                      onChange={(e) => setHotspotForm({ ...hotspotForm, videoUrl: e.target.value })}
-                      placeholder="YouTube or Vimeo URL"
-                      className="w-full px-3 py-2 text-sm text-white transition-all border rounded-lg outline-none bg-dark-700 border-dark-600 focus:border-primary-500"
-                    />
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="flex gap-3 p-6 border-t border-dark-700 bg-dark-900/50">
-              <Button
-                variant="secondary"
-                onClick={() => {
-                  setIsHotspotPanelOpen(false);
-                  setAddHotspotMode(false);
-                  setNewHotspotCoords(null);
-                }}
-                className="flex-1 text-xs"
-              >
-                Cancel
-              </Button>
-              <Button
-                variant="primary"
-                onClick={handleCreateHotspot}
-                className="flex-1 text-xs"
-                disabled={
-                  (hotspotForm.type === 'LINK' && !hotspotForm.targetImageId) ||
-                  (hotspotForm.type === 'INFO' && !hotspotForm.content) ||
-                  (hotspotForm.type === 'URL' && !hotspotForm.url) ||
-                  (hotspotForm.type === 'VIDEO' && !hotspotForm.videoUrl)
-                }
-              >
-                Create
-              </Button>
-            </div>
-          </>
-        )}
-      </div>,
+      <HotspotConfigPanel
+        isCollapsed={isHotspotPanelCollapsed}
+        onCollapsedChange={setIsHotspotPanelCollapsed}
+        onClose={() => {
+          setIsHotspotPanelOpen(false);
+          setAddHotspotMode(false);
+          setNewHotspotCoords(null);
+          setSelectedHotspot(null);
+        }}
+        tourImages={tour.images}
+        currentImageId={currentImage.id}
+        selectedHotspot={selectedHotspot}
+        onSave={handleSaveHotspot}
+        isSaving={false}
+      />,
       slot
     );
   };
