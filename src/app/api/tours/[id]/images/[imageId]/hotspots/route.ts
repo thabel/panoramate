@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAuthUser } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { logger } from '@/lib/logger';
+import { validateHotspotData, HotspotIconType } from '@/lib/hotspotIconsConfig';
 
 export async function GET(
   request: NextRequest,
@@ -55,11 +56,49 @@ export async function POST(
     }
 
     const body = await request.json();
-    const { type, yaw, pitch, rotation, targetImageId, title, content, url, videoUrl, imageUrl, animationType, iconUrl, iconName, color, scale } = body;
+    const {
+      type,
+      yaw,
+      pitch,
+      rotation,
+      targetImageId,
+      title,
+      content,
+      url,
+      videoUrl,
+      imageUrl,
+      imageUrls,
+      animationType,
+      iconUrl,
+      iconName,
+      color,
+      scale,
+      metadata,
+    } = body;
 
     if (!type || yaw === undefined || pitch === undefined) {
       return NextResponse.json(
         { error: 'type, yaw, and pitch are required' },
+        { status: 400 }
+      );
+    }
+
+    // Validate hotspot data against icon type requirements
+    const validation = validateHotspotData(iconName as HotspotIconType, {
+      title,
+      targetImageId,
+      content,
+      url,
+      videoUrl,
+      imageUrls,
+    });
+
+    if (!validation.valid) {
+      return NextResponse.json(
+        {
+          error: 'Validation failed',
+          details: validation.errors,
+        },
         { status: 400 }
       );
     }
@@ -90,15 +129,20 @@ export async function POST(
         url: url || null,
         videoUrl: videoUrl || null,
         imageUrl: imageUrl || null,
+        imageUrls: imageUrls || null,
         animationType: animationType || 'NONE',
         iconUrl: iconUrl || null,
         iconName: iconName || 'info',
         color: color || null,
         scale: scale || 1.0,
+        metadata: metadata || null,
       },
     });
 
-    logger.info({ hotspotId: hotspot.id, imageId: params.imageId, tourId: params.id }, 'Hotspot created in database');
+    logger.info(
+      { hotspotId: hotspot.id, imageId: params.imageId, tourId: params.id, iconName },
+      'Hotspot created in database'
+    );
 
     return NextResponse.json(
       { success: true, data: hotspot },
@@ -125,7 +169,26 @@ export async function PATCH(
     }
 
     const body = await request.json();
-    const { hotspotId, type, yaw, pitch, rotation, targetImageId, title, content, url, videoUrl, imageUrl, animationType, iconUrl, iconName, color, scale } = body;
+    const {
+      hotspotId,
+      type,
+      yaw,
+      pitch,
+      rotation,
+      targetImageId,
+      title,
+      content,
+      url,
+      videoUrl,
+      imageUrl,
+      imageUrls,
+      animationType,
+      iconUrl,
+      iconName,
+      color,
+      scale,
+      metadata,
+    } = body;
 
     if (!hotspotId) {
       return NextResponse.json(
@@ -150,6 +213,29 @@ export async function PATCH(
       );
     }
 
+    // Validate hotspot data against icon type requirements if iconName is being changed
+    if (iconName || title || targetImageId || content || url || videoUrl || imageUrls) {
+      const finalIconName = iconName || hotspot.iconName;
+      const validation = validateHotspotData(finalIconName as HotspotIconType, {
+        title: title !== undefined ? title : hotspot.title,
+        targetImageId: targetImageId !== undefined ? targetImageId : hotspot.targetImageId,
+        content: content !== undefined ? content : hotspot.content,
+        url: url !== undefined ? url : hotspot.url,
+        videoUrl: videoUrl !== undefined ? videoUrl : hotspot.videoUrl,
+        imageUrls: imageUrls !== undefined ? imageUrls : hotspot.imageUrls,
+      });
+
+      if (!validation.valid) {
+        return NextResponse.json(
+          {
+            error: 'Validation failed',
+            details: validation.errors,
+          },
+          { status: 400 }
+        );
+      }
+    }
+
     // RESTRICTION DISABLED: all authenticated users can update hotspots
     const updatedHotspot = await db.hotspot.update({
       where: { id: hotspotId },
@@ -164,13 +250,20 @@ export async function PATCH(
         ...(url !== undefined && { url }),
         ...(videoUrl !== undefined && { videoUrl }),
         ...(imageUrl !== undefined && { imageUrl }),
+        ...(imageUrls !== undefined && { imageUrls }),
         ...(animationType && { animationType }),
         ...(iconUrl !== undefined && { iconUrl }),
         ...(iconName !== undefined && { iconName }),
         ...(color !== undefined && { color }),
         ...(scale !== undefined && { scale }),
+        ...(metadata !== undefined && { metadata }),
       },
     });
+
+    logger.info(
+      { hotspotId: updatedHotspot.id, iconName: updatedHotspot.iconName },
+      'Hotspot updated'
+    );
 
     return NextResponse.json(
       { success: true, data: updatedHotspot },
@@ -225,6 +318,8 @@ export async function DELETE(
     await db.hotspot.delete({
       where: { id: hotspotId },
     });
+
+    logger.info({ hotspotId }, 'Hotspot deleted');
 
     return NextResponse.json(
       { success: true, message: 'Hotspot deleted' },
