@@ -152,11 +152,13 @@ model Hotspot {
   url           String?         @db.Text
   videoUrl      String?         @db.Text
   imageUrl      String?         @db.Text
+  imageUrls     String?         @db.Text
   animationType AnimationType   @default(NONE)
   iconUrl       String?         @db.Text
   iconName      String?         @default("info")
   color         String?
   scale         Float           @default(1.0)
+  metadata      Json?
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
   image         TourImage       @relation(fields: [imageId], references: [id], onDelete: Cascade)

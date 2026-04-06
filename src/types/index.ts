@@ -40,11 +40,13 @@ export interface Hotspot {
   url?: string;
   videoUrl?: string;
   imageUrl?: string;
+  imageUrls?: string; // JSON array for Camera type (supports 1-2 images)
   animationType: AnimationType;
   iconUrl?: string;
   iconName?: string;
   color?: string;
   scale: number;
+  metadata?: Record<string, any>; // Additional metadata for specific icon types
   createdAt: Date;
   updatedAt: Date;
 }
@@ -122,10 +124,47 @@ export interface CreateHotspotInput {
   url?: string;
   videoUrl?: string;
   imageUrl?: string;
+  imageUrls?: string; // JSON array of image URLs for Camera type
+  iconName?: string;
+  animationType?: AnimationType;
+  color?: string;
+  scale?: number;
+  metadata?: Record<string, any>;
 }
 
 export interface UpdateHotspotInput extends Partial<CreateHotspotInput> {
   hotspotId: string;
+}
+
+/**
+ * Icon-specific hotspot configuration data
+ */
+export interface HotspotIconData {
+  // Scene Navigation (ArrowRight, MapPin)
+  sceneNavigationData?: {
+    targetImageId: string;
+  };
+
+  // External Links (ExternalLink, Link)
+  urlData?: {
+    url: string;
+  };
+
+  // Videos (Play, Video)
+  videoData?: {
+    videoUrl: string;
+    isUpload?: boolean; // true if uploaded file, false if external URL
+  };
+
+  // Messages (MessageCircle)
+  messageData?: {
+    content: string;
+  };
+
+  // Images (Camera)
+  galleryData?: {
+    imageUrls: string[]; // Array of 1-2 image URLs
+  };
 }
 
 export interface PlanLimits {
