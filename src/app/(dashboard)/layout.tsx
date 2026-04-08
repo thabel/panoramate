@@ -72,11 +72,11 @@ export default function DashboardLayout({
       href: '/team',
       icon: Users,
     },
-    {
-      label: 'Billing',
-      href: '/billing',
-      icon: CreditCard,
-    },
+    // {
+    //   label: 'Billing',
+    //   href: '/billing',
+    //   icon: CreditCard,
+    // },
     {
       label: 'Settings',
       href: '/settings',

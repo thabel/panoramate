@@ -1,106 +1,80 @@
-* Afficher ou pas le menu du viewer
-* Permettre de rajouter un hostpost 
-    * le mettre dans n'importe quel zone dans le viewer
-* Partage de lien et partage de l'iframe
+# Roadmap Viewer
 
+## Priorités immédiates [semaine du 23 mars 2026. ]
+- Afficher ou masquer le menu du viewer.
+- Permettre d’ajouter un hotspot dans n’importe quelle zone du viewer.
+- Partager un lien public et partager l’iframe.
 
+## Hotspots
+- Le contenu d’un hotspot info peut inclure du texte, une image, une vidéo ou un lien externe.
+- Ajouter une option pour afficher ou masquer le titre du hotspot.
+- Quand on survole un hotspot, afficher son titre.
+- Rendre le hover sur hotspot plus fluide et plus visible.
 
-### Nice to have
-* Commentaires sur les virtuel
+## Vue publique
+- Permettre d’activer ou de désactiver le menu de navigation via un paramètre.
+- Ajouter une recherche sur les titres des images 360.
+- Ajouter une musique de fond avec un bouton on/off.
+- Ajouter des assets multimédia dans le viewer.
+- Ajouter les directions et les flèches dans la vue publique.
+- Rendre le tour public plus proche du comportement de Marzipano.
 
+## Nice to have
+- Commentaires sur les virtuels.
 
-## Optique View
+## À discuter
+- Plan 2D interactif.
+- Viewer comparatif à partir d’un plan.
+- Uploader un plan, pas seulement pour les travaux.
+- Comparer une vue 360 à une autre date pour faire du avant/après.
+- Cas d’usage type comparaison d’un espace avant/après rénovation.
+- Version Freeweer / version payante légère une fois les fonctionnalités clés en place.
 
-Sur le hoststop info on peut mettre 
-    du texte 
-    une image
-    une video 
-    ou lien externe (iframe qui t'ouvre une page) .p
+## Offlinked Academy
+- Voir les formations et les speakers.
+- Proposer des formations en ligne, en présentiel et en hybride.
+- Structurer la partie formation en ligne.
 
-* Menu de navigation
-    ( possibilité de l'afficher ou pas au niveau du parametre)
-    parametrrage
-    * Rajouter une possibilité de recherche sur les titres 
-    des images 360.
+## Personnalisation
+- Permettre d’utiliser son propre icône.
 
-* Objectif: Rendre le hoover to 
-hotspot disponible.
+## Follow-up
+- Valider le périmètre exact du menu du viewer: masquable, persistant, contextuel.
+- Prioriser les hotspots: création, positionnement libre, titre au survol, types de contenu.
+- Décider du modèle de partage: lien simple, iframe, options d’intégration.
+- Choisir la prochaine grosse brique produit: 2D interactive, comparatif avant/après, ou Academy.
+- Revoir la meilleure approche UX pour le panel de configuration sans déplacer visuellement le viewer.
 
-* 2eme objectif : Rendre le tour public comme sur marzipano tester:
+## Rapport d’investigation - Hotspot Panel Issue (02/04/2026)
 
-## Fonctionalités
-    * Rajouter une option afficher ou pas le title sur le hoststpot
-    Quand on hover le hoststop , il faut montrer le titre 
-    * Rajouter une musique dans le background et un btn on off [Vue publique]
-    * Rajouter des assest multimédia dans le viewer.
-    * Rajouter à la vue publique les directioin et fleches.
+### Contexte du problème
+Lors de l’ajout d’un hotspot temporaire dans l’éditeur de tour, un problème visuel a été identifié: quand le panel de configuration s’ouvre à droite, le hotspot se déplace visuellement même si ses coordonnées n’ont pas changé.
 
-## A discuter
-    [Fonctionnalité]: Plan 2D interractive
-    Quand , on va 
-    *
-
-### Viewer comparatif 
-comparitif à patir d'un plan
-
-Uploader un plan
-[Pas par defaut que pour les traveaux.]
-
-On a un plan 360  d'une chambre on , voit la date 
-capturer et comparer cette mm vue à une autre 
-date , cette fonctionnalité
-
-Avant et Apres
-
-Comparer un espace , avec une autre espace , 
-j'ai une chambre que je veux refaire la peinture 
-meuble , comparer , avant apres.
-comparaison le jour et la nuit.
-
-Exemple: RICO360...
-
-### Versions Freeweer:
-
-une petite version payantes
-Quand on aura les fonctionnalités
-
-la versioin Freeweer.
-
-### Offlinked Academy
-
-* voir les formations & et voir les speakers
-* une formations en ligne & presentiel & hybirde
-* La formation en ligne .
-*
-
----
-
-## 📋 Rapport d'Investigation - Hotspot Panel Issue (02/04/2026)
-
-### Contexte du Problème
-Lors de l'ajout d'un hotspot temporaire dans l'éditeur de tour, un problème visuel a été identifié : **quand le panel de configuration s'ouvre à droite, le hotspot se déplace visuellement** même si ses coordonnées n'ont pas changé.
-
-### Analyse Effectuée
-- 🔍 Investigation complète du code du viewer Marzipano (la technologie 360°)
-- 📍 Identification de la cause : quand le panel s'ouvre, il réduit la largeur du viewer, mais Marzipano n'était pas notifié de ce changement
-- 🔧 Tentative de correction via ResizeObserver (composant React qui détecte les changements de taille)
+### Analyse effectuée
+- Investigation complète du code du viewer Marzipano.
+- Identification de la cause: l’ouverture du panel réduit la largeur du viewer, mais Marzipano n’était pas notifié de ce changement.
+- Tentative de correction via ResizeObserver.
 
 ### Résultat
-- ❌ La première approche s'est avérée invalide (méthodes API qui n'existent pas dans Marzipano)
-- ✅ Code revenu à l'état stable sans casser la fonctionnalité existante
-- 📚 Documentation Marzipano insuffisante pour une solution rapide
+- La première approche s’est avérée invalide, car certaines méthodes API n’existent pas dans Marzipano.
+- Le code est revenu à un état stable sans casser la fonctionnalité existante.
+- La documentation Marzipano ne permet pas encore une correction rapide.
 
 ### Recommandations
-1. **Court terme** : Tester manuellement si ce décalage est vraiment perceptible par les utilisateurs
-2. **Moyen terme** : Consulter la documentation officielle Marzipano ou la communauté Google pour la bonne approche
-3. **Alternative** : Mettre le panel à un endroit qui ne réduit pas le viewer (ex: overlay floatant)
+1. Court terme: tester manuellement si ce décalage est réellement perceptible pour les utilisateurs.
+2. Moyen terme: consulter la documentation officielle Marzipano ou la communauté pour la bonne approche.
+3. Alternative: placer le panel ailleurs, par exemple en overlay flottant, pour ne pas réduire le viewer.
 
-### Impact Utilisateur
-- ✅ L'application fonctionne correctement
-- ⚠️ Problème cosmétique possible à améliorer
+### Impact utilisateur
+- L’application fonctionne correctement.
+- Le problème reste cosmétique mais mérite une amélioration.
 
----
+### [TODO] 
+* La tache concerne le comparaison , de deux viewer.
+* Modifier la configuration d'un hotspot.
+* Reproposer une autre interface pour mettre en avnat la partie 2D interactive
 
-## Personnalisation:
-* Permeetre d'utiliser son propre icon
-* 
+Question
+L'histoire du partage de vue 360 comment l'integrer ou l'integer.
+
+ma proposition 
