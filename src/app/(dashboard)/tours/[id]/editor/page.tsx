@@ -40,6 +40,7 @@ export default function TourEditorPage({
   const [isRenameModalOpen, setIsRenameModalOpen] = useState(false);
   const [newSceneTitle, setNewSceneTitle] = useState('');
   const [selectedHotspot, setSelectedHotspot] = useState<any | null>(null);
+  const [isEditingHotspot, setIsEditingHotspot] = useState(false);
   const [isHotspotActionModalOpen, setIsHotspotActionModalOpen] = useState(false);
   const [newHotspotCoords, setNewHotspotCoords] = useState<{ yaw: number; pitch: number; iconName?: string } | null>(null);
   const [sceneSearchQuery, setSceneSearchQuery] = useState('');
@@ -87,6 +88,31 @@ export default function TourEditorPage({
     setAddHotspotMode(false);
     setNewHotspotCoords(null);
     setSceneSearchQuery('');
+    setIsEditingHotspot(false);
+    setSelectedHotspot(null);
+  };
+
+  const handleEditHotspot = () => {
+    if (!selectedHotspot) return;
+
+    setHotspotForm({
+      type: selectedHotspot.type,
+      title: selectedHotspot.title || '',
+      targetImageId: selectedHotspot.targetImageId || '',
+      content: selectedHotspot.content || '',
+      url: selectedHotspot.url || '',
+      videoUrl: selectedHotspot.videoUrl || '',
+      imageUrl: selectedHotspot.imageUrl || '',
+      imageUrls: selectedHotspot.imageUrls || '',
+      animationType: selectedHotspot.animationType || 'NONE',
+      scale: selectedHotspot.scale || 1.0,
+      iconUrl: selectedHotspot.iconUrl || '',
+      iconName: selectedHotspot.iconName || 'info',
+    });
+
+    setIsEditingHotspot(true);
+    setIsHotspotActionModalOpen(false);
+    setIsHotspotPanelOpen(true);
   };
 
   const handleAudioUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -251,32 +277,61 @@ export default function TourEditorPage({
     }
   };
 
-  const handleCreateHotspot = async () => {
-    if (!newHotspotCoords || !tour) return;
+  const handleSaveHotspot = async () => {
+    if ((!newHotspotCoords && !isEditingHotspot) || !tour) return;
     try {
       const currentImageId = tour.images[currentSceneIndex].id;
       const token = localStorage.getItem('token');
-      const response = await fetch(`/api/tours/${params.id}/images/${currentImageId}/hotspots`, {
-        method: 'POST',
+
+      const url = `/api/tours/${params.id}/images/${currentImageId}/hotspots`;
+      const method = isEditingHotspot ? 'PATCH' : 'POST';
+      const body = isEditingHotspot
+        ? { hotspotId: selectedHotspot.id, ...hotspotForm }
+        : { ...newHotspotCoords, ...hotspotForm };
+
+      const response = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token || ''}` },
-        body: JSON.stringify({ ...newHotspotCoords, ...hotspotForm }),
+        body: JSON.stringify(body),
       });
+
       if (response.ok) {
         const data = await response.json();
-        const newHotspot = data.data;
-        logger.info({ tourId: params.id, imageId: currentImageId, hotspotId: newHotspot.id }, 'Hotspot created successfully');
-        setTour({
-          ...tour,
-          images: tour.images.map((img: TourImage) =>
-            img.id === currentImageId
-              ? { ...img, hotspots: [...((img as any).hotspots || []), newHotspot] }
-              : img
-          ),
-        });
+        const savedHotspot = data.data;
+
+        if (isEditingHotspot) {
+          logger.info({ tourId: params.id, imageId: currentImageId, hotspotId: savedHotspot.id }, 'Hotspot updated successfully');
+          setTour({
+            ...tour,
+            images: tour.images.map((img: TourImage) =>
+              img.id === currentImageId
+                ? {
+                    ...img,
+                    hotspots: ((img as any).hotspots || []).map((h: any) =>
+                      h.id === savedHotspot.id ? savedHotspot : h
+                    ),
+                  }
+                : img
+            ),
+          });
+        } else {
+          logger.info({ tourId: params.id, imageId: currentImageId, hotspotId: savedHotspot.id }, 'Hotspot created successfully');
+          setTour({
+            ...tour,
+            images: tour.images.map((img: TourImage) =>
+              img.id === currentImageId
+                ? { ...img, hotspots: [...((img as any).hotspots || []), savedHotspot] }
+                : img
+            ),
+          });
+        }
+
         const hotspotType = getHostpotIconType(hotspotForm.iconName);
         setIsHotspotPanelOpen(false);
         setAddHotspotMode(false);
         setNewHotspotCoords(null);
+        setIsEditingHotspot(false);
+        setSelectedHotspot(null);
         setSceneSearchQuery('');
         setHotspotForm({
           type: hotspotType,
@@ -292,12 +347,12 @@ export default function TourEditorPage({
           iconUrl: '',
           iconName: 'info',
         });
-        toast.success('Hotspot created');
+        toast.success(isEditingHotspot ? 'Hotspot updated' : 'Hotspot created');
       } else {
-        toast.error('Failed to create hotspot');
+        toast.error(`Failed to ${isEditingHotspot ? 'update' : 'create'} hotspot`);
       }
     } catch {
-      toast.error('Error creating hotspot');
+      toast.error(`Error ${isEditingHotspot ? 'updating' : 'creating'} hotspot`);
     }
   };
 
@@ -567,7 +622,9 @@ export default function TourEditorPage({
                 >
                   <ChevronRight size={18} />
                 </button>
-                <h2 className="text-sm font-semibold text-white">Configure Hotspot</h2>
+                <h2 className="text-sm font-semibold text-white">
+                  {isEditingHotspot ? 'Modifier le hotspot' : 'Configure Hotspot'}
+                </h2>
               </div>
 
               {/* Large, impossible-to-miss close button */}
@@ -593,7 +650,11 @@ export default function TourEditorPage({
                       {['MapPin', 'info'].map((iconName) => (
                         <button
                           key={iconName}
+                          disabled={isEditingHotspot}
                           onClick={() => {
+                            
+                            // if isEditingHotspot ? changing icon is impossible and should be disabled.
+                            if(isEditingHotspot) return;
                             setHotspotForm({ ...hotspotForm, iconName, type: getHostpotIconType(iconName) });
                             if (newHotspotCoords) setNewHotspotCoords({ ...newHotspotCoords, iconName });
                           }}
@@ -619,7 +680,9 @@ export default function TourEditorPage({
                         .map((iconName) => (
                           <button
                             key={iconName}
+                            disabled={isEditingHotspot}
                             onClick={() => {
+                               if(isEditingHotspot) return;
                               setHotspotForm({ ...hotspotForm, iconName, type: getHostpotIconType(iconName) });
                               if (newHotspotCoords) setNewHotspotCoords({ ...newHotspotCoords, iconName });
                             }}
@@ -865,7 +928,7 @@ export default function TourEditorPage({
               </button>
               <Button
                 variant="primary"
-                onClick={handleCreateHotspot}
+                onClick={handleSaveHotspot}
                 className="flex-1 text-sm font-semibold"
                 disabled={
                   isSaving ||
@@ -876,7 +939,7 @@ export default function TourEditorPage({
                   (hotspotForm.type === 'IMAGE' && !hotspotForm.imageUrl && (!hotspotForm.imageUrls || JSON.parse(hotspotForm.imageUrls).length === 0))
                 }
               >
-                Créer
+                {isEditingHotspot ? 'Mettre à jour' : 'Créer'}
               </Button>
             </div>
           </>
@@ -1099,6 +1162,14 @@ export default function TourEditorPage({
             )}
             <Button
               variant="secondary"
+              onClick={handleEditHotspot}
+              className="flex items-center justify-center w-full gap-2"
+            >
+              <Edit2 size={18} />
+              Edit Hotspot
+            </Button>
+            <Button
+              variant="secondary"
               onClick={confirmDeleteHotspot}
               className="flex items-center justify-center w-full gap-2 text-red-400 hover:text-red-300 border-red-900/50 hover:bg-red-900/20"
             >
@@ -1108,7 +1179,6 @@ export default function TourEditorPage({
             <Button variant="ghost" onClick={() => { setIsHotspotActionModalOpen(false); setSelectedHotspot(null); }} className="w-full">
               Cancel
             </Button>
-            {/* // TODO: Add hotspot editing configurations here (icon, title, content) */}
           </div>
         </div>
       </Modal>
