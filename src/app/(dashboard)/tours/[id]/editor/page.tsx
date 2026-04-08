@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useState, useCallback, useMemo } from 'react';
@@ -20,6 +19,7 @@ import { getHostpotIconType, HOTSPOT_ICONS_SVG } from '@/lib/hotspotIconsSvg';
 import { logger } from '@/lib/logger';
 import toast from 'react-hot-toast';
 import { MapPin as MapPinIcon } from 'lucide-react';
+import TourSettingsModal from '@/components/dashboard/TourSettingsModal';
 
 export default function TourEditorPage({
   params,
@@ -61,16 +61,33 @@ export default function TourEditorPage({
   const [showSceneMenu, setShowSceneMenu] = useState(true);
   const [showHotspotTitles, setShowHotspotTitles] = useState(true);
 
-  // Memoize hotspots to prevent new array reference on every render
   const allHotspots = useMemo(() => {
     if (!tour) return [];
     return tour.images.flatMap((img: any) => (img.hotspots || []).map((h: any) => ({ ...h, imageId: img.id })));
   }, [tour]);
 
+  // ── Keyboard shortcut: Escape closes the hotspot panel ──────────────────
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isHotspotPanelOpen) {
+        closeHotspotPanel();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isHotspotPanelOpen]);
+
   useEffect(() => {
     setMounted(true);
     fetchTour();
   }, []);
+
+  const closeHotspotPanel = () => {
+    setIsHotspotPanelOpen(false);
+    setAddHotspotMode(false);
+    setNewHotspotCoords(null);
+    setSceneSearchQuery('');
+  };
 
   const handleAudioUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -83,70 +100,50 @@ export default function TourEditorPage({
       const token = localStorage.getItem('token');
       const response = await fetch(`/api/tours/${tour.id}/audio`, {
         method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token || ''}`,
-        },
+        headers: { Authorization: `Bearer ${token || ''}` },
         body: formData,
       });
 
       if (response.ok) {
         const data = await response.json();
-        setTour({
-          ...tour,
-          backgroundAudioUrl: data.data.backgroundAudioUrl,
-        });
+        setTour({ ...tour, backgroundAudioUrl: data.data.backgroundAudioUrl });
         toast.success('Audio uploaded');
       } else {
         toast.error('Failed to upload audio');
       }
-    } catch (error) {
+    } catch {
       toast.error('Error uploading audio');
     }
   };
 
   const handleRemoveAudio = async () => {
     if (!tour || !confirm('Are you sure you want to remove the background audio?')) return;
-
     try {
       const token = localStorage.getItem('token');
       const response = await fetch(`/api/tours/${tour.id}/audio`, {
         method: 'DELETE',
-        headers: {
-          Authorization: `Bearer ${token || ''}`,
-        },
+        headers: { Authorization: `Bearer ${token || ''}` },
       });
-
       if (response.ok) {
-        setTour({
-          ...tour,
-          backgroundAudioUrl: undefined,
-        });
+        setTour({ ...tour, backgroundAudioUrl: undefined });
         toast.success('Audio removed');
       } else {
         toast.error('Failed to remove audio');
       }
-    } catch (error) {
+    } catch {
       toast.error('Error removing audio');
     }
   };
 
   const handleVolumeChange = async (volume: number) => {
     if (!tour) return;
-    
-    // Update local state first for responsiveness
     setTour({ ...tour, backgroundAudioVolume: volume });
-
     try {
       const token = localStorage.getItem('token');
       await fetch(`/api/tours/${tour.id}`, {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token || ''}`,
-        },
-        body: JSON.stringify({
-          backgroundAudioVolume: volume,
-        }),
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token || ''}` },
+        body: JSON.stringify({ backgroundAudioVolume: volume }),
       });
     } catch (error) {
       console.error('Error updating volume:', error);
@@ -157,23 +154,15 @@ export default function TourEditorPage({
     try {
       const token = localStorage.getItem('token');
       const response = await fetch(`/api/tours/${params.id}`, {
-        headers: {
-          Authorization: `Bearer ${token || ''}`,
-        },
+        headers: { Authorization: `Bearer ${token || ''}` },
       });
-
       if (response.ok) {
         const data = await response.json();
         setTour(data.data);
-
         const sceneParam = searchParams.get('scene');
         if (sceneParam) {
-          const index = data.data.images.findIndex(
-            (img: any) => img.id === sceneParam
-          );
-          if (index !== -1) {
-            setCurrentSceneIndex(index);
-          }
+          const index = data.data.images.findIndex((img: any) => img.id === sceneParam);
+          if (index !== -1) setCurrentSceneIndex(index);
         }
       }
     } catch (error) {
@@ -186,10 +175,7 @@ export default function TourEditorPage({
 
   const handleUploadComplete = (files: any[]) => {
     if (tour) {
-      setTour({
-        ...tour,
-        images: [...tour.images, ...files],
-      });
+      setTour({ ...tour, images: [...tour.images, ...files] });
       setIsUploadModalOpen(false);
       toast.success('Scenes added');
     }
@@ -197,44 +183,32 @@ export default function TourEditorPage({
 
   const handleDeleteScene = async (e: React.MouseEvent, imageId: string) => {
     e.stopPropagation();
-    
     if (tour && tour.images.length <= 1) {
       toast.error('At least one scene is required');
       return;
     }
-
     if (!confirm('Are you sure you want to delete this scene?')) return;
-
     try {
       const token = localStorage.getItem('token');
       const response = await fetch(`/api/tours/${params.id}/images`, {
         method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token || ''}`,
-        },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token || ''}` },
         body: JSON.stringify({ imageId }),
       });
-
       if (response.ok) {
         const updatedImages = tour!.images.filter((img: TourImage) => img.id !== imageId);
-        setTour({
-          ...tour!,
-          images: updatedImages,
-        });
-        
+        setTour({ ...tour!, images: updatedImages });
         if (tour!.images[currentSceneIndex].id === imageId) {
           setCurrentSceneIndex(0);
         } else if (currentSceneIndex >= updatedImages.length) {
           setCurrentSceneIndex(Math.max(0, updatedImages.length - 1));
         }
-        
         toast.success('Scene deleted');
       } else {
         const errorData = await response.json();
         toast.error(errorData.error || 'Failed to delete scene');
       }
-    } catch (error) {
+    } catch {
       toast.error('Error deleting scene');
     }
   };
@@ -248,27 +222,21 @@ export default function TourEditorPage({
         type: getHostpotIconType(hotspotForm.iconName),
         targetImageId: tour?.images.find((img: TourImage) => img.id !== tour.images[currentSceneIndex].id)?.id || '',
       });
-      // Open config panel directly
       setIsHotspotPanelOpen(true);
     }
   };
 
   const uploadHotspotIcon = async (file: File) => {
     if (!tour) return;
-
     const formData = new FormData();
     formData.append('icon', file);
-
     try {
       const token = localStorage.getItem('token');
       const response = await fetch(`/api/tours/${tour.id}/icons`, {
         method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token || ''}`,
-        },
+        headers: { Authorization: `Bearer ${token || ''}` },
         body: formData,
       });
-
       if (response.ok) {
         const data = await response.json();
         setHotspotForm({ ...hotspotForm, iconUrl: data.data.iconUrl });
@@ -285,37 +253,27 @@ export default function TourEditorPage({
 
   const handleCreateHotspot = async () => {
     if (!newHotspotCoords || !tour) return;
-
     try {
       const currentImageId = tour.images[currentSceneIndex].id;
       const token = localStorage.getItem('token');
       const response = await fetch(`/api/tours/${params.id}/images/${currentImageId}/hotspots`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token || ''}`,
-        },
-        body: JSON.stringify({
-          ...newHotspotCoords,
-          ...hotspotForm,
-        }),
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token || ''}` },
+        body: JSON.stringify({ ...newHotspotCoords, ...hotspotForm }),
       });
-
       if (response.ok) {
         const data = await response.json();
         const newHotspot = data.data;
         logger.info({ tourId: params.id, imageId: currentImageId, hotspotId: newHotspot.id }, 'Hotspot created successfully');
-        
         setTour({
           ...tour,
           images: tour.images.map((img: TourImage) =>
             img.id === currentImageId
               ? { ...img, hotspots: [...((img as any).hotspots || []), newHotspot] }
               : img
-          )
+          ),
         });
         const hotspotType = getHostpotIconType(hotspotForm.iconName);
-        
         setIsHotspotPanelOpen(false);
         setAddHotspotMode(false);
         setNewHotspotCoords(null);
@@ -338,7 +296,7 @@ export default function TourEditorPage({
       } else {
         toast.error('Failed to create hotspot');
       }
-    } catch (error) {
+    } catch {
       toast.error('Error creating hotspot');
     }
   };
@@ -351,19 +309,14 @@ export default function TourEditorPage({
   const confirmDeleteHotspot = async () => {
     if (!selectedHotspot || !tour) return;
     if (!confirm('Are you sure you want to delete this hotspot?')) return;
-
     try {
       const currentImageId = tour.images[currentSceneIndex].id;
       const token = localStorage.getItem('token');
       const response = await fetch(`/api/tours/${params.id}/images/${currentImageId}/hotspots`, {
         method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token || ''}`,
-        },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token || ''}` },
         body: JSON.stringify({ hotspotId: selectedHotspot.id }),
       });
-
       if (response.ok) {
         setTour({
           ...tour,
@@ -371,7 +324,7 @@ export default function TourEditorPage({
             img.id === currentImageId
               ? { ...img, hotspots: (img as any).hotspots.filter((h: any) => h.id !== selectedHotspot.id) }
               : img
-          )
+          ),
         });
         setIsHotspotActionModalOpen(false);
         setSelectedHotspot(null);
@@ -379,14 +332,13 @@ export default function TourEditorPage({
       } else {
         toast.error('Failed to delete hotspot');
       }
-    } catch (error) {
+    } catch {
       toast.error('Error deleting hotspot');
     }
   };
 
   const goToTargetScene = () => {
     if (!selectedHotspot || (selectedHotspot.type !== 'LINK' && selectedHotspot.type !== 'LINK_SCENE') || !selectedHotspot.targetImageId) return;
-
     const index = tour!.images.findIndex((img: TourImage) => img.id === selectedHotspot.targetImageId);
     if (index !== -1) {
       setCurrentSceneIndex(index);
@@ -399,22 +351,14 @@ export default function TourEditorPage({
 
   const handleRenameScene = async () => {
     if (!tour || !newSceneTitle.trim()) return;
-
     try {
       const currentImageId = tour.images[currentSceneIndex].id;
       const token = localStorage.getItem('token');
       const response = await fetch(`/api/tours/${params.id}/images`, {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token || ''}`,
-        },
-        body: JSON.stringify({
-          imageId: currentImageId,
-          title: newSceneTitle.trim(),
-        }),
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token || ''}` },
+        body: JSON.stringify({ imageId: currentImageId, title: newSceneTitle.trim() }),
       });
-
       if (response.ok) {
         setTour({
           ...tour,
@@ -427,7 +371,7 @@ export default function TourEditorPage({
       } else {
         toast.error('Failed to rename scene');
       }
-    } catch (error) {
+    } catch {
       toast.error('Error renaming scene');
     }
   };
@@ -435,81 +379,56 @@ export default function TourEditorPage({
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !tour) return;
-
     const formData = new FormData();
     formData.append('file', file);
-
     try {
       const token = localStorage.getItem('token');
       const response = await fetch(`/api/tours/${tour.id}/logo`, {
         method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token || ''}`,
-        },
+        headers: { Authorization: `Bearer ${token || ''}` },
         body: formData,
       });
-
       if (response.ok) {
         const data = await response.json();
-        setTour({
-          ...tour,
-          customLogoUrl: data.data.customLogoUrl,
-        });
+        setTour({ ...tour, customLogoUrl: data.data.customLogoUrl });
         toast.success('Logo uploaded');
       } else {
         toast.error('Failed to upload logo');
       }
-    } catch (error) {
+    } catch {
       toast.error('Error uploading logo');
     }
   };
 
   const handleRemoveLogo = async () => {
     if (!tour || !confirm('Are you sure you want to remove the logo?')) return;
-
     try {
       const token = localStorage.getItem('token');
       const response = await fetch(`/api/tours/${tour.id}/logo`, {
         method: 'DELETE',
-        headers: {
-          Authorization: `Bearer ${token || ''}`,
-        },
+        headers: { Authorization: `Bearer ${token || ''}` },
       });
-
       if (response.ok) {
-        setTour({
-          ...tour,
-          customLogoUrl: undefined,
-        });
+        setTour({ ...tour, customLogoUrl: undefined });
         toast.success('Logo removed');
       } else {
         toast.error('Failed to remove logo');
       }
-    } catch (error) {
+    } catch {
       toast.error('Error removing logo');
     }
   };
 
   const handleSave = async () => {
     if (!tour) return;
-
     setIsSaving(true);
-
     try {
       const token = localStorage.getItem('token');
       const response = await fetch(`/api/tours/${tour.id}`, {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token || ''}`,
-        },
-        body: JSON.stringify({
-          status: 'PUBLISHED',
-          showSceneMenu,
-          showHotspotTitles,
-        }),
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token || ''}` },
+        body: JSON.stringify({ status: 'PUBLISHED', showSceneMenu, showHotspotTitles }),
       });
-
       if (response.ok) {
         toast.success('Tour saved');
       } else {
@@ -539,16 +458,11 @@ export default function TourEditorPage({
             <h1 className="text-xl font-bold text-white">{tour?.title || 'Tour'} - Editor</h1>
             <p className="text-sm text-dark-400">Add scenes to start editing</p>
           </div>
-          <Button
-            variant="secondary"
-            onClick={() => window.history.back()}
-            className="flex items-center gap-2"
-          >
+          <Button variant="secondary" onClick={() => window.history.back()} className="flex items-center gap-2">
             <ChevronLeft size={18} />
             Back
           </Button>
         </div>
-
         <div className="flex items-center justify-center flex-1 p-8">
           <div className="w-full max-w-xl space-y-8">
             <div className="text-center">
@@ -556,11 +470,8 @@ export default function TourEditorPage({
                 <ImageIcon className="text-primary-400" size={40} />
               </div>
               <h2 className="mb-2 text-2xl font-bold text-white">Your tour is empty</h2>
-              <p className="text-dark-400">
-                To start creating your virtual tour, you need to add at least one 360° scene.
-              </p>
+              <p className="text-dark-400">To start creating your virtual tour, you need to add at least one 360° scene.</p>
             </div>
-            
             <div className="p-8 border shadow-2xl bg-dark-800 border-dark-700 rounded-xl">
               <UploadZone tourId={params.id} onUploadComplete={handleUploadComplete} />
             </div>
@@ -571,13 +482,12 @@ export default function TourEditorPage({
   }
 
   const currentScene = tour.images[currentSceneIndex];
+
   const renderIconBoxer = (size: number, iconName: string) => {
-    // Map doublearrow to MapPin as requested
     const effectiveIconName = iconName === 'doublearrow' ? 'MapPin' : iconName;
     const svgString = HOTSPOT_ICONS_SVG[effectiveIconName] || HOTSPOT_ICONS_SVG['info'];
-    
     return (
-      <div 
+      <div
         style={{ width: size, height: size, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
         className="text-white [&>svg]:w-full [&>svg]:h-full"
         dangerouslySetInnerHTML={{ __html: svgString }}
@@ -588,58 +498,48 @@ export default function TourEditorPage({
   const handleHotspotFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, field: 'videoUrl' | 'imageUrls') => {
     const files = e.target.files;
     if (!files || files.length === 0 || !tour) return;
-
     setIsSaving(true);
     const formData = new FormData();
-    Array.from(files).forEach(file => {
-      formData.append('files', file);
-    });
-
+    Array.from(files).forEach(file => formData.append('files', file));
     try {
       const token = localStorage.getItem('token');
       const response = await fetch(`/api/tours/${tour.id}/hotspot-uploads`, {
         method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token || ''}`,
-        },
+        headers: { Authorization: `Bearer ${token || ''}` },
         body: formData,
       });
-
       if (response.ok) {
         const data = await response.json();
         const uploadedUrls = data.data.urls;
-
         if (field === 'videoUrl') {
-          // For video, we take the first one
           setHotspotForm({ ...hotspotForm, videoUrl: uploadedUrls[0] });
         } else if (field === 'imageUrls') {
-          // For images, we can have multiple
           const currentUrls = hotspotForm.imageUrls ? JSON.parse(hotspotForm.imageUrls) : [];
-          const newUrls = JSON.stringify([...currentUrls, ...uploadedUrls]);
-          setHotspotForm({ ...hotspotForm, imageUrls: newUrls });
+          setHotspotForm({ ...hotspotForm, imageUrls: JSON.stringify([...currentUrls, ...uploadedUrls]) });
         }
         toast.success('Files uploaded');
       } else {
         toast.error('Failed to upload files');
       }
-    } catch (error) {
+    } catch {
       toast.error('Error uploading files');
     } finally {
       setIsSaving(false);
     }
   };
 
+  // ── Hotspot Panel (portaled) ─────────────────────────────────────────────
   const renderHotspotPanel = () => {
     if (!isHotspotPanelOpen || !mounted) return null;
-    console.log("selected icon",hotspotForm);
     const slot = document.getElementById('hotspot-panel-slot');
     if (!slot) return null;
 
     return createPortal(
       <div className="flex flex-col h-full overflow-hidden text-white">
         {isHotspotPanelCollapsed ? (
+          /* ── Collapsed state ── */
           <div className="flex flex-col items-center gap-6 py-6">
-             <button
+            <button
               onClick={() => setIsHotspotPanelCollapsed(false)}
               className="p-2 transition-colors rounded-lg hover:bg-dark-700 text-primary-400"
               title="Expand Panel"
@@ -647,53 +547,55 @@ export default function TourEditorPage({
               <ChevronLeft size={20} />
             </button>
             <div className="w-px h-12 bg-dark-700" />
-            <div className="vertical-text text-[10px] font-bold text-dark-400 uppercase tracking-[0.2em] whitespace-nowrap select-none" style={{ writingMode: 'vertical-rl' }}>
+            <div
+              className="vertical-text text-[10px] font-bold text-dark-400 uppercase tracking-[0.2em] whitespace-nowrap select-none"
+              style={{ writingMode: 'vertical-rl' }}
+            >
               Configuration
             </div>
           </div>
         ) : (
+          /* ── Expanded state ── */
           <>
-            <div className="flex items-center justify-between px-6 py-4 border-b border-dark-700 bg-dark-900/50">
+            {/* ── STICKY CLOSE BUTTON at the very top ── */}
+            <div className="sticky top-0 z-50 flex items-center justify-between px-4 py-3 border-b shadow-lg bg-dark-800 border-dark-700">
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => setIsHotspotPanelCollapsed(true)}
-                  className="p-1 transition-colors rounded-lg hover:bg-dark-700 text-dark-400"
+                  className="p-1.5 transition-colors rounded-lg hover:bg-dark-700 text-dark-400 hover:text-white"
                   title="Collapse Panel"
                 >
-                  <ChevronRight size={20} />
+                  <ChevronRight size={18} />
                 </button>
-                <h2 className="text-lg font-semibold text-white">Configure Hotspot</h2>
+                <h2 className="text-sm font-semibold text-white">Configure Hotspot</h2>
               </div>
+
+              {/* Large, impossible-to-miss close button */}
               <button
-                onClick={() => {
-                  setIsHotspotPanelOpen(false);
-                  setAddHotspotMode(false);
-                  setNewHotspotCoords(null);
-                  setSceneSearchQuery('');
-                }}
-                className="p-1 transition-colors rounded-lg hover:bg-dark-700 text-dark-400"
+                onClick={closeHotspotPanel}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white transition-all rounded-lg bg-red-600 hover:bg-red-500 active:scale-95 shadow-md"
+                title="Close panel (Esc)"
               >
-                <X size={20} />
+                <X size={14} />
+                Fermer
               </button>
             </div>
-            
+
             <div className="flex-1 p-6 space-y-6 overflow-y-auto scrollbar-hide">
               <div className="space-y-4">
                 <div>
                   <label className="block mb-3 text-sm font-medium text-dark-300">Hotspot Icon</label>
-                  
-                  {/* Primary Icons Group */}
+
+                  {/* Primary Icons */}
                   <div className="mb-4">
                     <p className="mb-2 text-[10px] font-bold text-dark-500 uppercase tracking-wider">Main Actions</p>
                     <div className="grid grid-cols-4 gap-2">
-                      {[ 'MapPin','info'].map((iconName) => (
+                      {['MapPin', 'info'].map((iconName) => (
                         <button
                           key={iconName}
                           onClick={() => {
-                            setHotspotForm({ ...hotspotForm, iconName ,   type: getHostpotIconType(iconName) });
-                            if (newHotspotCoords) {
-                              setNewHotspotCoords({ ...newHotspotCoords, iconName });
-                            }
+                            setHotspotForm({ ...hotspotForm, iconName, type: getHostpotIconType(iconName) });
+                            if (newHotspotCoords) setNewHotspotCoords({ ...newHotspotCoords, iconName });
                           }}
                           className={`flex items-center justify-center p-2 rounded-lg transition-all ${
                             hotspotForm.iconName === iconName
@@ -708,20 +610,18 @@ export default function TourEditorPage({
                     </div>
                   </div>
 
-                  {/* Other Icons Group */}
+                  {/* Other Icons */}
                   <div>
                     <p className="mb-2 text-[10px] font-bold text-dark-500 uppercase tracking-wider">Other Icons</p>
                     <div className="grid grid-cols-4 gap-2">
                       {Object.keys(HOTSPOT_ICONS_SVG)
-                        .filter(name => !['info', 'MapPin'].includes(name))
+                        .filter((name) => !['info', 'MapPin'].includes(name))
                         .map((iconName) => (
                           <button
                             key={iconName}
                             onClick={() => {
-                              setHotspotForm({ ...hotspotForm, iconName , type: getHostpotIconType(iconName) });
-                              if (newHotspotCoords) {
-                                setNewHotspotCoords({ ...newHotspotCoords, iconName });
-                              }
+                              setHotspotForm({ ...hotspotForm, iconName, type: getHostpotIconType(iconName) });
+                              if (newHotspotCoords) setNewHotspotCoords({ ...newHotspotCoords, iconName });
                             }}
                             className={`flex items-center justify-center p-2 rounded-lg transition-all ${
                               hotspotForm.iconName === iconName
@@ -738,7 +638,7 @@ export default function TourEditorPage({
                 </div>
 
                 <div>
-                  <label className="flex items-center block gap-2 mb-2 text-sm font-medium text-dark-300">
+                  <label className="flex items-center gap-2 mb-2 text-sm font-medium text-dark-300">
                     <Zap size={16} className="text-primary-400" />
                     Hotspot Title
                   </label>
@@ -756,11 +656,8 @@ export default function TourEditorPage({
               {hotspotForm.iconName === 'MapPin' && (
                 <div className="pt-4 space-y-4 border-t border-dark-700">
                   <div className="flex flex-col gap-3">
-                    <label className="flex items-center gap-2 text-sm font-semibold text-white">
-                      Target Scene
-                    </label>
+                    <label className="flex items-center gap-2 text-sm font-semibold text-white">Target Scene</label>
                     <div className="flex w-full p-1 border rounded-lg bg-dark-900 border-dark-700">
-                     
                       <button
                         onClick={() => setSelectionMode('image')}
                         className={`flex-1 py-1.5 px-2 text-xs font-medium rounded-md transition-all flex items-center justify-center gap-1 ${
@@ -769,7 +666,6 @@ export default function TourEditorPage({
                       >
                         By image
                       </button>
-                      
                       <button
                         onClick={() => setSelectionMode('name')}
                         className={`flex-1 py-1.5 px-2 text-xs font-medium rounded-md transition-all flex items-center justify-center gap-1 ${
@@ -778,7 +674,6 @@ export default function TourEditorPage({
                       >
                         By name
                       </button>
-                     
                     </div>
                   </div>
 
@@ -812,8 +707,7 @@ export default function TourEditorPage({
                             >
                               {img.title || `Scene ${img.order + 1}`}
                             </button>
-                          ))
-                        }
+                          ))}
                       </div>
                     </div>
                   ) : (
@@ -825,21 +719,12 @@ export default function TourEditorPage({
                             key={img.id}
                             onClick={() => setHotspotForm({ ...hotspotForm, targetImageId: img.id })}
                             className={`relative group rounded-lg overflow-hidden border-2 transition-all ${
-                              hotspotForm.targetImageId === img.id
-                                ? 'border-primary-500'
-                                : 'border-transparent'
+                              hotspotForm.targetImageId === img.id ? 'border-primary-500' : 'border-transparent'
                             }`}
                           >
-                            <img
-                              src={`/api/uploads/${img.filename}`}
-                              alt={img.title || 'Scene'}
-                              className="object-cover w-full h-16"
-                            />
-                            
+                            <img src={`/api/uploads/${img.filename}`} alt={img.title || 'Scene'} className="object-cover w-full h-16" />
                           </button>
-                          // TODO: add image name on the bottom of the thumbnail .
-                        ))
-                      }
+                        ))}
                     </div>
                   )}
                 </div>
@@ -849,9 +734,7 @@ export default function TourEditorPage({
               {hotspotForm.type === 'INFO' && (
                 <div className="pt-4 space-y-4 border-t border-dark-700">
                   <div>
-                    <label className="flex items-center block gap-2 mb-2 text-sm font-medium text-dark-300">
-                      Content Text
-                    </label>
+                    <label className="flex items-center gap-2 mb-2 text-sm font-medium text-dark-300">Content Text</label>
                     <textarea
                       value={hotspotForm.content}
                       onChange={(e) => setHotspotForm({ ...hotspotForm, content: e.target.value })}
@@ -867,9 +750,7 @@ export default function TourEditorPage({
               {hotspotForm.type === 'URL' && (
                 <div className="pt-4 space-y-4 border-t border-dark-700">
                   <div>
-                    <label className="flex items-center block gap-2 mb-2 text-sm font-medium text-dark-300">
-                      URL
-                    </label>
+                    <label className="flex items-center gap-2 mb-2 text-sm font-medium text-dark-300">URL</label>
                     <input
                       type="url"
                       value={hotspotForm.url}
@@ -886,9 +767,7 @@ export default function TourEditorPage({
                 <div className="pt-4 space-y-4 border-t border-dark-700">
                   <div className="space-y-4">
                     <div>
-                      <label className="flex items-center block gap-2 mb-2 text-sm font-medium text-dark-300">
-                        Video URL (YouTube/Vimeo)
-                      </label>
+                      <label className="flex items-center gap-2 mb-2 text-sm font-medium text-dark-300">Video URL (YouTube/Vimeo)</label>
                       <input
                         type="url"
                         value={hotspotForm.videoUrl}
@@ -897,37 +776,22 @@ export default function TourEditorPage({
                         className="w-full px-3 py-2 text-sm text-white transition-all border rounded-lg outline-none bg-dark-700 border-dark-600 focus:border-primary-500"
                       />
                     </div>
-                    
                     <div className="relative">
                       <div className="absolute inset-0 flex items-center" aria-hidden="true">
-                        <div className="w-full border-t border-dark-700"></div>
+                        <div className="w-full border-t border-dark-700" />
                       </div>
                       <div className="relative flex justify-center text-xs uppercase">
                         <span className="px-2 text-dark-400 bg-dark-800">Or Upload Video</span>
                       </div>
                     </div>
-
                     <div>
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        onClick={() => document.getElementById('hotspot-video-upload')?.click()}
-                        className="w-full text-xs"
-                      >
+                      <Button variant="secondary" size="sm" onClick={() => document.getElementById('hotspot-video-upload')?.click()} className="w-full text-xs">
                         <Video size={14} className="mr-2" />
                         {hotspotForm.videoUrl && !hotspotForm.videoUrl.startsWith('http') ? 'Change Video' : 'Upload Video File'}
                       </Button>
-                      <input
-                        id="hotspot-video-upload"
-                        type="file"
-                        className="hidden"
-                        accept="video/*"
-                        onChange={(e) => handleHotspotFileUpload(e, 'videoUrl')}
-                      />
+                      <input id="hotspot-video-upload" type="file" className="hidden" accept="video/*" onChange={(e) => handleHotspotFileUpload(e, 'videoUrl')} />
                       {hotspotForm.videoUrl && !hotspotForm.videoUrl.startsWith('http') && (
-                        <p className="mt-1 text-[10px] text-primary-400 truncate">
-                          File: {hotspotForm.videoUrl.split('/').pop()}
-                        </p>
+                        <p className="mt-1 text-[10px] text-primary-400 truncate">File: {hotspotForm.videoUrl.split('/').pop()}</p>
                       )}
                     </div>
                   </div>
@@ -939,9 +803,7 @@ export default function TourEditorPage({
                 <div className="pt-4 space-y-4 border-t border-dark-700">
                   <div className="space-y-4">
                     <div>
-                      <label className="flex items-center block gap-2 mb-2 text-sm font-medium text-dark-300">
-                        Image URL
-                      </label>
+                      <label className="flex items-center gap-2 mb-2 text-sm font-medium text-dark-300">Image URL</label>
                       <input
                         type="url"
                         value={hotspotForm.imageUrl}
@@ -950,46 +812,28 @@ export default function TourEditorPage({
                         className="w-full px-3 py-2 text-sm text-white transition-all border rounded-lg outline-none bg-dark-700 border-dark-600 focus:border-primary-500"
                       />
                     </div>
-
                     <div className="relative">
                       <div className="absolute inset-0 flex items-center" aria-hidden="true">
-                        <div className="w-full border-t border-dark-700"></div>
+                        <div className="w-full border-t border-dark-700" />
                       </div>
                       <div className="relative flex justify-center text-xs uppercase">
                         <span className="px-2 text-dark-400 bg-dark-800">Or Upload Images</span>
                       </div>
                     </div>
-
                     <div>
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        onClick={() => document.getElementById('hotspot-images-upload')?.click()}
-                        className="w-full text-xs"
-                      >
+                      <Button variant="secondary" size="sm" onClick={() => document.getElementById('hotspot-images-upload')?.click()} className="w-full text-xs">
                         <LucideIcons.Image size={14} className="mr-2" />
                         Upload Gallery Images
                       </Button>
-                      <input
-                        id="hotspot-images-upload"
-                        type="file"
-                        multiple
-                        className="hidden"
-                        accept="image/*"
-                        onChange={(e) => handleHotspotFileUpload(e, 'imageUrls')}
-                      />
-                      
+                      <input id="hotspot-images-upload" type="file" multiple className="hidden" accept="image/*" onChange={(e) => handleHotspotFileUpload(e, 'imageUrls')} />
                       {hotspotForm.imageUrls && (
                         <div className="mt-3 space-y-2">
                           <p className="text-[10px] font-bold text-dark-500 uppercase">Gallery Items ({JSON.parse(hotspotForm.imageUrls).length})</p>
                           <div className="grid grid-cols-4 gap-2">
                             {JSON.parse(hotspotForm.imageUrls).map((url: string, idx: number) => (
                               <div key={idx} className="relative group aspect-square">
-                                <img 
-                                  src={`/api/uploads/${url}`} 
-                                  className="object-cover w-full h-full border rounded border-dark-600"
-                                />
-                                <button 
+                                <img src={`/api/uploads/${url}`} className="object-cover w-full h-full border rounded border-dark-600" />
+                                <button
                                   onClick={() => {
                                     const urls = JSON.parse(hotspotForm.imageUrls);
                                     urls.splice(idx, 1);
@@ -1010,22 +854,19 @@ export default function TourEditorPage({
               )}
             </div>
 
-            <div className="flex gap-3 p-6 border-t border-dark-700 bg-dark-900/50">
-              <Button
-                variant="secondary"
-                onClick={() => {
-                  setIsHotspotPanelOpen(false);
-                  setAddHotspotMode(false);
-                  setNewHotspotCoords(null);
-                }}
-                className="flex-1 text-xs"
+            {/* ── Footer actions ── */}
+            <div className="flex gap-3 p-4 border-t border-dark-700 bg-dark-900/80 backdrop-blur">
+              <button
+                onClick={closeHotspotPanel}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-white transition-all rounded-lg bg-dark-700 hover:bg-dark-600 active:scale-95 border border-dark-600"
               >
-                Cancel
-              </Button>
+                <X size={16} />
+                Annuler
+              </button>
               <Button
                 variant="primary"
                 onClick={handleCreateHotspot}
-                className="flex-1 text-xs"
+                className="flex-1 text-sm font-semibold"
                 disabled={
                   isSaving ||
                   (hotspotForm.type === 'LINK_SCENE' && !hotspotForm.targetImageId) ||
@@ -1035,7 +876,7 @@ export default function TourEditorPage({
                   (hotspotForm.type === 'IMAGE' && !hotspotForm.imageUrl && (!hotspotForm.imageUrls || JSON.parse(hotspotForm.imageUrls).length === 0))
                 }
               >
-                Create
+                Créer
               </Button>
             </div>
           </>
@@ -1057,7 +898,6 @@ export default function TourEditorPage({
           <h1 className="text-lg font-semibold text-white truncate max-w-[200px]">{tour.title}</h1>
           <div className="w-px h-6 bg-dark-700" />
           <div className="flex items-center gap-2">
-         
             <Badge variant="default" className="ml-2">
               {currentSceneIndex + 1} / {tour.images.length}
             </Badge>
@@ -1065,36 +905,19 @@ export default function TourEditorPage({
         </div>
 
         <div className="flex gap-3">
-          <Button
-            variant="secondary"
-            onClick={() => setIsUploadModalOpen(true)}
-            className="flex items-center gap-2"
-          >
+          <Button variant="secondary" onClick={() => setIsUploadModalOpen(true)} className="flex items-center gap-2">
             <Plus size={18} />
             Add Scene
           </Button>
-          <Button
-            variant="secondary"
-            onClick={() => setIsShareModalOpen(true)}
-            className="flex items-center gap-2"
-          >
+          <Button variant="secondary" onClick={() => setIsShareModalOpen(true)} className="flex items-center gap-2">
             <Share2 size={18} />
             Share
           </Button>
-          <Button
-            variant="secondary"
-            onClick={() => window.history.back()}
-            className="flex items-center gap-2"
-          >
+          <Button variant="secondary" onClick={() => window.history.back()} className="flex items-center gap-2">
             <ChevronLeft size={18} />
             Back
           </Button>
-          <Button
-            variant="primary"
-            onClick={handleSave}
-            isLoading={isSaving}
-            className="flex items-center gap-2 px-6"
-          >
+          <Button variant="primary" onClick={handleSave} isLoading={isSaving} className="flex items-center gap-2 px-6">
             <Save size={18} />
             Save
           </Button>
@@ -1106,7 +929,7 @@ export default function TourEditorPage({
         {/* Left Action Sidebar */}
         <aside className="z-30 flex flex-col items-center w-20 gap-6 py-6 border-r bg-dark-800 border-dark-700">
           <button
-            onClick={() =>{
+            onClick={() => {
               const nextMode = !addHotspotMode;
               setAddHotspotMode(nextMode);
               if (!nextMode) {
@@ -1115,15 +938,13 @@ export default function TourEditorPage({
               }
             }}
             className={`flex flex-col items-center gap-1 p-2 w-16 rounded-xl transition-all duration-200 ${
-              addHotspotMode 
-                ? 'bg-primary-600 text-white' 
-                : 'text-dark-400 hover:text-white hover:bg-dark-700'
+              addHotspotMode ? 'bg-primary-600 text-white' : 'text-dark-400 hover:text-white hover:bg-dark-700'
             }`}
           >
             <MapPinIcon size={22} />
             <span className="text-[10px] font-medium">Hotspot</span>
           </button>
-          
+
           <button
             onClick={() => {
               setNewSceneTitle(currentScene.title || `Scene ${currentSceneIndex + 1}`);
@@ -1156,6 +977,26 @@ export default function TourEditorPage({
 
         {/* Viewer Area */}
         <div className="relative flex-1 overflow-hidden">
+
+          {/* ── Hotspot mode banner ── visible only when addHotspotMode is ON */}
+          {addHotspotMode && (
+            <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 flex items-center gap-3 px-5 py-2.5 rounded-full bg-primary-600/90 backdrop-blur-md shadow-xl border border-primary-500 text-white text-sm font-semibold pointer-events-auto">
+              <MapPinIcon size={16} className="animate-bounce" />
+              <span>Cliquez sur la scène pour placer un hotspot</span>
+              <button
+                onClick={() => {
+                  setAddHotspotMode(false);
+                  setIsHotspotPanelOpen(false);
+                  setNewHotspotCoords(null);
+                }}
+                className="ml-2 flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/20 hover:bg-white/30 transition-colors text-xs font-bold"
+              >
+                <X size={12} />
+                Annuler
+              </button>
+            </div>
+          )}
+
           <div className="absolute inset-0 pb-24">
             <MarzipanoViewer
               scenes={tour.images}
@@ -1220,11 +1061,7 @@ export default function TourEditorPage({
             </div>
 
             <button
-              onClick={() =>
-                setCurrentSceneIndex(
-                  Math.min(tour.images.length - 1, currentSceneIndex + 1)
-                )
-              }
+              onClick={() => setCurrentSceneIndex(Math.min(tour.images.length - 1, currentSceneIndex + 1))}
               disabled={currentSceneIndex === tour.images.length - 1}
               className="flex-shrink-0 p-2.5 transition-all rounded-full bg-dark-800 hover:bg-dark-700 border border-dark-700 disabled:opacity-30 shadow-lg text-white"
             >
@@ -1233,15 +1070,11 @@ export default function TourEditorPage({
           </div>
         </div>
 
-        {/* Portaled Panel Content */}
         {renderHotspotPanel()}
       </div>
 
-      <Modal
-        isOpen={isUploadModalOpen}
-        onClose={() => setIsUploadModalOpen(false)}
-        title="Add New Scenes"
-      >
+      {/* Modals */}
+      <Modal isOpen={isUploadModalOpen} onClose={() => setIsUploadModalOpen(false)} title="Add New Scenes">
         <div className="p-4">
           <UploadZone tourId={params.id} onUploadComplete={handleUploadComplete} />
         </div>
@@ -1249,34 +1082,21 @@ export default function TourEditorPage({
 
       <Modal
         isOpen={isHotspotActionModalOpen}
-        onClose={() => {
-          setIsHotspotActionModalOpen(false);
-          setSelectedHotspot(null);
-        }}
+        onClose={() => { setIsHotspotActionModalOpen(false); setSelectedHotspot(null); }}
         title="Hotspot Actions"
       >
         <div className="p-6 space-y-4">
           <div className="mb-6 text-center">
-            <h3 className="text-lg font-semibold text-white">
-              {selectedHotspot?.title || 'Unnamed Hotspot'}
-            </h3>
-            <p className="mt-1 text-sm text-dark-400">
-              Type: {selectedHotspot?.type === 'LINK_SCENE' ? 'Scene Link' : 'Information'}
-            </p>
+            <h3 className="text-lg font-semibold text-white">{selectedHotspot?.title || 'Unnamed Hotspot'}</h3>
+            <p className="mt-1 text-sm text-dark-400">Type: {selectedHotspot?.type === 'LINK_SCENE' ? 'Scene Link' : 'Information'}</p>
           </div>
-
           <div className="flex flex-col gap-3">
             {selectedHotspot?.type === 'LINK_SCENE' && (
-              <Button
-                variant="primary"
-                onClick={goToTargetScene}
-                className="flex items-center justify-center w-full gap-2"
-              >
+              <Button variant="primary" onClick={goToTargetScene} className="flex items-center justify-center w-full gap-2">
                 <ChevronRight size={18} />
                 Go to Target Scene
               </Button>
             )}
-            
             <Button
               variant="secondary"
               onClick={confirmDeleteHotspot}
@@ -1285,26 +1105,15 @@ export default function TourEditorPage({
               <Trash2 size={18} />
               Delete Hotspot
             </Button>
-            
-            <Button
-              variant="ghost"
-              onClick={() => {
-                setIsHotspotActionModalOpen(false);
-                setSelectedHotspot(null);
-              }}
-              className="w-full"
-            >
+            <Button variant="ghost" onClick={() => { setIsHotspotActionModalOpen(false); setSelectedHotspot(null); }} className="w-full">
               Cancel
             </Button>
+            {/* // TODO: Add hotspot editing configurations here (icon, title, content) */}
           </div>
         </div>
       </Modal>
 
-      <Modal
-        isOpen={isRenameModalOpen}
-        onClose={() => setIsRenameModalOpen(false)}
-        title="Rename Scene"
-      >
+      <Modal isOpen={isRenameModalOpen} onClose={() => setIsRenameModalOpen(false)} title="Rename Scene">
         <div className="p-6 space-y-4">
           <div>
             <label className="block mb-1 text-sm font-medium text-dark-300">Scene Title</label>
@@ -1315,27 +1124,12 @@ export default function TourEditorPage({
               placeholder="e.g. Living Room"
               className="w-full px-3 py-2 text-white border rounded-lg outline-none bg-dark-700 border-dark-600 focus:border-primary-500"
               autoFocus
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') handleRenameScene();
-              }}
+              onKeyDown={(e) => { if (e.key === 'Enter') handleRenameScene(); }}
             />
           </div>
           <div className="flex gap-3 pt-4">
-            <Button
-              variant="secondary"
-              onClick={() => setIsRenameModalOpen(false)}
-              className="flex-1"
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="primary"
-              onClick={handleRenameScene}
-              className="flex-1"
-              disabled={!newSceneTitle.trim()}
-            >
-              Rename
-            </Button>
+            <Button variant="secondary" onClick={() => setIsRenameModalOpen(false)} className="flex-1">Cancel</Button>
+            <Button variant="primary" onClick={handleRenameScene} className="flex-1" disabled={!newSceneTitle.trim()}>Rename</Button>
           </div>
         </div>
       </Modal>
@@ -1348,175 +1142,20 @@ export default function TourEditorPage({
         isPublic={tour.isPublic}
       />
 
-      <Modal
-        isOpen={isSettingsModalOpen}
-        onClose={() => setIsSettingsModalOpen(false)}
-        title="Tour Settings"
-      >
-        <div className="p-6 space-y-6">
-          <div>
-            <h3 className="mb-4 text-sm font-medium text-dark-300">Tour Logo</h3>
-            <div className="flex items-center gap-6">
-              <div className="relative flex items-center justify-center w-24 h-24 overflow-hidden border rounded-lg bg-dark-700 border-dark-600">
-                {tour.customLogoUrl ? (
-                  <>
-                    <img
-                      src={`/api/uploads/${tour.customLogoUrl}`}
-                      alt="Tour logo"
-                      className="object-contain w-full h-full p-2"
-                    />
-                    <button
-                      onClick={handleRemoveLogo}
-                      className="absolute p-1 text-white transition-colors bg-red-500 rounded-full shadow-lg top-1 right-1 hover:bg-red-600"
-                      title="Remove logo"
-                    >
-                      <X size={12} />
-                    </button>
-                  </>
-                ) : (
-                  <ImageIcon className="text-dark-500" size={32} />
-                )}
-              </div>
-              
-              <div className="flex-1 space-y-3">
-                <p className="text-xs text-dark-400">
-                  Upload your brand logo to display it on the public tour viewer.
-                  Best results with PNG or SVG with transparent background.
-                </p>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => document.getElementById('logo-upload')?.click()}
-                    className="text-xs"
-                  >
-                    {tour.customLogoUrl ? 'Change Logo' : 'Upload Logo'}
-                  </Button>
-                  <input
-                    id="logo-upload"
-                    type="file"
-                    className="hidden"
-                    accept="image/*"
-                    onChange={handleLogoUpload}
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="pt-6 border-t border-dark-700">
-            <h3 className="mb-4 text-sm font-medium text-dark-300">Background Audio</h3>
-            <div className="space-y-6">
-              <div className="flex items-center gap-6">
-                <div className="relative flex items-center justify-center w-24 h-24 overflow-hidden border rounded-lg bg-dark-700 border-dark-600">
-                  {tour.backgroundAudioUrl ? (
-                    <div className="flex flex-col items-center gap-1">
-                      <Music className="text-primary-400" size={32} />
-                      <span className="text-[10px] text-dark-400 px-2 truncate max-w-full text-center">
-                        {tour.backgroundAudioUrl.split('/').pop()}
-                      </span>
-                      <button
-                        onClick={handleRemoveAudio}
-                        className="absolute p-1 text-white transition-colors bg-red-500 rounded-full shadow-lg top-1 right-1 hover:bg-red-600"
-                        title="Remove audio"
-                      >
-                        <X size={12} />
-                      </button>
-                    </div>
-                  ) : (
-                    <Music className="text-dark-500" size={32} />
-                  )}
-                </div>
-                
-                <div className="flex-1 space-y-3">
-                  <p className="text-xs text-dark-400">
-                    Add background music to your tour. It will play automatically when someone opens the public link.
-                    Supports MP3, WAV, or OGG.
-                  </p>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      onClick={() => document.getElementById('audio-upload')?.click()}
-                      className="text-xs"
-                    >
-                      {tour.backgroundAudioUrl ? 'Change Audio' : 'Upload Audio'}
-                    </Button>
-                    <input
-                      id="audio-upload"
-                      type="file"
-                      className="hidden"
-                      accept="audio/*"
-                      onChange={handleAudioUpload}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {tour.backgroundAudioUrl && (
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between text-xs text-dark-300">
-                    <div className="flex items-center gap-2">
-                      <Volume2 size={14} />
-                      <span>Volume</span>
-                    </div>
-                    <span>{Math.round((tour.backgroundAudioVolume || 0.5) * 100)}%</span>
-                  </div>
-                  <input
-                    type="range"
-                    min="0"
-                    max="1"
-                    step="0.01"
-                    value={tour.backgroundAudioVolume || 0.5}
-                    onChange={(e) => handleVolumeChange(parseFloat(e.target.value))}
-                    className="w-full h-1.5 bg-dark-700 rounded-lg appearance-none cursor-pointer accent-primary-500"
-                  />
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="pt-6 space-y-4 border-t border-dark-700">
-            <h3 className="text-sm font-medium text-dark-300">Viewer Settings</h3>
-            <div className="space-y-3">
-              <label className="flex items-center gap-3 p-3 transition-all rounded-lg cursor-pointer hover:bg-dark-800">
-                <input
-                  type="checkbox"
-                  checked={showSceneMenu}
-                  onChange={(e) => setShowSceneMenu(e.target.checked)}
-                  className="w-4 h-4 rounded accent-primary-500"
-                />
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-white">Show Scene Navigation Menu</p>
-                  <p className="text-xs text-dark-400">Allow viewers to search and browse scenes</p>
-                </div>
-              </label>
-
-              <label className="flex items-center gap-3 p-3 transition-all rounded-lg cursor-pointer hover:bg-dark-800">
-                <input
-                  type="checkbox"
-                  checked={showHotspotTitles}
-                  onChange={(e) => setShowHotspotTitles(e.target.checked)}
-                  className="w-4 h-4 rounded accent-primary-500"
-                />
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-white">Show Hotspot Titles</p>
-                  <p className="text-xs text-dark-400">Display labels when hovering over hotspots</p>
-                </div>
-              </label>
-            </div>
-          </div>
-
-          <div className="pt-6 border-t border-dark-700">
-            <Button
-              variant="primary"
-              onClick={() => setIsSettingsModalOpen(false)}
-              className="w-full"
-            >
-              Done
-            </Button>
-          </div>
-        </div>
+      <Modal isOpen={isSettingsModalOpen} onClose={() => setIsSettingsModalOpen(false)} title="Tour Settings">
+        <TourSettingsModal
+          tour={tour}
+          onClose={() => setIsSettingsModalOpen(false)}
+          onAudioUpload={handleAudioUpload}
+          onRemoveAudio={handleRemoveAudio}
+          onVolumeChange={handleVolumeChange}
+          onLogoUpload={handleLogoUpload}
+          onRemoveLogo={handleRemoveLogo}
+          showSceneMenu={showSceneMenu}
+          onShowSceneMenuChange={setShowSceneMenu}
+          showHotspotTitles={showHotspotTitles}
+          onShowHotspotTitlesChange={setShowHotspotTitles}
+        />
       </Modal>
     </div>
   );

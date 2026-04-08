@@ -166,7 +166,7 @@ export default function PublicTourPage({
         <div className="absolute z-30 max-w-xs top-4 left-4">
           <h1 className="text-sm font-semibold text-white truncate">{tour.title}</h1>
           <p className="text-xs text-dark-400">
-            {tour.viewCount} views {tour.organization && `• ${tour.organization.name}`}
+             views {tour.organization && `• ${tour.organization.name}`}
           </p>
         </div>
       )}
