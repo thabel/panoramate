@@ -6,9 +6,13 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import toast from 'react-hot-toast';
+import { useUI } from '@/context/UIContext';
+import { dictionaries } from '@/lib/i18n';
 
 export default function LoginPage() {
   const router = useRouter();
+  const { locale } = useUI();
+  const t = dictionaries[locale].auth.login;
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -42,7 +46,7 @@ export default function LoginPage() {
 
       if (!response.ok) {
         const error = await response.json();
-        toast.error(error.error || 'Login failed');
+        toast.error(error.error || t.loginFailed);
         return;
       }
 
@@ -51,11 +55,11 @@ export default function LoginPage() {
       if (data.success) {
         localStorage.setItem('token', data.data.token);
         localStorage.setItem('organization', JSON.stringify(data.data.organization));
-        toast.success('Welcome back!');
+        toast.success(t.welcomeBackToast);
         router.push('/dashboard');
       }
     } catch (error) {
-      toast.error('An error occurred. Please try again.');
+      toast.error(t.genericError);
       console.error('Login error:', error);
     } finally {
       setIsLoading(false);
@@ -64,10 +68,10 @@ export default function LoginPage() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <h1 className="text-2xl font-bold text-white mb-6">Welcome Back</h1>
+      <h1 className="text-2xl font-bold text-white mb-6">{t.title}</h1>
 
       <Input
-        label="Email"
+        label={t.emailLabel}
         type="email"
         name="email"
         value={formData.email}
@@ -78,7 +82,7 @@ export default function LoginPage() {
       />
 
       <Input
-        label="Password"
+        label={t.passwordLabel}
         type="password"
         name="password"
         value={formData.password}
@@ -96,7 +100,7 @@ export default function LoginPage() {
           onChange={handleChange}
           className="w-4 h-4 rounded border-dark-600 bg-dark-800 text-primary-600 focus:ring-primary-500"
         />
-        <label className="ml-2 text-sm text-dark-300">Remember me</label>
+        <label className="ml-2 text-sm text-dark-300">{t.rememberMe}</label>
       </div>
 
       <Button
@@ -105,13 +109,13 @@ export default function LoginPage() {
         className="w-full"
         isLoading={isLoading}
       >
-        Sign In
+        {t.submit}
       </Button>
 
       <p className="text-center text-dark-400 text-sm">
-        Don't have an account?{' '}
+        {t.noAccount}{' '}
         <Link href="/register" className="text-primary-400 hover:text-primary-300">
-          Sign up
+          {t.signUp}
         </Link>
       </p>
     </form>

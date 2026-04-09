@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import { DEFAULT_LOCALE, Locale } from '@/lib/i18n';
 
 interface UIContextType {
   isSidebarCollapsed: boolean;
@@ -11,6 +12,8 @@ interface UIContextType {
   setIsHotspotPanelCollapsed: (collapsed: boolean | ((prev: boolean) => boolean)) => void;
   activeHotspotId: string | null;
   setActiveHotspotId: (id: string | null) => void;
+  locale: Locale;
+  setLocale: (locale: Locale) => void;
   toggleSidebar: () => void;
   toggleHotspotPanel: () => void;
 }
@@ -22,6 +25,27 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
   const [isHotspotPanelOpen, setIsHotspotPanelOpenState] = useState(false);
   const [isHotspotPanelCollapsed, setIsHotspotPanelCollapsed] = useState(false);
   const [activeHotspotId, setActiveHotspotId] = useState<string | null>(null);
+  const [locale, setLocaleState] = useState<Locale>(DEFAULT_LOCALE);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const savedLocale = window.localStorage.getItem('locale');
+    if (savedLocale === 'en' || savedLocale === 'fr') {
+      setLocaleState(savedLocale);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    window.localStorage.setItem('locale', locale);
+    document.documentElement.lang = locale;
+  }, [locale]);
 
   const setIsSidebarCollapsed = useCallback((collapsed: boolean | ((prev: boolean) => boolean)) => {
     setIsSidebarCollapsedState((prev) => {
@@ -53,6 +77,10 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
     setIsHotspotPanelOpen((prev) => !prev);
   }, [setIsHotspotPanelOpen]);
 
+  const setLocale = useCallback((nextLocale: Locale) => {
+    setLocaleState(nextLocale);
+  }, []);
+
   return (
     <UIContext.Provider
       value={{
@@ -64,6 +92,8 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
         setIsHotspotPanelCollapsed,
         activeHotspotId,
         setActiveHotspotId,
+        locale,
+        setLocale,
         toggleSidebar,
         toggleHotspotPanel,
       }}

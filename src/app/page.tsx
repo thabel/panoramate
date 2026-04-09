@@ -1,5 +1,10 @@
+"use client";
+
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
+import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher';
+import { useUI } from '@/context/UIContext';
+import { dictionaries } from '@/lib/i18n';
 import {
   Image,
   Zap,
@@ -10,204 +15,151 @@ import {
 } from 'lucide-react';
 
 export default function Home() {
+  const { locale } = useUI();
+  const t = dictionaries[locale].home;
+  const featureIcons = [Image, Zap, Globe, Users];
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-dark-900 via-dark-900 to-dark-950">
       {/* Navigation */}
-      <nav className="border-b border-dark-800 sticky top-0 z-40 bg-dark-900/95 backdrop-blur-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
-          <div className="text-2xl font-bold bg-gradient-to-r from-primary-400 to-primary-600 bg-clip-text text-transparent">
-            Panoramate
+      <nav className="sticky top-0 z-40 border-b border-dark-800 bg-dark-900/95 backdrop-blur-sm">
+        <div className="flex items-center justify-between px-4 py-4 mx-auto max-w-7xl sm:px-6 lg:px-8">
+          <div className="text-2xl font-bold text-transparent bg-gradient-to-r from-primary-400 to-primary-600 bg-clip-text">
+            BATIVYMA
           </div>
-          <div className="flex gap-4">
+          <div className="flex items-center gap-4">
+            <LanguageSwitcher />
             <Link href="/login">
-              <Button variant="ghost">Sign In</Button>
+              <Button variant="ghost">{t.nav.signIn}</Button>
             </Link>
             <Link href="/register">
-              <Button variant="primary">Get Started</Button>
+              <Button variant="primary">{t.nav.getStarted}</Button>
             </Link>
           </div>
         </div>
       </nav>
 
       {/* Hero Section */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center">
-        <h1 className="text-5xl md:text-6xl font-bold text-white mb-6 leading-tight">
-          Create Stunning <span className="bg-gradient-to-r from-primary-400 to-primary-600 bg-clip-text text-transparent">360° Virtual Tours</span> in Minutes
+      <section className="px-4 py-20 mx-auto text-center max-w-7xl sm:px-6 lg:px-8">
+        <h1 className="mb-6 text-5xl font-bold leading-tight text-white md:text-6xl">
+          {t.hero.titlePrefix}{' '}
+          <span className="text-transparent bg-gradient-to-r from-primary-400 to-primary-600 bg-clip-text">{t.hero.titleHighlight}</span>{' '}
+          {t.hero.titleSuffix}
         </h1>
-        <p className="text-xl text-dark-300 mb-8 max-w-2xl mx-auto">
-          Panoramate makes it easy to create, customize, and share immersive 360° virtual tours.
-          Perfect for real estate, hospitality, tourism, and more.
+        <p className="max-w-2xl mx-auto mb-8 text-xl text-dark-300">
+          {t.hero.description}
         </p>
-        <div className="flex gap-4 justify-center flex-wrap">
+        <div className="flex flex-wrap justify-center gap-4">
           <Link href="/register">
             <Button variant="primary" size="lg" className="flex items-center gap-2">
-              Start Free Trial
+              {t.hero.startTrial}
               <ArrowRight size={20} />
             </Button>
           </Link>
           <Link href="#features">
             <Button variant="secondary" size="lg">
-              Learn More
+              {t.hero.learnMore}
             </Button>
           </Link>
         </div>
       </section>
 
       {/* Features Section */}
-      <section id="features" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-        <h2 className="text-3xl font-bold text-white mb-12 text-center">
-          Powerful Features
+      <section id="features" className="px-4 py-20 mx-auto max-w-7xl sm:px-6 lg:px-8">
+        <h2 className="mb-12 text-3xl font-bold text-center text-white">
+          {t.features.sectionTitle}
         </h2>
-        <div className="grid md:grid-cols-2 gap-8 mb-12">
-          <div className="bg-dark-800 border border-dark-700 rounded-lg p-8">
-            <Image className="text-primary-400 mb-4" size={32} />
-            <h3 className="text-xl font-semibold text-white mb-2">Easy Upload</h3>
-            <p className="text-dark-300">
-              Upload 360° images with a simple drag-and-drop interface. Support for multiple formats.
-            </p>
-          </div>
-          <div className="bg-dark-800 border border-dark-700 rounded-lg p-8">
-            <Zap className="text-primary-400 mb-4" size={32} />
-            <h3 className="text-xl font-semibold text-white mb-2">Interactive Editor</h3>
-            <p className="text-dark-300">
-              Add hotspots, links, and information points to create immersive experiences.
-            </p>
-          </div>
-          <div className="bg-dark-800 border border-dark-700 rounded-lg p-8">
-            <Globe className="text-primary-400 mb-4" size={32} />
-            <h3 className="text-xl font-semibold text-white mb-2">Share Anywhere</h3>
-            <p className="text-dark-300">
-              Generate shareable links and embed code. Perfect for websites and social media.
-            </p>
-          </div>
-          <div className="bg-dark-800 border border-dark-700 rounded-lg p-8">
-            <Users className="text-primary-400 mb-4" size={32} />
-            <h3 className="text-xl font-semibold text-white mb-2">Team Collaboration</h3>
-            <p className="text-dark-300">
-              Invite team members and work together on projects in real-time.
-            </p>
-          </div>
+        <div className="grid gap-8 mb-12 md:grid-cols-2">
+          {t.features.cards.map((card, index) => {
+            const Icon = featureIcons[index];
+
+            return (
+              <div key={card.title} className="p-8 border rounded-lg bg-dark-800 border-dark-700">
+                <Icon className="mb-4 text-primary-400" size={32} />
+                <h3 className="mb-2 text-xl font-semibold text-white">{card.title}</h3>
+                <p className="text-dark-300">{card.description}</p>
+              </div>
+            );
+          })}
         </div>
       </section>
 
       {/* Pricing Section */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-        <h2 className="text-3xl font-bold text-white mb-12 text-center">
-          Simple Pricing
+      <section className="px-4 py-20 mx-auto max-w-7xl sm:px-6 lg:px-8">
+        <h2 className="mb-12 text-3xl font-bold text-center text-white">
+          {t.pricing.sectionTitle}
         </h2>
-        <div className="grid md:grid-cols-3 gap-8">
+        <div className="grid gap-8 md:grid-cols-3">
           {/* Starter */}
-          <div className="bg-dark-800 border border-dark-700 rounded-lg p-8 hover:border-primary-500 transition-colors">
-            <h3 className="text-2xl font-bold text-white mb-2">Starter</h3>
-            <p className="text-dark-400 mb-6">Perfect for getting started</p>
+          <div className="p-8 transition-colors border rounded-lg bg-dark-800 border-dark-700 hover:border-primary-500">
+            <h3 className="mb-2 text-2xl font-bold text-white">{t.pricing.tiers.starter.name}</h3>
+            <p className="mb-6 text-dark-400">{t.pricing.tiers.starter.subtitle}</p>
             <div className="mb-6">
               <span className="text-5xl font-bold text-white">$29</span>
-              <span className="text-dark-400">/month</span>
+              <span className="text-dark-400">{t.pricing.monthlySuffix}</span>
             </div>
-            <ul className="space-y-3 mb-8">
-              <li className="flex items-center gap-2 text-dark-300">
-                <Check size={18} className="text-primary-400" />
-                5 Virtual Tours
-              </li>
-              <li className="flex items-center gap-2 text-dark-300">
-                <Check size={18} className="text-primary-400" />
-                50 Scenes per Tour
-              </li>
-              <li className="flex items-center gap-2 text-dark-300">
-                <Check size={18} className="text-primary-400" />
-                2 GB Storage
-              </li>
-              <li className="flex items-center gap-2 text-dark-300">
-                <Check size={18} className="text-primary-400" />
-                Public Sharing
-              </li>
-              <li className="flex items-center gap-2 text-dark-300">
-                <Check size={18} className="text-primary-400" />
-                Email Support
-              </li>
+            <ul className="mb-8 space-y-3">
+              {t.pricing.tiers.starter.features.map((feature) => (
+                <li key={feature} className="flex items-center gap-2 text-dark-300">
+                  <Check size={18} className="text-primary-400" />
+                  {feature}
+                </li>
+              ))}
             </ul>
             <Link href="/register">
               <Button variant="secondary" className="w-full">
-                Get Started
+                {t.pricing.tiers.starter.cta}
               </Button>
             </Link>
           </div>
 
           {/* Professional */}
-          <div className="bg-dark-800 border-2 border-primary-500 rounded-lg p-8 relative">
-            <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-              <span className="bg-primary-600 text-white px-3 py-1 rounded-full text-sm font-semibold">
-                Most Popular
+          <div className="relative p-8 border-2 rounded-lg bg-dark-800 border-primary-500">
+            <div className="absolute transform -translate-x-1/2 -top-3 left-1/2">
+              <span className="px-3 py-1 text-sm font-semibold text-white rounded-full bg-primary-600">
+                {t.pricing.mostPopular}
               </span>
             </div>
-            <h3 className="text-2xl font-bold text-white mb-2 mt-4">Professional</h3>
-            <p className="text-dark-400 mb-6">For growing teams</p>
+            <h3 className="mt-4 mb-2 text-2xl font-bold text-white">{t.pricing.tiers.professional.name}</h3>
+            <p className="mb-6 text-dark-400">{t.pricing.tiers.professional.subtitle}</p>
             <div className="mb-6">
               <span className="text-5xl font-bold text-white">$79</span>
-              <span className="text-dark-400">/month</span>
+              <span className="text-dark-400">{t.pricing.monthlySuffix}</span>
             </div>
-            <ul className="space-y-3 mb-8">
-              <li className="flex items-center gap-2 text-dark-300">
-                <Check size={18} className="text-primary-400" />
-                20 Virtual Tours
-              </li>
-              <li className="flex items-center gap-2 text-dark-300">
-                <Check size={18} className="text-primary-400" />
-                200 Scenes per Tour
-              </li>
-              <li className="flex items-center gap-2 text-dark-300">
-                <Check size={18} className="text-primary-400" />
-                10 GB Storage
-              </li>
-              <li className="flex items-center gap-2 text-dark-300">
-                <Check size={18} className="text-primary-400" />
-                Team Members (10)
-              </li>
-              <li className="flex items-center gap-2 text-dark-300">
-                <Check size={18} className="text-primary-400" />
-                Priority Support
-              </li>
+            <ul className="mb-8 space-y-3">
+              {t.pricing.tiers.professional.features.map((feature) => (
+                <li key={feature} className="flex items-center gap-2 text-dark-300">
+                  <Check size={18} className="text-primary-400" />
+                  {feature}
+                </li>
+              ))}
             </ul>
             <Link href="/register">
               <Button variant="primary" className="w-full">
-                Get Started
+                {t.pricing.tiers.professional.cta}
               </Button>
             </Link>
           </div>
 
           {/* Enterprise */}
-          <div className="bg-dark-800 border border-dark-700 rounded-lg p-8 hover:border-primary-500 transition-colors">
-            <h3 className="text-2xl font-bold text-white mb-2">Enterprise</h3>
-            <p className="text-dark-400 mb-6">For large scale operations</p>
+          <div className="p-8 transition-colors border rounded-lg bg-dark-800 border-dark-700 hover:border-primary-500">
+            <h3 className="mb-2 text-2xl font-bold text-white">{t.pricing.tiers.enterprise.name}</h3>
+            <p className="mb-6 text-dark-400">{t.pricing.tiers.enterprise.subtitle}</p>
             <div className="mb-6">
               <span className="text-5xl font-bold text-white">$199</span>
-              <span className="text-dark-400">/month</span>
+              <span className="text-dark-400">{t.pricing.monthlySuffix}</span>
             </div>
-            <ul className="space-y-3 mb-8">
-              <li className="flex items-center gap-2 text-dark-300">
-                <Check size={18} className="text-primary-400" />
-                Unlimited Tours
-              </li>
-              <li className="flex items-center gap-2 text-dark-300">
-                <Check size={18} className="text-primary-400" />
-                Unlimited Scenes
-              </li>
-              <li className="flex items-center gap-2 text-dark-300">
-                <Check size={18} className="text-primary-400" />
-                100 GB Storage
-              </li>
-              <li className="flex items-center gap-2 text-dark-300">
-                <Check size={18} className="text-primary-400" />
-                Unlimited Team
-              </li>
-              <li className="flex items-center gap-2 text-dark-300">
-                <Check size={18} className="text-primary-400" />
-                24/7 Support
-              </li>
+            <ul className="mb-8 space-y-3">
+              {t.pricing.tiers.enterprise.features.map((feature) => (
+                <li key={feature} className="flex items-center gap-2 text-dark-300">
+                  <Check size={18} className="text-primary-400" />
+                  {feature}
+                </li>
+              ))}
             </ul>
             <Link href="/register">
               <Button variant="secondary" className="w-full">
-                Contact Sales
+                {t.pricing.tiers.enterprise.cta}
               </Button>
             </Link>
           </div>
@@ -215,26 +167,26 @@ export default function Home() {
       </section>
 
       {/* CTA Section */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center">
-        <h2 className="text-4xl font-bold text-white mb-4">
-          Ready to Create Your First Tour?
+      <section className="px-4 py-20 mx-auto text-center max-w-7xl sm:px-6 lg:px-8">
+        <h2 className="mb-4 text-4xl font-bold text-white">
+          {t.cta.title}
         </h2>
-        <p className="text-xl text-dark-300 mb-8">
-          Start your 14-day free trial today. No credit card required.
+        <p className="mb-8 text-xl text-dark-300">
+          {t.cta.description}
         </p>
         <Link href="/register">
           <Button variant="primary" size="lg" className="flex items-center gap-2 mx-auto">
-            Start Free Trial
+            {t.cta.button}
             <ArrowRight size={20} />
           </Button>
         </Link>
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-dark-800 py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <footer className="py-12 border-t border-dark-800">
+        <div className="px-4 mx-auto max-w-7xl sm:px-6 lg:px-8">
           <div className="text-center text-dark-400">
-            <p>© 2024 Panoramate. All rights reserved.</p>
+            <p>© 2024 Panoramate. {t.footer.rights}</p>
           </div>
         </div>
       </footer>
