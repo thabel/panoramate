@@ -31,6 +31,8 @@ model Organization {
   invoices             Invoice[]
   tours                Tour[]
   users                User[]
+  comparisons          Comparison[]
+
 
   @@map("organizations")
 }
@@ -51,6 +53,8 @@ model User {
   invitationsSent Invitation[] @relation("InvitedBy")
   sessions        Session[]
   tours           Tour[]
+  comparisons     Comparison[]
+
   organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([organizationId], map: "users_organizationId_fkey")
@@ -259,4 +263,37 @@ enum InvoiceStatus {
   PAID
   VOID
   UNCOLLECTIBLE
+}
+
+model Comparison {
+  id               String           @id @default(uuid())
+  title            String?
+  organizationId   String
+  createdById      String
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  images           ComparisonImage[]
+  organization     Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdBy        User             @relation(fields: [createdById], references: [id])
+
+  @@index([organizationId], map: "comparisons_organizationId_fkey")
+  @@index([createdById], map: "comparisons_createdById_fkey")
+  @@map("comparisons")
+}
+
+model ComparisonImage {
+  id               String     @id @default(uuid())
+  comparisonId     String
+  filename         String
+  originalName     String
+  mimeType         String     @default("image/jpeg")
+  sizeMb           Float
+  width            Int
+  height           Int
+  captureDate      DateTime
+  createdAt        DateTime   @default(now())
+  comparison       Comparison @relation(fields: [comparisonId], references: [id], onDelete: Cascade)
+
+  @@index([comparisonId], map: "comparison_images_comparisonId_fkey")
+  @@map("comparison_images")
 }

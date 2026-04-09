@@ -68,6 +68,11 @@ export default function DashboardLayout({
       icon: FileStack,
     },
     {
+      label: 'Comparisons',
+      href: '/comparisons',
+      icon: Users, // Using Users for now, maybe find a better icon like 'Layers' or 'Diff'
+    },
+    {
       label: 'Team',
       href: '/team',
       icon: Users,
@@ -96,11 +101,9 @@ export default function DashboardLayout({
 
       {/* Sidebar */}
       <aside
-        className={`fixed lg:static top-0 left-0 h-full bg-dark-800 border-r border-dark-700 z-50 transition-all duration-300 ${
-          isSidebarCollapsed ? 'w-20' : 'w-64'
-        } ${
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
-        }`}
+        className={`fixed lg:static top-0 left-0 h-full bg-dark-800 border-r border-dark-700 z-50 transition-all duration-300 ${isSidebarCollapsed ? 'w-20' : 'w-64'
+          } ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+          }`}
       >
         <div className={`p-4 border-b border-dark-700 flex items-center ${isSidebarCollapsed ? 'justify-center' : 'justify-between'}`}>
           {!isSidebarCollapsed && (
@@ -114,7 +117,7 @@ export default function DashboardLayout({
           {isSidebarCollapsed && (
             <div className="text-2xl font-bold text-primary-500">P</div>
           )}
-          <button 
+          <button
             onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
             className="hidden lg:block p-1.5 rounded-lg hover:bg-dark-700 text-dark-400 hover:text-white"
           >
