@@ -35,7 +35,7 @@ export default function Home() {
           {t.hero.description}
         </p>
         <div className="flex flex-wrap justify-center gap-4">
-          <Link href="/register">
+          <Link href="/request-inscription">
             <Button variant="primary" size="lg" className="flex items-center gap-2">
               {t.hero.startTrial}
               <ArrowRight size={20} />
@@ -74,7 +74,7 @@ export default function Home() {
         <h2 className="mb-12 text-3xl font-bold text-center text-white">
           {t.pricing.sectionTitle}
         </h2>
-        <div className="flex flex-col md:flex-row gap-8 justify-center max-w-4xl mx-auto">
+        <div className="flex flex-col justify-center max-w-4xl gap-8 mx-auto md:flex-row">
           {/* Free */}
           <div className="flex-1 p-8 transition-colors border rounded-lg bg-dark-800 border-dark-700 hover:border-primary-500">
             <h3 className="mb-2 text-2xl font-bold text-white">{t.pricing.tiers.starter.name}</h3>
@@ -129,7 +129,7 @@ export default function Home() {
         <p className="mb-8 text-xl text-dark-300">
           {t.cta.description}
         </p>
-        <Link href="/register">
+        <Link href="/request-inscription">
           <Button variant="primary" size="lg" className="flex items-center gap-2 mx-auto">
             {t.cta.button}
             <ArrowRight size={20} />

@@ -40,6 +40,7 @@ CREATE TABLE `users` (
     `organizationId` VARCHAR(191) NOT NULL,
 
     UNIQUE INDEX `users_email_key`(`email`),
+    INDEX `users_organizationId_fkey`(`organizationId`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -54,6 +55,7 @@ CREATE TABLE `sessions` (
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
 
     UNIQUE INDEX `sessions_token_key`(`token`),
+    INDEX `sessions_userId_fkey`(`userId`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -70,6 +72,8 @@ CREATE TABLE `invitations` (
     `invitedById` VARCHAR(191) NOT NULL,
 
     UNIQUE INDEX `invitations_token_key`(`token`),
+    INDEX `invitations_invitedById_fkey`(`invitedById`),
+    INDEX `invitations_organizationId_fkey`(`organizationId`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -88,8 +92,15 @@ CREATE TABLE `tours` (
     `createdById` VARCHAR(191) NOT NULL,
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NOT NULL,
+    `customLogoUrl` TEXT NULL,
+    `backgroundAudioUrl` TEXT NULL,
+    `backgroundAudioVolume` DOUBLE NOT NULL DEFAULT 0.5,
+    `showSceneMenu` BOOLEAN NOT NULL DEFAULT true,
+    `showHotspotTitles` BOOLEAN NOT NULL DEFAULT true,
 
     UNIQUE INDEX `tours_shareToken_key`(`shareToken`),
+    INDEX `tours_createdById_fkey`(`createdById`),
+    INDEX `tours_organizationId_fkey`(`organizationId`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -110,6 +121,7 @@ CREATE TABLE `tour_images` (
     `initialFov` DOUBLE NOT NULL DEFAULT 1.5707963,
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
 
+    INDEX `tour_images_tourId_fkey`(`tourId`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -117,7 +129,7 @@ CREATE TABLE `tour_images` (
 CREATE TABLE `hotspots` (
     `id` VARCHAR(191) NOT NULL,
     `imageId` VARCHAR(191) NOT NULL,
-    `type` ENUM('LINK', 'INFO', 'URL', 'VIDEO') NOT NULL DEFAULT 'LINK',
+    `type` ENUM('LINK', 'INFO', 'URL', 'VIDEO', 'LINK_SCENE', 'IMAGE', 'TEXT', 'OTHER') NOT NULL DEFAULT 'LINK',
     `yaw` DOUBLE NOT NULL,
     `pitch` DOUBLE NOT NULL,
     `rotation` DOUBLE NOT NULL DEFAULT 0,
@@ -126,9 +138,18 @@ CREATE TABLE `hotspots` (
     `content` TEXT NULL,
     `url` TEXT NULL,
     `videoUrl` TEXT NULL,
+    `imageUrl` TEXT NULL,
+    `imageUrls` TEXT NULL,
+    `animationType` ENUM('NONE', 'PULSE', 'GLOW', 'BOUNCE', 'FLOAT') NOT NULL DEFAULT 'NONE',
+    `iconUrl` TEXT NULL,
+    `iconName` VARCHAR(191) NULL DEFAULT 'info',
+    `color` VARCHAR(191) NULL,
+    `scale` DOUBLE NOT NULL DEFAULT 1.0,
+    `metadata` JSON NULL,
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NOT NULL,
 
+    INDEX `hotspots_imageId_fkey`(`imageId`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -170,6 +191,64 @@ CREATE TABLE `invoices` (
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
 
     UNIQUE INDEX `invoices_stripeInvoiceId_key`(`stripeInvoiceId`),
+    INDEX `invoices_organizationId_fkey`(`organizationId`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `comparisons` (
+    `id` VARCHAR(191) NOT NULL,
+    `title` VARCHAR(191) NULL,
+    `organizationId` VARCHAR(191) NOT NULL,
+    `createdById` VARCHAR(191) NOT NULL,
+    `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `updatedAt` DATETIME(3) NOT NULL,
+
+    INDEX `comparisons_organizationId_fkey`(`organizationId`),
+    INDEX `comparisons_createdById_fkey`(`createdById`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `comparison_images` (
+    `id` VARCHAR(191) NOT NULL,
+    `comparisonId` VARCHAR(191) NOT NULL,
+    `filename` VARCHAR(191) NOT NULL,
+    `originalName` VARCHAR(191) NOT NULL,
+    `mimeType` VARCHAR(191) NOT NULL DEFAULT 'image/jpeg',
+    `sizeMb` DOUBLE NOT NULL,
+    `width` INTEGER NOT NULL,
+    `height` INTEGER NOT NULL,
+    `captureDate` DATETIME(3) NOT NULL,
+    `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+
+    INDEX `comparison_images_comparisonId_fkey`(`comparisonId`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `inscription_requests` (
+    `id` VARCHAR(191) NOT NULL,
+    `type` ENUM('FREE', 'PROFESSIONAL') NOT NULL DEFAULT 'FREE',
+    `firstName` VARCHAR(191) NOT NULL,
+    `lastName` VARCHAR(191) NOT NULL,
+    `email` VARCHAR(191) NOT NULL,
+    `phone` VARCHAR(191) NULL,
+    `company` VARCHAR(191) NULL,
+    `country` VARCHAR(191) NULL,
+    `numberOfTours` INTEGER NULL,
+    `imagesPerTour` INTEGER NULL,
+    `teamMembers` INTEGER NULL,
+    `frequency` VARCHAR(191) NULL,
+    `status` ENUM('PENDING', 'APPROVED', 'REJECTED') NOT NULL DEFAULT 'PENDING',
+    `approvedAt` DATETIME(3) NULL,
+    `rejectionReason` VARCHAR(191) NULL,
+    `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `updatedAt` DATETIME(3) NOT NULL,
+
+    UNIQUE INDEX `inscription_requests_email_key`(`email`),
+    INDEX `inscription_requests_email_idx`(`email`),
+    INDEX `inscription_requests_status_idx`(`status`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -180,16 +259,16 @@ ALTER TABLE `users` ADD CONSTRAINT `users_organizationId_fkey` FOREIGN KEY (`org
 ALTER TABLE `sessions` ADD CONSTRAINT `sessions_userId_fkey` FOREIGN KEY (`userId`) REFERENCES `users`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE `invitations` ADD CONSTRAINT `invitations_organizationId_fkey` FOREIGN KEY (`organizationId`) REFERENCES `organizations`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
 ALTER TABLE `invitations` ADD CONSTRAINT `invitations_invitedById_fkey` FOREIGN KEY (`invitedById`) REFERENCES `users`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE `tours` ADD CONSTRAINT `tours_organizationId_fkey` FOREIGN KEY (`organizationId`) REFERENCES `organizations`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE `invitations` ADD CONSTRAINT `invitations_organizationId_fkey` FOREIGN KEY (`organizationId`) REFERENCES `organizations`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE `tours` ADD CONSTRAINT `tours_createdById_fkey` FOREIGN KEY (`createdById`) REFERENCES `users`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `tours` ADD CONSTRAINT `tours_organizationId_fkey` FOREIGN KEY (`organizationId`) REFERENCES `organizations`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE `tour_images` ADD CONSTRAINT `tour_images_tourId_fkey` FOREIGN KEY (`tourId`) REFERENCES `tours`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
@@ -199,3 +278,12 @@ ALTER TABLE `hotspots` ADD CONSTRAINT `hotspots_imageId_fkey` FOREIGN KEY (`imag
 
 -- AddForeignKey
 ALTER TABLE `invoices` ADD CONSTRAINT `invoices_organizationId_fkey` FOREIGN KEY (`organizationId`) REFERENCES `organizations`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `comparisons` ADD CONSTRAINT `comparisons_organizationId_fkey` FOREIGN KEY (`organizationId`) REFERENCES `organizations`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `comparisons` ADD CONSTRAINT `comparisons_createdById_fkey` FOREIGN KEY (`createdById`) REFERENCES `users`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `comparison_images` ADD CONSTRAINT `comparison_images_comparisonId_fkey` FOREIGN KEY (`comparisonId`) REFERENCES `comparisons`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;

@@ -19,18 +19,44 @@ interface InscriptionRequestData {
 export async function POST(request: NextRequest) {
   try {
     const data: InscriptionRequestData = await request.json();
+    const email = data.email?.trim().toLowerCase();
+    const prismaInscriptionRequest = (db as any).inscriptionRequest;
+
+    if (
+      !prismaInscriptionRequest ||
+      typeof prismaInscriptionRequest.findUnique !== 'function' ||
+      typeof prismaInscriptionRequest.create !== 'function'
+    ) {
+      logger.error({
+        event: 'inscription_request_delegate_missing',
+        hasDb: Boolean(db),
+        hasInscriptionRequest: Boolean(prismaInscriptionRequest),
+      });
+
+      return NextResponse.json(
+        { error: 'Database client is not ready. Please restart the server and try again.' },
+        { status: 500 }
+      );
+    }
 
     // Validate required fields
-    if (!data.type || !data.firstName || !data.lastName || !data.email) {
+    if (!data.type || !data.firstName || !data.lastName || !email) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
       );
     }
 
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return NextResponse.json(
+        { error: 'Invalid email format' },
+        { status: 400 }
+      );
+    }
+
     // Check if email already exists
-    const existingRequest = await db.inscriptionRequest.findUnique({
-      where: { email: data.email },
+    const existingRequest = await prismaInscriptionRequest.findUnique({
+      where: { email },
     });
 
     if (existingRequest) {
@@ -41,12 +67,12 @@ export async function POST(request: NextRequest) {
     }
 
     // Create inscription request
-    const inscriptionRequest = await db.inscriptionRequest.create({
+    const inscriptionRequest = await prismaInscriptionRequest.create({
       data: {
         type: data.type,
         firstName: data.firstName,
         lastName: data.lastName,
-        email: data.email,
+        email,
         phone: data.phone,
         company: data.company,
         country: data.country,
@@ -62,7 +88,7 @@ export async function POST(request: NextRequest) {
     logger.info({
       event: 'inscription_request_created',
       type: data.type,
-      email: data.email,
+      email,
       id: inscriptionRequest.id,
     });
 
