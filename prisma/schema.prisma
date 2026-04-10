@@ -297,3 +297,41 @@ model ComparisonImage {
   @@index([comparisonId], map: "comparison_images_comparisonId_fkey")
   @@map("comparison_images")
 }
+
+model InscriptionRequest {
+  id                String               @id @default(uuid())
+  type              InscriptionType      @default(FREE) // FREE or PROFESSIONAL
+  firstName         String
+  lastName          String
+  email             String               @unique
+  phone            String?
+  company          String?
+  country          String?
+  // Professional tier fields
+  numberOfTours    Int?
+  imagesPerTour    Int?
+  teamMembers      Int?
+  frequency        String? // monthly or annual
+  // Status
+  status           InscriptionStatus    @default(PENDING)
+  approvedAt       DateTime?
+  rejectionReason  String?
+  // Metadata
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+
+  @@index([email], map: "inscription_requests_email_idx")
+  @@index([status], map: "inscription_requests_status_idx")
+  @@map("inscription_requests")
+}
+
+enum InscriptionType {
+  FREE
+  PROFESSIONAL
+}
+
+enum InscriptionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
