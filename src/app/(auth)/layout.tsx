@@ -16,7 +16,7 @@ export default function AuthLayout({
 }) {
   return (
     <div className="flex items-center justify-center min-h-screen px-4 bg-gradient-to-b from-dark-900 to-dark-950">
-      <div className="relative w-full max-w-md">
+      <div className="relative w-full max-w-lg">
         <div className="absolute right-0 -top-14">
           <LanguageSwitcher />
         </div>

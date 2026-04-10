@@ -127,7 +127,7 @@ export default function Home() {
                 </li>
               ))}
             </ul>
-            <Link href="/register">
+            <Link href="/request-quote">
               <Button variant="primary" className="w-full">
                 {t.pricing.tiers.professional.cta}
               </Button>
