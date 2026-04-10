@@ -224,259 +224,209 @@ export default function RequestInscriptionPage() {
   };
 
   return (
-    <div className="grid md:grid-cols-2 gap-8 md:gap-12">
-      {/* Left Column - Info Section (visible on md+) */}
-      <div className="hidden md:flex flex-col justify-center">
-        <div className="space-y-6">
+    <div className="space-y-6">
+      <div className="flex items-center gap-2 mb-4">
+        <Link href="/" className="flex items-center gap-1 transition text-dark-400 hover:text-primary-400">
+          <ArrowLeft size={16} />
+          <span className="text-sm">{t.backToHome}</span>
+        </Link>
+      </div>
+
+      {/* Notice */}
+      <div className="p-4 border rounded-lg bg-primary-500/10 border-primary-500/20">
+        <div className="flex gap-3">
+          <CheckCircle size={20} className="text-primary-400 flex-shrink-0 mt-0.5" />
           <div>
-            <h2 className="text-3xl font-bold text-white mb-3">
-              {activeTab === 'free' ? t.free.title : t.professional.title}
-            </h2>
-            <p className="text-dark-300">
-              {activeTab === 'free' ? t.free.subtitle : t.professional.subtitle}
-            </p>
+            <h3 className="mb-1 text-sm font-semibold text-primary-400">{t.notice.title}</h3>
+            <p className="text-sm text-dark-300">{t.notice.message}</p>
           </div>
-
-          {/* Notice Box */}
-          <div className="p-4 rounded-lg bg-primary-500/10 border border-primary-500/20">
-            <div className="flex gap-3">
-              <CheckCircle size={20} className="text-primary-400 flex-shrink-0 mt-0.5" />
-              <div>
-                <h3 className="font-semibold text-primary-400 text-sm mb-1">{t.notice.title}</h3>
-                <p className="text-dark-300 text-sm">{t.notice.message}</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Benefits List for Professional */}
-          {activeTab === 'professional' && (
-            <div className="space-y-3">
-              <p className="text-sm font-medium text-dark-400">Included features:</p>
-              <ul className="space-y-2 text-sm text-dark-300">
-                <li className="flex items-center gap-2">
-                  <CheckCircle size={16} className="text-primary-400 flex-shrink-0" />
-                  <span>Custom pricing based on your needs</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <CheckCircle size={16} className="text-primary-400 flex-shrink-0" />
-                  <span>Dedicated account manager</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <CheckCircle size={16} className="text-primary-400 flex-shrink-0" />
-                  <span>Priority support</span>
-                </li>
-              </ul>
-            </div>
-          )}
         </div>
       </div>
 
-      {/* Right Column - Form Section */}
-      <div className="space-y-6">
-        {/* Back Link and Notice (mobile only) */}
-        <div className="md:hidden space-y-4">
-          <div className="flex items-center gap-2">
-            <Link href="/" className="text-dark-400 hover:text-primary-400 transition flex items-center gap-1">
-              <ArrowLeft size={16} />
-              <span className="text-sm">{t.backToHome}</span>
-            </Link>
+      {/* Tabs */}
+      <div className="flex gap-2 border-b border-dark-700">
+        <button
+          onClick={() => setActiveTab('free')}
+          className={`px-4 py-3 font-medium transition text-sm ${
+            activeTab === 'free'
+              ? 'border-b-2 border-primary-500 text-primary-400'
+              : 'text-dark-400 hover:text-dark-300'
+          }`}
+        >
+          {t.tabs.free}
+        </button>
+        <button
+          onClick={() => setActiveTab('professional')}
+          className={`px-4 py-3 font-medium transition text-sm ${
+            activeTab === 'professional'
+              ? 'border-b-2 border-primary-500 text-primary-400'
+              : 'text-dark-400 hover:text-dark-300'
+          }`}
+        >
+          {t.tabs.professional}
+        </button>
+      </div>
+
+      {/* Free Form */}
+      {activeTab === 'free' && (
+        <div>
+          <div className="mb-6">
+            <h1 className="mb-2 text-2xl font-bold text-white">{t.free.title}</h1>
+            <p className="text-sm text-dark-400">{t.free.subtitle}</p>
           </div>
 
-          <div className="p-4 rounded-lg bg-primary-500/10 border border-primary-500/20">
-            <div className="flex gap-3">
-              <CheckCircle size={20} className="text-primary-400 flex-shrink-0 mt-0.5" />
-              <div>
-                <h3 className="font-semibold text-primary-400 text-sm mb-1">{t.notice.title}</h3>
-                <p className="text-dark-300 text-sm">{t.notice.message}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Tabs */}
-        <div className="flex gap-2 border-b border-dark-700">
-          <button
-            onClick={() => setActiveTab('free')}
-            className={`px-4 py-3 font-medium transition text-sm ${
-              activeTab === 'free'
-                ? 'border-b-2 border-primary-500 text-primary-400'
-                : 'text-dark-400 hover:text-dark-300'
-            }`}
-          >
-            {t.tabs.free}
-          </button>
-          <button
-            onClick={() => setActiveTab('professional')}
-            className={`px-4 py-3 font-medium transition text-sm ${
-              activeTab === 'professional'
-                ? 'border-b-2 border-primary-500 text-primary-400'
-                : 'text-dark-400 hover:text-dark-300'
-            }`}
-          >
-            {t.tabs.professional}
-          </button>
-        </div>
-
-        {/* Free Form */}
-        {activeTab === 'free' && (
-          <div>
-            <div className="mb-6 md:hidden">
-              <h1 className="text-2xl font-bold text-white mb-2">{t.free.title}</h1>
-              <p className="text-dark-400 text-sm">{t.free.subtitle}</p>
-            </div>
-
-            <form onSubmit={handleFreeSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Input
-                  label={t.free.fields.firstName}
-                  type="text"
-                  name="firstName"
-                  value={freeFormData.firstName}
-                  onChange={handleFreeChange}
-                  required
-                />
-
-                <Input
-                  label={t.free.fields.lastName}
-                  type="text"
-                  name="lastName"
-                  value={freeFormData.lastName}
-                  onChange={handleFreeChange}
-                  required
-                />
-              </div>
-
+          <form onSubmit={handleFreeSubmit} className="space-y-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <Input
-                label={t.free.fields.email}
-                type="email"
-                name="email"
-                value={freeFormData.email}
+                label={t.free.fields.firstName}
+                type="text"
+                name="firstName"
+                value={freeFormData.firstName}
                 onChange={handleFreeChange}
                 required
               />
 
-              <Button
-                type="submit"
-                variant="primary"
-                className="w-full"
-                isLoading={isLoading}
-                disabled={isLoading}
-              >
-                {isLoading ? t.free.submitting : t.free.submit}
-              </Button>
-            </form>
-          </div>
-        )}
-
-        {/* Professional Form */}
-        {activeTab === 'professional' && (
-          <div>
-            <div className="mb-6 md:hidden">
-              <h1 className="text-2xl font-bold text-white mb-2">{t.professional.title}</h1>
-              <p className="text-dark-400 text-sm">{t.professional.subtitle}</p>
+              <Input
+                label={t.free.fields.lastName}
+                type="text"
+                name="lastName"
+                value={freeFormData.lastName}
+                onChange={handleFreeChange}
+                required
+              />
             </div>
 
-            <form onSubmit={handleProfSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Input
-                  label={t.professional.fields.firstName}
-                  type="text"
-                  name="firstName"
-                  value={profFormData.firstName}
-                  onChange={handleProfChange}
-                  required
-                />
+            <Input
+              label={t.free.fields.email}
+              type="email"
+              name="email"
+              value={freeFormData.email}
+              onChange={handleFreeChange}
+              required
+            />
 
-                <Input
-                  label={t.professional.fields.lastName}
-                  type="text"
-                  name="lastName"
-                  value={profFormData.lastName}
-                  onChange={handleProfChange}
-                  required
-                />
+            <Button
+              type="submit"
+              variant="primary"
+              className="w-full"
+              isLoading={isLoading}
+              disabled={isLoading}
+            >
+              {isLoading ? t.free.submitting : t.free.submit}
+            </Button>
+          </form>
+        </div>
+      )}
 
-                <Input
-                  label={t.professional.fields.email}
-                  type="email"
-                  name="email"
-                  value={profFormData.email}
-                  onChange={handleProfChange}
-                  required
-                />
+      {/* Professional Form */}
+      {activeTab === 'professional' && (
+        <div>
+          <div className="mb-6">
+            <h1 className="mb-2 text-2xl font-bold text-white">{t.professional.title}</h1>
+            <p className="text-sm text-dark-400">{t.professional.subtitle}</p>
+          </div>
 
-                <Input
-                  label={t.professional.fields.phone}
-                  type="tel"
-                  name="phone"
-                  value={profFormData.phone}
-                  onChange={handleProfChange}
-                  required
-                />
+          <form onSubmit={handleProfSubmit} className="space-y-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+              <Input
+                label={t.professional.fields.firstName}
+                type="text"
+                name="firstName"
+                value={profFormData.firstName}
+                onChange={handleProfChange}
+                required
+              />
 
-                <Input
-                  label={t.professional.fields.company}
-                  type="text"
-                  name="company"
-                  value={profFormData.company}
-                  onChange={handleProfChange}
-                  required
-                />
+              <Input
+                label={t.professional.fields.lastName}
+                type="text"
+                name="lastName"
+                value={profFormData.lastName}
+                onChange={handleProfChange}
+                required
+              />
 
-                <Input
-                  label={t.professional.fields.country}
-                  type="text"
-                  name="country"
-                  value={profFormData.country}
-                  onChange={handleProfChange}
-                  required
-                />
+              <Input
+                label={t.professional.fields.email}
+                type="email"
+                name="email"
+                value={profFormData.email}
+                onChange={handleProfChange}
+                required
+              />
 
-                <Input
-                  label={t.professional.fields.numberOfTours}
-                  type="number"
-                  name="numberOfTours"
-                  value={profFormData.numberOfTours}
-                  onChange={handleProfChange}
-                  min="1"
-                  required
-                />
+              <Input
+                label={t.professional.fields.phone}
+                type="tel"
+                name="phone"
+                value={profFormData.phone}
+                onChange={handleProfChange}
+                required
+              />
 
-                <Input
-                  label={t.professional.fields.imagesPerTour}
-                  type="number"
-                  name="imagesPerTour"
-                  value={profFormData.imagesPerTour}
-                  onChange={handleProfChange}
-                  min="1"
-                  required
-                />
+              <Input
+                label={t.professional.fields.company}
+                type="text"
+                name="company"
+                value={profFormData.company}
+                onChange={handleProfChange}
+                required
+              />
 
-                <Input
-                  label={t.professional.fields.teamMembers}
-                  type="number"
-                  name="teamMembers"
-                  value={profFormData.teamMembers}
-                  onChange={handleProfChange}
-                  min="1"
-                  required
-                />
+              <Input
+                label={t.professional.fields.country}
+                type="text"
+                name="country"
+                value={profFormData.country}
+                onChange={handleProfChange}
+                required
+              />
 
-                <div>
-                  <label className="block text-sm font-medium text-white mb-2">
-                    {t.professional.fields.frequency}
-                  </label>
-                  <select
-                    name="frequency"
-                    value={profFormData.frequency}
-                    onChange={handleProfChange}
-                    className="w-full px-4 py-2 rounded-lg bg-dark-700 border border-dark-600 text-white placeholder-dark-400 focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
-                  >
-                    <option value="monthly">{t.professional.frequency_options.monthly}</option>
-                    <option value="annual">{t.professional.frequency_options.annual}</option>
-                  </select>
-                </div>
+              <Input
+                label={t.professional.fields.numberOfTours}
+                type="number"
+                name="numberOfTours"
+                value={profFormData.numberOfTours}
+                onChange={handleProfChange}
+                min="1"
+                required
+              />
+
+              <Input
+                label={t.professional.fields.imagesPerTour}
+                type="number"
+                name="imagesPerTour"
+                value={profFormData.imagesPerTour}
+                onChange={handleProfChange}
+                min="1"
+                required
+              />
+
+              <Input
+                label={t.professional.fields.teamMembers}
+                type="number"
+                name="teamMembers"
+                value={profFormData.teamMembers}
+                onChange={handleProfChange}
+                min="1"
+                required
+              />
+
+              <div>
+                <label className="block mb-2 text-sm font-medium text-white">
+                  {t.professional.fields.frequency}
+                </label>
+                <select
+                  name="frequency"
+                  value={profFormData.frequency}
+                  onChange={handleProfChange}
+                  className="w-full px-4 py-2 text-white border rounded-lg bg-dark-700 border-dark-600 placeholder-dark-400 focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
+                >
+                  <option value="monthly">{t.professional.frequency_options.monthly}</option>
+                  <option value="annual">{t.professional.frequency_options.annual}</option>
+                </select>
               </div>
+            </div>
 
               <Button
                 type="submit"

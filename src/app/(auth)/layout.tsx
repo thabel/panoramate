@@ -19,7 +19,7 @@ export default function AuthLayout({
     <div className="min-h-screen bg-gradient-to-b from-dark-900 to-dark-950">
       <Header />
       <div className="flex items-center justify-center min-h-[calc(100vh-73px)] px-4">
-        <div className="relative w-full max-w-lg">
+        <div className="relative w-full max-w-lg md:max-w-xl">
           <div className="mb-8 text-center">
             <Link href="/" className="inline-block mb-2 text-3xl font-bold text-transparent bg-gradient-to-r from-primary-400 to-primary-600 bg-clip-text hover:opacity-80 transition">
               BATIVY
