@@ -89,9 +89,9 @@ export default function Home() {
         <h2 className="mb-12 text-3xl font-bold text-center text-white">
           {t.pricing.sectionTitle}
         </h2>
-        <div className="grid gap-8 md:grid-cols-2">
+        <div className="flex flex-col md:flex-row gap-8 justify-center max-w-4xl mx-auto">
           {/* Free */}
-          <div className="p-8 transition-colors border rounded-lg bg-dark-800 border-dark-700 hover:border-primary-500">
+          <div className="flex-1 p-8 transition-colors border rounded-lg bg-dark-800 border-dark-700 hover:border-primary-500">
             <h3 className="mb-2 text-2xl font-bold text-white">{t.pricing.tiers.starter.name}</h3>
             <p className="mb-6 text-dark-400">{t.pricing.tiers.starter.subtitle}</p>
             <div className="mb-6">
@@ -113,13 +113,8 @@ export default function Home() {
           </div>
 
           {/* Professional */}
-          <div className="relative p-8 border-2 rounded-lg bg-dark-800 border-primary-500">
-            <div className="absolute transform -translate-x-1/2 -top-3 left-1/2">
-              <span className="px-3 py-1 text-sm font-semibold text-white rounded-full bg-primary-600">
-                {t.pricing.mostPopular}
-              </span>
-            </div>
-            <h3 className="mt-4 mb-2 text-2xl font-bold text-white">{t.pricing.tiers.professional.name}</h3>
+          <div className="flex-1 p-8 transition-colors border rounded-lg bg-dark-800 border-dark-700 hover:border-primary-500">
+            <h3 className="mb-2 text-2xl font-bold text-white">{t.pricing.tiers.professional.name}</h3>
             <p className="mb-6 text-dark-400">{t.pricing.tiers.professional.subtitle}</p>
             <div className="mb-6">
               <span className="text-3xl font-bold text-dark-400">Custom pricing</span>
