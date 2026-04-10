@@ -1,10 +1,8 @@
 "use client";
 
 import Link from 'next/link';
-import { useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher';
-import { QuoteRequestModal } from '@/components/ui/QuoteRequestModal';
 import { useUI } from '@/context/UIContext';
 import { dictionaries } from '@/lib/i18n';
 import {
@@ -19,7 +17,6 @@ import {
 export default function Home() {
   const { locale } = useUI();
   const t = dictionaries[locale].home;
-  const [isQuoteModalOpen, setIsQuoteModalOpen] = useState(false);
   const featureIcons = [Image, Zap, Globe, Users];
 
   return (
@@ -92,7 +89,7 @@ export default function Home() {
         <h2 className="mb-12 text-3xl font-bold text-center text-white">
           {t.pricing.sectionTitle}
         </h2>
-        <div className="grid gap-8 md:grid-cols-3">
+        <div className="grid gap-8 md:grid-cols-2">
           {/* Free */}
           <div className="p-8 transition-colors border rounded-lg bg-dark-800 border-dark-700 hover:border-primary-500">
             <h3 className="mb-2 text-2xl font-bold text-white">{t.pricing.tiers.starter.name}</h3>
@@ -141,39 +138,8 @@ export default function Home() {
               </Button>
             </Link>
           </div>
-
-          {/* Enterprise */}
-          <div className="p-8 transition-colors border rounded-lg bg-dark-800 border-dark-700 hover:border-primary-500">
-            <h3 className="mb-2 text-2xl font-bold text-white">{t.pricing.tiers.enterprise.name}</h3>
-            <p className="mb-6 text-dark-400">{t.pricing.tiers.enterprise.subtitle}</p>
-            <div className="mb-6 h-16 flex items-center">
-              <span className="text-lg font-semibold text-primary-400">Custom Solutions</span>
-            </div>
-            <ul className="mb-8 space-y-3">
-              {t.pricing.tiers.enterprise.features.map((feature) => (
-                <li key={feature} className="flex items-center gap-2 text-dark-300">
-                  <Check size={18} className="text-primary-400" />
-                  {feature}
-                </li>
-              ))}
-            </ul>
-            <Button
-              variant="secondary"
-              className="w-full"
-              onClick={() => setIsQuoteModalOpen(true)}
-            >
-              {t.pricing.tiers.enterprise.cta}
-            </Button>
-          </div>
         </div>
       </section>
-
-      {/* Quote Request Modal */}
-      <QuoteRequestModal
-        isOpen={isQuoteModalOpen}
-        onClose={() => setIsQuoteModalOpen(false)}
-        locale={locale}
-      />
 
       {/* CTA Section */}
       <section className="px-4 py-20 mx-auto text-center max-w-7xl sm:px-6 lg:px-8">
