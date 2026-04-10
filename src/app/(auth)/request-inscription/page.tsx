@@ -4,13 +4,17 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, CheckCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useUI } from '@/context/UIContext';
 
 const translations = {
   en: {
     backToHome: 'Back to Home',
+    notice: {
+      title: 'How it works',
+      message: 'Your request will be reviewed and confirmed by our team. You\'ll receive a confirmation email once your account is approved.',
+    },
     tabs: {
       free: 'Free Trial',
       professional: 'Professional',
@@ -55,6 +59,10 @@ const translations = {
   },
   fr: {
     backToHome: 'Retour à l\'accueil',
+    notice: {
+      title: 'Comment ça marche',
+      message: 'Votre demande sera examinée et confirmée par notre équipe. Vous recevrez un email de confirmation une fois votre compte approuvé.',
+    },
     tabs: {
       free: 'Essai Gratuit',
       professional: 'Professional',
@@ -222,6 +230,17 @@ export default function RequestInscriptionPage() {
           <ArrowLeft size={16} />
           <span className="text-sm">{t.backToHome}</span>
         </Link>
+      </div>
+
+      {/* Notice */}
+      <div className="p-4 rounded-lg bg-primary-500/10 border border-primary-500/20">
+        <div className="flex gap-3">
+          <CheckCircle size={20} className="text-primary-400 flex-shrink-0 mt-0.5" />
+          <div>
+            <h3 className="font-semibold text-primary-400 text-sm mb-1">{t.notice.title}</h3>
+            <p className="text-dark-300 text-sm">{t.notice.message}</p>
+          </div>
+        </div>
       </div>
 
       {/* Tabs */}
