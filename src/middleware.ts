@@ -11,9 +11,11 @@ export async function middleware(request: NextRequest) {
     '/api/auth/logout',
     '/api/billing/webhook',
     '/api/tours-public',
+    '/api/inscription-request',
     '/tour/',
     '/login',
     '/register',
+    '/request-inscription',
   ];
 
   // Check if this is a public route
