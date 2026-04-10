@@ -171,7 +171,8 @@ export default function RequestInscriptionPage() {
           window.location.href = '/';
         }, 2000);
       } else {
-        toast.error(t.free.error);
+        const errorData = await response.json();
+        toast.error(errorData.error || t.free.error);
       }
     } catch (error) {
       toast.error(t.free.error);
@@ -213,7 +214,8 @@ export default function RequestInscriptionPage() {
           window.location.href = '/';
         }, 2000);
       } else {
-        toast.error(t.professional.error);
+        const errorData = await response.json();
+        toast.error(errorData.error || t.professional.error);
       }
     } catch (error) {
       toast.error(t.professional.error);
@@ -226,19 +228,19 @@ export default function RequestInscriptionPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-2 mb-4">
-        <Link href="/" className="text-dark-400 hover:text-primary-400 transition flex items-center gap-1">
+        <Link href="/" className="flex items-center gap-1 transition text-dark-400 hover:text-primary-400">
           <ArrowLeft size={16} />
           <span className="text-sm">{t.backToHome}</span>
         </Link>
       </div>
 
       {/* Notice */}
-      <div className="p-4 rounded-lg bg-primary-500/10 border border-primary-500/20">
+      <div className="p-4 border rounded-lg bg-primary-500/10 border-primary-500/20">
         <div className="flex gap-3">
           <CheckCircle size={20} className="text-primary-400 flex-shrink-0 mt-0.5" />
           <div>
-            <h3 className="font-semibold text-primary-400 text-sm mb-1">{t.notice.title}</h3>
-            <p className="text-dark-300 text-sm">{t.notice.message}</p>
+            <h3 className="mb-1 text-sm font-semibold text-primary-400">{t.notice.title}</h3>
+            <p className="text-sm text-dark-300">{t.notice.message}</p>
           </div>
         </div>
       </div>
@@ -271,12 +273,12 @@ export default function RequestInscriptionPage() {
       {activeTab === 'free' && (
         <div>
           <div className="mb-6">
-            <h1 className="text-2xl font-bold text-white mb-2">{t.free.title}</h1>
-            <p className="text-dark-400 text-sm">{t.free.subtitle}</p>
+            <h1 className="mb-2 text-2xl font-bold text-white">{t.free.title}</h1>
+            <p className="text-sm text-dark-400">{t.free.subtitle}</p>
           </div>
 
           <form onSubmit={handleFreeSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <Input
                 label={t.free.fields.firstName}
                 type="text"
@@ -322,12 +324,12 @@ export default function RequestInscriptionPage() {
       {activeTab === 'professional' && (
         <div>
           <div className="mb-6">
-            <h1 className="text-2xl font-bold text-white mb-2">{t.professional.title}</h1>
-            <p className="text-dark-400 text-sm">{t.professional.subtitle}</p>
+            <h1 className="mb-2 text-2xl font-bold text-white">{t.professional.title}</h1>
+            <p className="text-sm text-dark-400">{t.professional.subtitle}</p>
           </div>
 
           <form onSubmit={handleProfSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <Input
                 label={t.professional.fields.firstName}
                 type="text"
@@ -413,14 +415,14 @@ export default function RequestInscriptionPage() {
               />
 
               <div>
-                <label className="block text-sm font-medium text-white mb-2">
+                <label className="block mb-2 text-sm font-medium text-white">
                   {t.professional.fields.frequency}
                 </label>
                 <select
                   name="frequency"
                   value={profFormData.frequency}
                   onChange={handleProfChange}
-                  className="w-full px-4 py-2 rounded-lg bg-dark-700 border border-dark-600 text-white placeholder-dark-400 focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
+                  className="w-full px-4 py-2 text-white border rounded-lg bg-dark-700 border-dark-600 placeholder-dark-400 focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
                 >
                   <option value="monthly">{t.professional.frequency_options.monthly}</option>
                   <option value="annual">{t.professional.frequency_options.annual}</option>

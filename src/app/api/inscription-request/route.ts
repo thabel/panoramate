@@ -85,11 +85,10 @@ export async function POST(request: NextRequest) {
     });
 
     // Log the inscription request
-    logger.info({
-      event: 'inscription_request_created',
+    console.info({
+      event: 'new_inscription_request',
       type: data.type,
-      email,
-      id: inscriptionRequest.id,
+      data: data,
     });
 
     return NextResponse.json(
@@ -105,10 +104,7 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     );
   } catch (error) {
-    logger.error({
-      event: 'inscription_request_error',
-      error: error instanceof Error ? error.message : 'Unknown error',
-    });
+     console.error('Error processing inscription request:', error);
 
     return NextResponse.json(
       { error: 'Failed to process inscription request' },
