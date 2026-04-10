@@ -1,6 +1,7 @@
 'use client';
 
-import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher';
+import Link from 'next/link';
+import { Header } from '@/components/ui/Header';
 import { dictionaries } from '@/lib/i18n';
 import { useUI } from '@/context/UIContext';
 
@@ -15,19 +16,19 @@ export default function AuthLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex items-center justify-center min-h-screen px-4 bg-gradient-to-b from-dark-900 to-dark-950">
-      <div className="relative w-full max-w-lg">
-        <div className="absolute right-0 -top-14">
-          <LanguageSwitcher />
-        </div>
-        <div className="mb-8 text-center">
-          <div className="mb-2 text-3xl font-bold text-transparent bg-gradient-to-r from-primary-400 to-primary-600 bg-clip-text">
-            BATIVY
+    <div className="min-h-screen bg-gradient-to-b from-dark-900 to-dark-950">
+      <Header />
+      <div className="flex items-center justify-center min-h-[calc(100vh-73px)] px-4">
+        <div className="relative w-full max-w-lg">
+          <div className="mb-8 text-center">
+            <Link href="/" className="inline-block mb-2 text-3xl font-bold text-transparent bg-gradient-to-r from-primary-400 to-primary-600 bg-clip-text hover:opacity-80 transition">
+              BATIVY
+            </Link>
+            <AuthHeaderSubtitle />
           </div>
-          <AuthHeaderSubtitle />
-        </div>
-        <div className="p-8 border rounded-lg bg-dark-800 border-dark-700">
-          {children}
+          <div className="p-8 border rounded-lg bg-dark-800 border-dark-700">
+            {children}
+          </div>
         </div>
       </div>
     </div>
