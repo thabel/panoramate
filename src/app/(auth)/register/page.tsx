@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
@@ -8,10 +8,21 @@ import { Input } from '@/components/ui/Input';
 import toast from 'react-hot-toast';
 import { useUI } from '@/context/UIContext';
 import { dictionaries } from '@/lib/i18n';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 
 export default function RegisterPage() {
   const router = useRouter();
   const { locale } = useUI();
+  const [isRedirecting, setIsRedirecting] = useState(true);
+
+  useEffect(() => {
+    // Redirect to request-inscription as public registration is disabled
+    const timer = setTimeout(() => {
+      router.push('/request-inscription');
+    }, 0);
+
+    return () => clearTimeout(timer);
+  }, [router]);
   const t = dictionaries[locale].auth.register;
   const [formData, setFormData] = useState({
     firstName: '',
@@ -90,6 +101,14 @@ export default function RegisterPage() {
       setIsLoading(false);
     }
   };
+
+  if (isRedirecting) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <LoadingSpinner size="lg" />
+      </div>
+    );
+  }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">

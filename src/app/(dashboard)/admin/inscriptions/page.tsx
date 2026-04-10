@@ -42,7 +42,7 @@ export default function AdminInscriptionsPage() {
 
   // Check if user is admin
   useEffect(() => {
-    if (!authLoading && user && user.role !== 'OWNER' && user.role !== 'ADMIN') {
+    if (!authLoading && user && user.role !== 'ADMIN') {
       router.push('/dashboard');
       toast.error('Admin access required');
     }
@@ -50,7 +50,7 @@ export default function AdminInscriptionsPage() {
 
   // Fetch inscription requests
   useEffect(() => {
-    if (!user || (user.role !== 'OWNER' && user.role !== 'ADMIN')) {
+    if (!user || user.role !== 'ADMIN') {
       return;
     }
 
@@ -151,7 +151,7 @@ export default function AdminInscriptionsPage() {
     );
   }
 
-  if (user && user.role !== 'OWNER' && user.role !== 'ADMIN') {
+  if (user && user.role !== 'ADMIN') {
     return (
       <Alert variant="error">
         <AlertCircle size={20} />

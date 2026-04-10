@@ -22,7 +22,7 @@ async function verifyAdminAuth(request: NextRequest) {
       include: { organization: true },
     });
 
-    if (!user || user.role !== 'OWNER') {
+    if (!user || user.role !== 'ADMIN') {
       return null;
     }
 

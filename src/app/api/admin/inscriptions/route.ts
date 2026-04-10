@@ -22,13 +22,13 @@ async function verifyAdminAuth(request: NextRequest) {
       return null;
     }
 
-    // Get user and check if admin/owner
+    // Get user and check if admin
     const user = await db.user.findUnique({
       where: { id: payload.userId as string },
       include: { organization: true },
     });
 
-    if (!user || (user.role !== 'OWNER' && user.role !== 'ADMIN')) {
+    if (!user || user.role !== 'ADMIN') {
       return null;
     }
 

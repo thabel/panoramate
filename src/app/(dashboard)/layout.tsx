@@ -56,7 +56,7 @@ export default function DashboardLayout({
   }
 
   const isTrialing = organization.plan === 'FREE_TRIAL';
-  const isAdmin = user.role === 'OWNER' || user.role === 'ADMIN';
+  const isAdmin = user.role === 'ADMIN';
 
   const navItems = [
     {
