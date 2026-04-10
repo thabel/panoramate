@@ -60,8 +60,9 @@ export const config = {
   matcher: [
     '/api/:path*',
     '/dashboard/:path*',
+    '/admin/:path*',
     '/tours/:path*',
-  
+
     /*
      * Match all request paths except for the ones starting with:
      * - _next/static (static files)

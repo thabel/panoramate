@@ -18,6 +18,7 @@ import {
   AlertCircle,
   ChevronLeft,
   ChevronRight,
+  Shield,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/Badge';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
@@ -55,6 +56,7 @@ export default function DashboardLayout({
   }
 
   const isTrialing = organization.plan === 'FREE_TRIAL';
+  const isAdmin = user.role === 'OWNER' || user.role === 'ADMIN';
 
   const navItems = [
     {
@@ -87,6 +89,15 @@ export default function DashboardLayout({
       href: '/settings',
       icon: Settings,
     },
+    ...(isAdmin
+      ? [
+          {
+            label: 'Admin',
+            href: '/admin/inscriptions',
+            icon: Shield,
+          },
+        ]
+      : []),
   ];
 
   return (
