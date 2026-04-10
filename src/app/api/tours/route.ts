@@ -3,6 +3,7 @@ import { getAuthUser } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { PLAN_LIMITS } from '@/lib/stripe';
 import { logger } from '@/lib/logger';
+import { canCreateTour } from '@/lib/plan-limits';
 
 export async function GET(request: NextRequest) {
   try {
@@ -110,7 +111,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // RESTRICTION DISABLED: plan limits no longer enforced
+    // Check plan limits
+    const canCreate = await canCreateTour(authPayload);
+    if (!canCreate.allowed) {
+      return NextResponse.json(
+        { error: canCreate.reason || 'Cannot create tour' },
+        { status: 403 }
+      );
+    }
 
     const tour = await db.tour.create({
       data: {

@@ -10,9 +10,9 @@ export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
 
 export const PLAN_LIMITS = {
   FREE_TRIAL: {
-    maxTours: 2,
+    maxTours: 1,
     maxImages: 10,
-    storageMb: 200,
+    storageMb: 500,
     priceMonthly: 0,
     priceYearly: 0,
   },

@@ -3,6 +3,7 @@ import { getAuthUser } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { saveUploadedFile, deleteFile } from '@/lib/storage';
 import { PLAN_LIMITS } from '@/lib/stripe';
+import { canAddImagesToTour, canAddStorage } from '@/lib/plan-limits';
 
 export async function POST(
   request: NextRequest,
@@ -27,7 +28,6 @@ export async function POST(
       );
     }
 
-    // RESTRICTION DISABLED: all authenticated users can upload images to any tour
     const org = await db.organization.findUnique({
       where: { id: authPayload.organizationId },
     });
@@ -38,8 +38,6 @@ export async function POST(
         { status: 404 }
       );
     }
-
-    // RESTRICTION DISABLED: image limits no longer enforced
 
     // Parse multipart form data
     const formData = await request.formData();
@@ -52,7 +50,17 @@ export async function POST(
       );
     }
 
+    // Check image count limit before processing
+    const canAddImages = await canAddImagesToTour(authPayload, params.id, files.length);
+    if (!canAddImages.allowed) {
+      return NextResponse.json(
+        { error: canAddImages.reason || 'Cannot add images' },
+        { status: 403 }
+      );
+    }
+
     const createdImages: any[] = [];
+    let totalStorageAdded = 0;
 
     for (const file of files) {
       // Validate file type
@@ -71,7 +79,16 @@ export async function POST(
           file.name
         );
 
-        // RESTRICTION DISABLED: storage limits no longer enforced
+        // Check storage limit
+        const canAddStorageResult = await canAddStorage(authPayload, org.usedStorageMb + totalStorageAdded + sizeMb);
+        if (!canAddStorageResult.allowed) {
+          return NextResponse.json(
+            { error: canAddStorageResult.reason || 'Storage limit exceeded' },
+            { status: 403 }
+          );
+        }
+
+        totalStorageAdded += sizeMb;
         const order = tour.images.length + createdImages.length;
 
         const image = await db.tourImage.create({
