@@ -25,7 +25,7 @@ export default function Home() {
       <nav className="sticky top-0 z-40 border-b border-dark-800 bg-dark-900/95 backdrop-blur-sm">
         <div className="flex items-center justify-between px-4 py-4 mx-auto max-w-7xl sm:px-6 lg:px-8">
           <div className="text-2xl font-bold text-transparent bg-gradient-to-r from-primary-400 to-primary-600 bg-clip-text">
-            BATIVYMA
+            BATIVY
           </div>
           <div className="flex items-center gap-4">
             <LanguageSwitcher />
