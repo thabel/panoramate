@@ -276,7 +276,7 @@ export default function RequestInscriptionPage() {
           </div>
 
           <form onSubmit={handleFreeSubmit} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Input
                 label={t.free.fields.firstName}
                 type="text"
@@ -327,7 +327,7 @@ export default function RequestInscriptionPage() {
           </div>
 
           <form onSubmit={handleProfSubmit} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <Input
                 label={t.professional.fields.firstName}
                 type="text"
