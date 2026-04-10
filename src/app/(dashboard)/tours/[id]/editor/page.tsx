@@ -955,7 +955,7 @@ export default function TourEditorPage({
       <div className="z-20 flex items-center justify-between flex-shrink-0 h-16 px-6 py-4 border-b bg-dark-800 border-dark-700">
         <div className="flex items-center gap-4">
           <div className="text-xl font-bold text-transparent bg-gradient-to-r from-primary-400 to-primary-600 bg-clip-text">
-            Panoramate
+            BATIVY
           </div>
           <div className="w-px h-6 bg-dark-700" />
           <h1 className="text-lg font-semibold text-white truncate max-w-[200px]">{tour.title}</h1>

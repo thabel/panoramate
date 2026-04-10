@@ -5,7 +5,7 @@ import './globals.css';
 import { UIProvider } from '@/context/UIContext';
 
 export const metadata: Metadata = {
-  title: 'Panoramate - Virtual Tour Creator',
+  title: 'BATIVY - Virtual Tour Creator',
   description: 'Create and share stunning 360° virtual tours in minutes',
   icons: {
     icon: '/favicon.ico',

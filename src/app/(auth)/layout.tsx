@@ -15,18 +15,18 @@ export default function AuthLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-dark-900 to-dark-950 flex items-center justify-center px-4">
-      <div className="w-full max-w-md relative">
-        <div className="absolute -top-14 right-0">
+    <div className="flex items-center justify-center min-h-screen px-4 bg-gradient-to-b from-dark-900 to-dark-950">
+      <div className="relative w-full max-w-md">
+        <div className="absolute right-0 -top-14">
           <LanguageSwitcher />
         </div>
-        <div className="text-center mb-8">
-          <div className="text-3xl font-bold bg-gradient-to-r from-primary-400 to-primary-600 bg-clip-text text-transparent mb-2">
-            Panoramate
+        <div className="mb-8 text-center">
+          <div className="mb-2 text-3xl font-bold text-transparent bg-gradient-to-r from-primary-400 to-primary-600 bg-clip-text">
+            BATIVY
           </div>
           <AuthHeaderSubtitle />
         </div>
-        <div className="bg-dark-800 border border-dark-700 rounded-lg p-8">
+        <div className="p-8 border rounded-lg bg-dark-800 border-dark-700">
           {children}
         </div>
       </div>

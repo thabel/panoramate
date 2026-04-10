@@ -376,7 +376,7 @@ export default function PublicTourPage({
       {/* Compact Footer - Bottom Right Corner */}
       {!isEmbed && !isFullScreen && (
         <div className="absolute z-20 text-xs bottom-4 right-4 text-dark-400">
-          Powered by <span className="font-semibold text-primary-400">Panoramate</span>
+          Powered by <span className="font-semibold text-primary-400">BATIVY</span>
         </div>
       )}
 
