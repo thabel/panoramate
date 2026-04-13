@@ -20,7 +20,8 @@ jobs:
 
       - name: Install dependencies
         run: npm install
-
+        env:
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
       - name: Build project
         run: npm run build
 
