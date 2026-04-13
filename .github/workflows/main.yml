@@ -34,7 +34,7 @@ jobs:
       - name: FTP Deploy
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
-          server: ${{ secrets.FTP_HOST }}
+          server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
           # On exclut les fichiers inutiles et node_modules (trop lourd)
@@ -50,7 +50,7 @@ jobs:
       - name: SSH Post-Deployment
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.FTP_HOST }}
+          host: ${{ secrets.FTP_SERVER  }}
           username: ${{ secrets.FTP_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
