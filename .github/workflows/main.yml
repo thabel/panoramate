@@ -1,36 +1,70 @@
-name: Deploy Next.js to cPanel
+name: Deploy Next.js App to cPanel
 
 on:
   push:
-    branches:
-      - master
+    branches: master # Se déclenche lors d'un push sur la branche master
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+      - name: Checkout Code
+        uses: actions/checkout@v4
 
-      - name: Setup Node
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: '20'
+          cache: 'npm'
 
-      - name: Install dependencies
+      - name: Install Dependencies
         run: npm install
 
-      - name: Build project
-        run: npm run build
-        env:
-          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+      - name: Generate Prisma Client
+        # Indispensable pour que le build Next.js reconnaisse Prisma
+        run: npx prisma generate
 
-      - name: Deploy via FTP
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+      - name: Build Next.js Project
+        # On build sur GitHub pour ne pas saturer le CPU du cPanel
+        run: npm run build
+
+      - name: FTP Deploy
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
-          server: ${{ secrets.FTP_SERVER }}
+          server: ${{ secrets.FTP_HOST }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
-          local-dir: ./out/
-          server-dir: /public_html/
+          # On exclut les fichiers inutiles et node_modules (trop lourd)
+          exclude: |
+            **/.git*
+            **/.github*
+            node_modules/**
+            src/**
+            README.md
+            .env
+          server-dir: ${{ secrets.SERVER_DIR }}/
+
+      - name: SSH Post-Deployment
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.FTP_HOST }}
+          username: ${{ secrets.FTP_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd ${{ secrets.SERVER_DIR }}
+            
+            # Charger Node 20 (Vérifie bien ce chemin dans ton terminal cPanel)
+            source /home/bativyma/nodevenv/bativy/20/bin/activate
+            
+            # Installer les dépendances (pour compiler sharp et bcrypt sur le serveur)
+            npm install --production
+            
+            # Appliquer les migrations de base de données
+            npx prisma migrate deploy
+            
+            # Générer le client Prisma pour AlmaLinux
+            npx prisma generate
+            
+            # Redémarrer l'app
+            mkdir -p tmp && touch tmp/restart.txt
