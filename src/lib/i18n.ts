@@ -192,7 +192,6 @@ export const dictionaries: Record<Locale, Dictionary> = {
             features: [
               '1 Virtual Tour',
               '10 Scenes per Tour',
-              'No Storage',
               '15-Day Free Trial',
             ],
           },
@@ -204,7 +203,7 @@ export const dictionaries: Record<Locale, Dictionary> = {
               '5 to Unlimited Virtual Tours',
               'Multiple Scenes per Tour',
               'Team Members (1 to Unlimited)',
-              'Advanced Features',
+     
             ],
           },
           enterprise: {
@@ -214,10 +213,9 @@ export const dictionaries: Record<Locale, Dictionary> = {
             features: [
               'Unlimited Tours',
               'Unlimited Scenes',
-              'Unlimited Storage',
               'Unlimited Team Members',
               'Custom Integrations',
-              '24/7 Support',
+          
             ],
           },
         },
@@ -322,7 +320,6 @@ export const dictionaries: Record<Locale, Dictionary> = {
             features: [
               '1 visite virtuelle',
               '10 scenes par visite',
-              'Pas de stockage',
               'Essai gratuit de 15 jours',
             ],
           },
@@ -331,10 +328,10 @@ export const dictionaries: Record<Locale, Dictionary> = {
             subtitle: 'Pour les equipes en croissance',
             cta: 'Commencer',
             features: [
-              '5 a illimites de visites virtuelles',
+              '5 à illimites de visites virtuelles',
               'Plusieurs scenes par visite',
-              'De 1 a illimites de membres d\'equipe',
-              'Fonctionnalites avancees',
+              'De 1 à illimites de membres d\'equipe',
+         
             ],
           },
           enterprise: {
@@ -344,10 +341,8 @@ export const dictionaries: Record<Locale, Dictionary> = {
             features: [
               'Visites illimitees',
               'Scenes illimitees',
-              'Stockage illimite',
               'Equipe illimitee',
               'Integrations personnalisees',
-              'Support 24/7',
             ],
           },
         },

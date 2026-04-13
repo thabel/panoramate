@@ -131,7 +131,7 @@ export default function TeamPage() {
     <div className="space-y-8">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-white mb-2">Team</h1>
+          <h1 className="mb-2 text-3xl font-bold text-white">Team</h1>
           <p className="text-dark-400">Manage team members and permissions</p>
         </div>
         <Button
@@ -145,24 +145,24 @@ export default function TeamPage() {
       </div>
 
       {/* Members Table */}
-      <div className="bg-dark-800 border border-dark-700 rounded-lg overflow-hidden">
+      <div className="overflow-hidden border rounded-lg bg-dark-800 border-dark-700">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="border-b border-dark-700">
               <tr>
-                <th className="px-6 py-3 text-left text-sm font-semibold text-dark-200">
+                <th className="px-6 py-3 text-sm font-semibold text-left text-dark-200">
                   Name
                 </th>
-                <th className="px-6 py-3 text-left text-sm font-semibold text-dark-200">
+                <th className="px-6 py-3 text-sm font-semibold text-left text-dark-200">
                   Email
                 </th>
-                <th className="px-6 py-3 text-left text-sm font-semibold text-dark-200">
+                <th className="px-6 py-3 text-sm font-semibold text-left text-dark-200">
                   Role
                 </th>
-                <th className="px-6 py-3 text-left text-sm font-semibold text-dark-200">
+                <th className="px-6 py-3 text-sm font-semibold text-left text-dark-200">
                   Joined
                 </th>
-                <th className="px-6 py-3 text-right text-sm font-semibold text-dark-200">
+                <th className="px-6 py-3 text-sm font-semibold text-right text-dark-200">
                   Actions
                 </th>
               </tr>
@@ -178,14 +178,14 @@ export default function TeamPage() {
                 members.map((member) => (
                   <tr key={member.id} className="border-t border-dark-700 hover:bg-dark-700">
                     <td className="px-6 py-4">
-                      <div className="w-8 h-8 rounded-full bg-primary-600 text-white flex items-center justify-center text-sm font-bold">
+                      <div className="flex items-center justify-center w-8 h-8 text-sm font-bold text-white rounded-full bg-primary-600">
                         {member.firstName.charAt(0)}
                       </div>
                     </td>
                     <td className="px-6 py-4 text-dark-200">{member.firstName} {member.lastName}</td>
                     <td className="px-6 py-4 text-dark-200">{member.email}</td>
                     <td className="px-6 py-4">
-                      <span className="px-2 py-1 bg-dark-700 text-dark-200 text-sm rounded">
+                      <span className="px-2 py-1 text-sm rounded bg-dark-700 text-dark-200">
                         {member.role}
                       </span>
                     </td>
@@ -196,7 +196,7 @@ export default function TeamPage() {
                       {member.role !== 'OWNER' && (
                         <button
                           onClick={() => handleRemoveMember(member.id)}
-                          className="p-2 hover:bg-red-900/20 text-red-400 rounded-lg transition-colors"
+                          className="p-2 text-red-400 transition-colors rounded-lg hover:bg-red-900/20"
                         >
                           <Trash2 size={16} />
                         </button>
@@ -212,24 +212,24 @@ export default function TeamPage() {
 
       {/* Pending Invitations */}
       {pendingInvitations.length > 0 && (
-        <div className="bg-dark-800 border border-dark-700 rounded-lg p-6">
-          <h2 className="text-xl font-bold text-white mb-4">Pending Invitations</h2>
+        <div className="p-6 border rounded-lg bg-dark-800 border-dark-700">
+          <h2 className="mb-4 text-xl font-bold text-white">Pending Invitations</h2>
           <div className="space-y-3">
             {pendingInvitations.map((inv) => (
               <div
                 key={inv.id}
-                className="flex items-center justify-between bg-dark-700 p-4 rounded-lg"
+                className="flex items-center justify-between p-4 rounded-lg bg-dark-700"
               >
                 <div className="flex items-center gap-3">
                   <Mail size={18} className="text-primary-400" />
                   <div>
-                    <p className="text-white font-medium">{inv.email}</p>
-                    <p className="text-dark-400 text-sm">
+                    <p className="font-medium text-white">{inv.email}</p>
+                    <p className="text-sm text-dark-400">
                       Expires {new Date(inv.expiresAt).toLocaleDateString()}
                     </p>
                   </div>
                 </div>
-                <span className="text-dark-300 text-sm">{inv.role}</span>
+                <span className="text-sm text-dark-300">{inv.role}</span>
               </div>
             ))}
           </div>
@@ -258,7 +258,7 @@ export default function TeamPage() {
           />
 
           <div>
-            <label className="block text-sm font-medium text-dark-200 mb-2">
+            <label className="block mb-2 text-sm font-medium text-dark-200">
               Role
             </label>
             <select
@@ -269,15 +269,14 @@ export default function TeamPage() {
                   role: e.target.value,
                 }))
               }
-              className="w-full px-4 py-2 bg-dark-800 text-white rounded-lg border-2 border-dark-700 focus:outline-none focus:border-primary-500"
+              className="w-full px-4 py-2 text-white border-2 rounded-lg bg-dark-800 border-dark-700 focus:outline-none focus:border-primary-500"
             >
               <option value="VIEWER">Viewer</option>
               <option value="MEMBER">Member</option>
-              <option value="ADMIN">Admin</option>
             </select>
           </div>
 
-          <div className="flex gap-2 justify-end pt-4">
+          <div className="flex justify-end gap-2 pt-4">
             <Button
               type="button"
               variant="ghost"

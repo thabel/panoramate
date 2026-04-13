@@ -69,11 +69,7 @@ export default function DashboardLayout({
       href: '/tours',
       icon: FileStack,
     },
-    {
-      label: 'Comparisons',
-      href: '/comparisons',
-      icon: Users, // Using Users for now, maybe find a better icon like 'Layers' or 'Diff'
-    },
+   
     {
       label: 'Team',
       href: '/team',

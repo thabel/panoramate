@@ -69,6 +69,11 @@ export async function POST(request: NextRequest) {
     // RESTRICTION DISABLED: all users can invite members (role checks removed)
     const body = await request.json();
     const { email, role = 'MEMBER' } = body;
+    // if ROLE ADMIN then reject
+    if (authPayload.role === 'ADMIN') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
 
     if (!email) {
       return NextResponse.json(
