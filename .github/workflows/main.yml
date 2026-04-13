@@ -28,7 +28,9 @@ jobs:
       - name: Build Next.js Project
         # On build sur GitHub pour ne pas saturer le CPU du cPanel
         run: npm run build
-
+        env:
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
       - name: FTP Deploy
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
