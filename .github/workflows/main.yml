@@ -47,26 +47,29 @@ jobs:
             .env
           server-dir: ${{ secrets.SERVER_DIR }}/
 
-      - name: SSH Post-Deployment
+      - name: SSH Post-Deployment (SAFE)
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.FTP_SERVER  }}
+          host: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             cd ${{ secrets.SERVER_DIR }}
-            
-            # Charger Node 20 (Vérifie bien ce chemin dans ton terminal cPanel)
+
             source /home/bativyma/nodevenv/bativy/20/bin/activate
-            
-            # Installer les dépendances (pour compiler sharp et bcrypt sur le serveur)
-            npm install --production
-            
-            # Appliquer les migrations de base de données
+
+            # 🔒 Anti double execution
+            if [ -f migration.lock ]; then
+              echo "Migration already running"
+              exit 0
+            fi
+
+            touch migration.lock
+
+            # ⚡ UNIQUEMENT migration (léger)
             npx prisma migrate deploy
-            
-            # Générer le client Prisma pour AlmaLinux
-            npx prisma generate
-            
-            # Redémarrer l'app
+
+            rm migration.lock
+
+            # 🔄 restart propre
             mkdir -p tmp && touch tmp/restart.txt
