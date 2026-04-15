@@ -67,7 +67,7 @@ jobs:
             touch migration.lock
 
             # ⚡ UNIQUEMENT migration (léger)
-            npx prisma migrate deploy
+            ./node_modules/.bin/prisma migrate deploy
 
             rm migration.lock
 
