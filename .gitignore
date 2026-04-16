@@ -19,3 +19,7 @@ coverage
 *.sw?   
 uploads
 app.zip
+
+# prismas
+app/generated
+prisma/generated
