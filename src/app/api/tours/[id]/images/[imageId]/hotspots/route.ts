@@ -77,6 +77,7 @@ export async function POST(
     } = body;
 
     if (!type || yaw === undefined || pitch === undefined) {
+      console.error('type, yaw, and pitch are required', { body });
       return NextResponse.json(
         { error: 'type, yaw, and pitch are required' },
         { status: 400 }
@@ -94,6 +95,7 @@ export async function POST(
     });
 
     if (!validation.valid) {
+      console.error('Validation failed for new hotspot:', validation.errors);
       return NextResponse.json(
         {
           error: 'Validation failed',
@@ -154,7 +156,7 @@ export async function POST(
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
-    );
+      );
   }
 }
 
@@ -191,6 +193,7 @@ export async function PATCH(
     } = body;
 
     if (!hotspotId) {
+      console.error('hotspotId is required for update');
       return NextResponse.json(
         { error: 'hotspotId is required' },
         { status: 400 }
@@ -226,6 +229,7 @@ export async function PATCH(
       });
 
       if (!validation.valid) {
+        console.error('Validation failed for hotspot update:', validation.errors);
         return NextResponse.json(
           {
             error: 'Validation failed',
