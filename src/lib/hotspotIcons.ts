@@ -62,6 +62,13 @@ export const HOTSPOT_ICONS = [
     color: '#ef4444', // red
   },
   {
+    id: 'marker',
+    name: 'Marker',
+    iconName: 'Marker',
+    description: 'Animated marker',
+    color: '#3b82f6', // blue
+  },
+  {
     id: 'star',
     name: 'Favorite',
     iconName: 'Star',
@@ -100,6 +107,7 @@ export const iconIdToType = (iconId: string): 'LINK' | 'INFO' | 'URL' | 'VIDEO' 
     'camera': 'INFO',
     'link': 'URL',
     'map-pin': 'INFO',
+    'marker': 'LINK',
     'star': 'INFO',
     'help-circle': 'INFO',
   };
