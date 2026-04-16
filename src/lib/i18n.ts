@@ -104,7 +104,7 @@ interface Dictionary {
 export const dictionaries: Record<Locale, Dictionary> = {
   en: {
     auth: {
-      layoutSubtitle: 'Create stunning 360deg virtual tours',
+      layoutSubtitle: 'Create stunning 360° virtual tours',
       login: {
         title: 'Welcome Back',
         emailLabel: 'Email',
@@ -148,10 +148,10 @@ export const dictionaries: Record<Locale, Dictionary> = {
       },
       hero: {
         titlePrefix: 'Create Stunning',
-        titleHighlight: '360deg Virtual Tours',
+        titleHighlight: '360 Virtual Tours',
         titleSuffix: 'in Minutes',
         description:
-          'BATIVY makes it easy to create, customize, and share immersive 360deg virtual tours. Perfect for real estate, hospitality, tourism, and more.',
+          'BATIVY makes it easy to create, customize, and share immersive 360° virtual tours. Perfect for real estate, hospitality, tourism, and more.',
         startTrial: 'Start Free Trial',
         learnMore: 'Learn More',
       },
@@ -161,7 +161,7 @@ export const dictionaries: Record<Locale, Dictionary> = {
           {
             title: 'Easy Upload',
             description:
-              'Upload 360deg images with a simple drag-and-drop interface. Support for multiple formats.',
+              'Upload 360° images with a simple drag-and-drop interface. Support for multiple formats.',
           },
           {
             title: 'Interactive Editor',
@@ -232,7 +232,7 @@ export const dictionaries: Record<Locale, Dictionary> = {
   },
   fr: {
     auth: {
-      layoutSubtitle: 'Creez des visites virtuelles 360deg impressionnantes',
+      layoutSubtitle: 'Creez des visites virtuelles 360° impressionnantes',
       login: {
         title: 'Bon retour',
         emailLabel: 'Email',
@@ -276,10 +276,10 @@ export const dictionaries: Record<Locale, Dictionary> = {
       },
       hero: {
         titlePrefix: 'Creez des',
-        titleHighlight: 'visites virtuelles 360deg',
+        titleHighlight: 'visites virtuelles 360°',
         titleSuffix: 'en quelques minutes',
         description:
-          "BATIVY vous permet de creer, personnaliser et partager facilement des visites virtuelles 360deg immersives. Ideal pour l'immobilier, l'hotellerie, le tourisme et plus encore.",
+          "BATIVY vous permet de creer, personnaliser et partager facilement des visites virtuelles 360° immersives. Ideal pour l'immobilier, l'hotellerie, le tourisme et plus encore.",
         startTrial: "Demarrer l'essai gratuit",
         learnMore: 'En savoir plus',
       },
@@ -289,7 +289,7 @@ export const dictionaries: Record<Locale, Dictionary> = {
           {
             title: 'Import simplifie',
             description:
-              "Importez vos images 360deg avec une interface glisser-deposer simple. Prise en charge de plusieurs formats.",
+              "Importez vos images 360° avec une interface glisser-deposer simple. Prise en charge de plusieurs formats.",
           },
           {
             title: 'Editeur interactif',

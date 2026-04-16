@@ -72,9 +72,75 @@ Lors de l’ajout d’un hotspot temporaire dans l’éditeur de tour, un probl�
 ### [TODO] 
 * La tache concerne le comparaison , de deux viewer.
 * Modifier la configuration d'un hotspot.
+* Mettre un bouton pour identifier une vue unique de hotspot.
 * Reproposer une autre interface pour mettre en avnat la partie 2D interactive
+
+* [TODO:][Type d'abonnement] : Travailler le select.
+* [TODO:] Ajouter une option de selection de scenes première.
+
+* BATIVY ( tous en majusciscules)
 
 Question
 L'histoire du partage de vue 360 comment l'integrer ou l'integer.
 
 ma proposition 
+
+Dans le menu pricing il faut pas afficher les prix 
+quand on cliquer sur ca ca va etre du coup la demande de devis
+request a quote
+
+Il faut 2 choses Free version et , profesional version 
+
+Free version
+Valable 15 jours 
+1 visites virtuel
+10 scenes
+pas de storage
+
+Professional version
+
+* from 5 to untilimed tours.
+* team members from 1 to unlimited team members
+
+Elever Entreprise
+Pas affichage des prix
+
+Les champs à remplir pour la partie demande de devis "request a quote"
+
+* La sociéte
+* Nom et prénoms 
+* Pays
+* Email et Telephone
+* Nombre de visites virtuel dont vous avez bésoins.
+* Le nombre des images 360° par visites virtuel dont vous avez bésoins
+* Le nombre de personnes qui vont accéder à votre abonnement.
+* Vous voulez un abonnement mensuel ou annuel.
+
+[Controle]
+La creation de compte se fait sur demande , 
+receptioin de message de confirmation de votre demande 
+
+* Rajouter le FR 
+
+[Dashborad]
+
+* compte active ( difference entre gratuit et professionel )
+gratuit : compte utilisable une fois.
+* compte inactive ( abonnement expiré  difference gratuit et professionel )
+* compte en attente de validation 
+( demande de creation pas encore validé )
+    * capable de valider ces comptes.
+    * nice to have: valider un part un ou selectionner les 20 et les actives.
+
+L'histoire  du comparatif à laisser pour plus tard.
+
+#TODO
+remplacer 360° par le site
+
+L'admin peut voir les tours créer par les personnes qu'il a 
+ajouter mais les personnes ne peuvent voir que leur tour par default.
+
+[TODO:Rechercher si le module propriéte sur Odoo est open source.]
+
+
+* TODO: ajouter une fleche qui te montre aller tout droit

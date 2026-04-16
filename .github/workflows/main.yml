@@ -55,10 +55,9 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             cd ${{ secrets.SERVER_DIR }}
-
             source /home/bativyma/nodevenv/bativy/20/bin/activate
 
-            # 🔒 Anti double execution
+            # 🔒 Prevent double execution
             if [ -f migration.lock ]; then
               echo "Migration already running"
               exit 0
@@ -66,10 +65,19 @@ jobs:
 
             touch migration.lock
 
-            # ⚡ UNIQUEMENT migration (léger)
-            ./node_modules/.bin/prisma migrate deploy
+            # 🧠 Ensure cleanup even if crash / timeout happens
+            trap 'rm -f migration.lock' EXIT
 
-            rm migration.lock
+            echo "Running Prisma migration safely..."
 
-            # 🔄 restart propre
+            # ⚡ HARD LIMIT to prevent process explosion
+            timeout 120s ./node_modules/.bin/prisma migrate deploy
+
+            EXIT_CODE=$?
+
+            echo "Migration finished with code $EXIT_CODE"
+
+            # 🔄 restart app safely
             mkdir -p tmp && touch tmp/restart.txt
+
+            exit $EXIT_CODE

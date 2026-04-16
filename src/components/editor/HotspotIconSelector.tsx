@@ -29,7 +29,7 @@ export const HotspotIconSelector: React.FC<HotspotIconSelectorProps> = ({
   selectedIcon,
   onIconSelect,
 }) => {
-  const navigationIcons: HotspotIconType[] = ['ArrowRight', 'MapPin'];
+  const navigationIcons: HotspotIconType[] = ['ArrowRight', 'MapPin', 'Marker'];
   const actionIcons: HotspotIconType[] = ['ExternalLink', 'Link', 'Play', 'Video'];
   const contentIcons: HotspotIconType[] = ['MessageCircle', 'Camera'];
 

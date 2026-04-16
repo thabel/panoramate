@@ -11,6 +11,7 @@ export type HotspotIconType =
   | 'Camera'
   | 'Link'
   | 'MapPin'
+  | 'Marker'
   | 'Video';
 
 export type HotspotFieldType = 'title' | 'targetImageId' | 'url' | 'content' | 'videoUrl' | 'imageUrls';
@@ -35,6 +36,28 @@ export const HOTSPOT_ICON_CONFIG: Record<HotspotIconType, IconConfig> = {
   'ArrowRight': {
     label: 'Scene Navigation',
     description: 'Navigate to the next scene',
+    fields: [
+      {
+        name: 'title',
+        label: 'Hotspot Title',
+        type: 'text',
+        required: true,
+        placeholder: 'e.g., Next Room',
+        description: 'The label shown when hovering over this hotspot'
+      },
+      {
+        name: 'targetImageId',
+        label: 'Target Scene',
+        type: 'select',
+        required: true,
+        description: 'The scene to navigate to when clicked'
+      }
+    ]
+  },
+
+  'Marker': {
+    label: 'Animated Marker',
+    description: 'Navigation marker with animation',
     fields: [
       {
         name: 'title',
