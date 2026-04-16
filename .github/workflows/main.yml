@@ -1,79 +1,67 @@
-name: Deploy Next.js App to cPanel
+name: Deploy Next.js App to cPanel (Safe Prisma Workflow)
 
 on:
   push:
-    branches: master # Se déclenche lors d'un push sur la branche master
+    branches: [master]
 
 jobs:
-  build-and-deploy:
+  deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Code
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Install Dependencies
-        run: npm install
-
-      - name: Build Next.js Project
-        # On build sur GitHub pour ne pas saturer le CPU du cPanel
-        run: npm run build
-        env:
-          JWT_SECRET: ${{ secrets.JWT_SECRET }}
-          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
-      - name: FTP Deploy
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
-        with:
-          server: ${{ secrets.FTP_SERVER }}
-          username: ${{ secrets.FTP_USERNAME }}
-          password: ${{ secrets.FTP_PASSWORD }}
-          # On exclut les fichiers inutiles et node_modules (trop lourd)
-          exclude: |
-            **/.git*
-            **/.github*
-            node_modules/**
-            src/**
-            README.md
-            .env
-          server-dir: ${{ secrets.SERVER_DIR }}/
-
-      - name: SSH Post-Deployment (SAFE)
+      - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+
           script: |
+            set -e
+
             cd ${{ secrets.SERVER_DIR }}
+
+            echo "=================================="
+            echo "1. Activate Node (cPanel env)"
+            echo "=================================="
             source /home/bativyma/nodevenv/bativy/20/bin/activate
-            
-            # 🔒 Prevent double execution
-            if [ -f migration.lock ]; then
-              echo "Migration already running"
-              exit 0
-            fi
 
-            touch migration.lock
+            echo "Node version:"
+            node -v
 
-            # 🧠 Ensure cleanup even if crash / timeout happens
-            trap 'rm -f migration.lock' EXIT
-            timeout 120s ./node_modules/.bin/prisma generate 
-            echo "Running Prisma migration safely..."
+            echo "=================================="
+            echo "2. Clean old build artifacts"
+            echo "=================================="
+            rm -rf .next
+            rm -rf node_modules/.prisma
+            rm -rf prisma/migrations/.lock || true
 
-            # ⚡ HARD LIMIT to prevent process explosion
-            timeout 120s ./node_modules/.bin/prisma migrate deploy
+            echo "=================================="
+            echo "3. Install dependencies"
+            echo "=================================="
+            npm install --production=false
 
-            EXIT_CODE=$?
+            echo "=================================="
+            echo "4. Generate Prisma client"
+            echo "=================================="
+            npx prisma generate
 
-            echo "Migration finished with code $EXIT_CODE"
+            echo "=================================="
+            echo "5. Run migrations (safe)"
+            echo "=================================="
+            npx prisma migrate deploy
 
-            # 🔄 restart app safely
+            echo "=================================="
+            echo "6. Build Next.js"
+            echo "=================================="
+            npm run build
+
+            echo "=================================="
+            echo "7. Restart app"
+            echo "=================================="
             mkdir -p tmp && touch tmp/restart.txt
 
-            exit $EXIT_CODE
+            echo "DEPLOYMENT SUCCESS"
