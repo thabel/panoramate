@@ -21,10 +21,6 @@ jobs:
       - name: Install Dependencies
         run: npm install
 
-      - name: Generate Prisma Client
-        # Indispensable pour que le build Next.js reconnaisse Prisma
-        run: npx prisma generate
-
       - name: Build Next.js Project
         # On build sur GitHub pour ne pas saturer le CPU du cPanel
         run: npm run build
@@ -56,7 +52,7 @@ jobs:
           script: |
             cd ${{ secrets.SERVER_DIR }}
             source /home/bativyma/nodevenv/bativy/20/bin/activate
-
+            
             # 🔒 Prevent double execution
             if [ -f migration.lock ]; then
               echo "Migration already running"
@@ -67,7 +63,7 @@ jobs:
 
             # 🧠 Ensure cleanup even if crash / timeout happens
             trap 'rm -f migration.lock' EXIT
-
+            timeout 120s ./node_modules/.bin/prisma generate 
             echo "Running Prisma migration safely..."
 
             # ⚡ HARD LIMIT to prevent process explosion
