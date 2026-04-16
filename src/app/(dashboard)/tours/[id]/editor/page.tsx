@@ -15,11 +15,12 @@ import * as LucideIcons from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import { ShareModal } from '@/components/dashboard/ShareModal';
 import { HOTSPOT_ICONS, getHotspotIconConfig, iconIdToType } from '@/lib/hotspotIcons';
-import { getHostpotIconType, HOTSPOT_ICONS_SVG } from '@/lib/hotspotIconsSvg';
+import { getHotspotIconType, HOTSPOT_ICONS_SVG } from '@/lib/hotspotIconsSvg';
 import { logger } from '@/lib/logger';
 import toast from 'react-hot-toast';
 import { MapPin as MapPinIcon } from 'lucide-react';
 import TourSettingsModal from '@/components/dashboard/TourSettingsModal';
+import { cp } from 'fs';
 
 export default function TourEditorPage({
   params,
@@ -245,7 +246,7 @@ export default function TourEditorPage({
       setNewHotspotCoords({ yaw, pitch, iconName: hotspotForm.iconName });
       setHotspotForm({
         ...hotspotForm,
-        type: getHostpotIconType(hotspotForm.iconName),
+        type: getHotspotIconType(hotspotForm.iconName),
         targetImageId: tour?.images.find((img: TourImage) => img.id !== tour.images[currentSceneIndex].id)?.id || '',
       });
       setIsHotspotPanelOpen(true);
@@ -326,7 +327,7 @@ export default function TourEditorPage({
           });
         }
 
-        const hotspotType = getHostpotIconType(hotspotForm.iconName);
+        const hotspotType = getHotspotIconType(hotspotForm.iconName);
         setIsHotspotPanelOpen(false);
         setAddHotspotMode(false);
         setNewHotspotCoords(null);
@@ -349,9 +350,17 @@ export default function TourEditorPage({
         });
         toast.success(isEditingHotspot ? 'Hotspot updated' : 'Hotspot created');
       } else {
-        toast.error(`Failed to ${isEditingHotspot ? 'update' : 'create'} hotspot`);
+        const errorData = await response.json();
+        console.error('Error saving hotspot:', errorData);
+        if (errorData.details && Array.isArray(errorData.details)) {
+          toast.error(errorData.details.join('\n'));
+        } else {
+          console.error('Error response:', errorData);
+          toast.error(errorData.error || `Failed to ${isEditingHotspot ? 'update' : 'create'} hotspot`);
+        }
       }
-    } catch {
+    } catch (error) {
+      console.error('Error saving hotspot:', error);
       toast.error(`Error ${isEditingHotspot ? 'updating' : 'creating'} hotspot`);
     }
   };
@@ -544,7 +553,7 @@ export default function TourEditorPage({
     return (
       <div
         style={{ width: size, height: size, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-        className="text-white [&>svg]:w-full [&>svg]:h-full"
+        className="text-white [&>svg]:w-full [&>svg]:h-full [&>img]:w-full [&>img]:h-full"
         dangerouslySetInnerHTML={{ __html: svgString }}
       />
     );
@@ -655,7 +664,7 @@ export default function TourEditorPage({
                             
                             // if isEditingHotspot ? changing icon is impossible and should be disabled.
                             if(isEditingHotspot) return;
-                            setHotspotForm({ ...hotspotForm, iconName, type: getHostpotIconType(iconName) });
+                            setHotspotForm({ ...hotspotForm, iconName, type: getHotspotIconType(iconName) });
                             if (newHotspotCoords) setNewHotspotCoords({ ...newHotspotCoords, iconName });
                           }}
                           className={`flex items-center justify-center p-2 rounded-lg transition-all ${
@@ -683,7 +692,7 @@ export default function TourEditorPage({
                             disabled={isEditingHotspot}
                             onClick={() => {
                                if(isEditingHotspot) return;
-                              setHotspotForm({ ...hotspotForm, iconName, type: getHostpotIconType(iconName) });
+                              setHotspotForm({ ...hotspotForm, iconName, type: getHotspotIconType(iconName) });
                               if (newHotspotCoords) setNewHotspotCoords({ ...newHotspotCoords, iconName });
                             }}
                             className={`flex items-center justify-center p-2 rounded-lg transition-all ${
@@ -704,10 +713,12 @@ export default function TourEditorPage({
                   <label className="flex items-center gap-2 mb-2 text-sm font-medium text-dark-300">
                     <Zap size={16} className="text-primary-400" />
                     Hotspot Title
+                    <span className="text-red-400">*</span>
                   </label>
                   <input
                     type="text"
                     value={hotspotForm.title}
+                    required
                     onChange={(e) => setHotspotForm({ ...hotspotForm, title: e.target.value })}
                     placeholder="e.g. Living Room"
                     className="w-full px-3 py-2 text-sm text-white transition-all border rounded-lg outline-none bg-dark-700 border-dark-600 focus:border-primary-500"
@@ -716,7 +727,7 @@ export default function TourEditorPage({
               </div>
 
               {/* Link to Scene */}
-              {hotspotForm.iconName === 'MapPin' && (
+              {getHotspotIconType(hotspotForm.iconName) === 'LINK_SCENE' && (
                 <div className="pt-4 space-y-4 border-t border-dark-700">
                   <div className="flex flex-col gap-3">
                     <label className="flex items-center gap-2 text-sm font-semibold text-white">Target Scene</label>
@@ -932,6 +943,7 @@ export default function TourEditorPage({
                 className="flex-1 text-sm font-semibold"
                 disabled={
                   isSaving ||
+                  !hotspotForm.title.trim() ||
                   (hotspotForm.type === 'LINK_SCENE' && !hotspotForm.targetImageId) ||
                   (hotspotForm.type === 'INFO' && !hotspotForm.content) ||
                   (hotspotForm.type === 'URL' && !hotspotForm.url) ||

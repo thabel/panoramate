@@ -276,11 +276,11 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
     iconContainer.style.color = '#ffffff';
     iconContainer.innerHTML = iconSvg;
 
-    // Ensure the SVG inside the container is properly sized
-    const svgElement = iconContainer.querySelector('svg');
-    if (svgElement) {
-      svgElement.style.width = '60%';
-      svgElement.style.height = '60%';
+    // Ensure the SVG or IMG inside the container is properly sized
+    const iconElement = iconContainer.querySelector('svg, img') as HTMLElement;
+    if (iconElement) {
+      iconElement.style.width = '60%';
+      iconElement.style.height = '60%';
     }
 
     visual.appendChild(iconContainer);

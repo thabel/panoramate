@@ -27,7 +27,7 @@ export default function PublicTourPage({
   const [showHotspotTitles, setShowHotspotTitles] = useState(true);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [activeHotspot, setActiveHotspot] = useState<any | null>(null);
-  const [showSceneNavigation, setShowSceneNavigation] = useState(true);
+  const [showSceneNavigation, setShowSceneNavigation] = useState(false);
   const [isAutoRotating, setIsAutoRotating] = useState(true);
   const containerRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);

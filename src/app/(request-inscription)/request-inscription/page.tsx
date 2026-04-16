@@ -91,7 +91,7 @@ const translations = {
         company: 'Sociéte',
         country: 'Pays',
         numberOfTours: 'Nombre de visites virtuelles dont vous avez besoin',
-        imagesPerTour: 'Nombre des images 360 degrés par visite virtuelle',
+        imagesPerTour: 'Nombre des images 360° par visite virtuelle',
         teamMembers: 'Nombre de personnes qui vont accéder à votre abonnement',
         frequency: 'Type d\'abonnement',
       },
