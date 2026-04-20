@@ -10,10 +10,10 @@ export interface AuthPayload {
 
 /**
  * Check if a user is exempt from plan limits
- * SUPER_ADMIN and ADMIN users have unlimited resources
+ * ONLY SUPER_ADMIN  users have unlimited resources
  */
 export function isExemptFromLimits(authPayload: AuthPayload): boolean {
-  return authPayload.role === 'SUPER_ADMIN' || authPayload.role === 'ADMIN';
+  return authPayload.role === 'SUPER_ADMIN';
 }
 
 /**
