@@ -1,0 +1,301 @@
+PANORAMATE RBAC ANALYSIS - EXECUTIVE SUMMARY
+==============================================
+
+ANALYSIS DATE: April 20, 2026
+BRANCH: feat/v1-bativy
+MAIN BRANCH: feat/improve_addhotspot
+
+========== 1. ROLE DEFINITIONS ==========
+
+Four Roles Defined:
+  - OWNER: Organization founder/creator
+  - ADMIN: Administrator with special permissions & exemptions
+  - MEMBER: Standard team member
+  - VIEWER: Read-only access (defined but NOT enforced)
+
+========== 2. ROLE ASSIGNMENT FLOW ==========
+
+A. New Registrants:
+   - Redirected from /register to /request-inscription
+   - Submit inscription request (FREE or PROFESSIONAL)
+   - ADMIN reviews and approves
+   - User created with OWNER role (if auto-creation implemented)
+
+B. Team Invitations:
+   - OWNER or MEMBER can invite (ADMIN blocked)
+   - Inviter specifies role (default: MEMBER)
+   - Invitation expires in 7 days
+   - Invitee accepts and creates account with invitation role
+
+========== 3. PERMISSION ENFORCEMENT STATUS ==========
+
+TOUR MANAGEMENT:
+  Create:  YES - Respects plan limits, ADMIN exempt
+  Read:    YES* - All authenticated users can read ALL tours
+  Update:  YES* - All authenticated users can update ANY tour
+  Delete:  YES* - All authenticated users can delete ANY tour
+  (* = No ownership/role checks enforced)
+
+IMAGE MANAGEMENT:
+  Upload:  YES - Respects plan limits, ADMIN exempt
+  Delete:  YES* - All authenticated users can delete ANY image
+  Update:  YES* - All authenticated users can update ANY image
+
+HOTSPOT MANAGEMENT:
+  Create:  YES* - All authenticated users can create
+  Read:    YES* - All authenticated users can read
+  Update:  YES* - All authenticated users can update
+  Delete:  YES* - All authenticated users can delete
+
+TEAM MANAGEMENT:
+  View:    YES
+  Invite:  OWNER/MEMBER only (ADMIN blocked)
+  Update:  YES* - All can update member roles (no checks)
+  Remove:  YES* - All can remove members (no checks)
+
+ADMIN PANEL:
+  Access:  ADMIN ONLY (properly enforced)
+  Approve: ADMIN ONLY (properly enforced)
+  Reject:  ADMIN ONLY (properly enforced)
+
+========== 4. PLAN LIMITS & EXEMPTIONS ==========
+
+FREE_TRIAL:    1 tour, 10 images, 500 MB storage (14 day trial)
+STARTER:       5 tours, 50 images, 2 GB storage ($29/month)
+PROFESSIONAL:  20 tours, 200 images, 10 GB storage ($79/month)
+ENTERPRISE:    Unlimited tours, Unlimited images, 100 GB storage ($199/month)
+
+ADMIN EXEMPTION:
+  - Exempt from ALL plan limits
+  - Can create unlimited tours
+  - Can upload unlimited images
+  - Can use unlimited storage
+  - Bypass: isExemptFromLimits() function
+
+========== 5. CRITICAL SECURITY FINDINGS ==========
+
+FINDING 1: DISABLED OWNERSHIP CHECKS
+  Status: CRITICAL
+  Impact: All authenticated users can access/modify any tour/image/hotspot
+  Files: Multiple /api/tours/*, /api/images/*, /api/hotspots/* endpoints
+  Evidence: Comments explicitly state "RESTRICTION DISABLED: all authenticated users..."
+  Verdict: Intentionally disabled (explicit code comments)
+
+FINDING 2: NO ORGANIZATION SCOPING
+  Status: CRITICAL
+  Impact: Users could theoretically access data from other organizations
+  Evidence: /api/tours/route.ts line 24: "const where: any = {}" (no org check)
+  Verdict: Organization isolation not enforced
+
+FINDING 3: ADMIN CANNOT INVITE
+  Status: MEDIUM
+  Impact: ADMINs can manage but not recruit team members
+  Evidence: /api/team/route.ts lines 73-74 explicitly block ADMIN role
+  Verdict: Security measure (prevents unauthorized recruitment)
+
+FINDING 4: INSCRIPTION AUTO-CREATION MISSING
+  Status: MEDIUM
+  Impact: Approving request doesn't create user account
+  Location: /api/inscription-request/[id]/approve/route.ts
+  Missing: Automatic user creation & email notification
+  Verdict: Incomplete feature
+
+FINDING 5: REGISTRATION COMPLETELY DISABLED
+  Status: MEDIUM
+  Impact: No self-service registration; must go through admin approval
+  Location: /app/(auth)/register/page.tsx
+  Evidence: Redirects to /request-inscription
+  Verdict: Intentional (gatekeeping feature)
+
+========== 6. DISABLED RESTRICTIONS ==========
+
+Explicitly Disabled (with code comments):
+  - Tour ownership checks (3 locations)
+  - Image ownership checks (2 locations)
+  - Hotspot ownership checks (4 locations)
+  - Member role update restrictions
+  - Member deletion protections
+  - Organization checks on team operations
+  - Self-removal protections
+
+========== 7. SPECIAL ROLE BEHAVIORS ==========
+
+OWNER:
+  - Created during registration
+  - Can invite members
+  - Can update/remove members
+  - Plan limits apply (not exempt)
+  - Can manage all tours/images (due to disabled checks)
+
+ADMIN:
+  - Cannot invite members (blocked)
+  - Can update/remove members
+  - EXEMPT from plan limits
+  - Access admin dashboard
+  - Approve/reject inscription requests
+  - Can manage all tours/images (due to disabled checks)
+
+MEMBER:
+  - Can invite members (if not ADMIN)
+  - Cannot update/remove members
+  - Plan limits apply
+  - Can access tours/images (due to disabled checks)
+
+VIEWER:
+  - Role defined but NOT enforced
+  - Cannot invite
+  - Cannot manage
+  - Role exists in schema but no permission checks exist
+
+========== 8. MIDDLEWARE & AUTH FLOW ==========
+
+Authentication:
+  - JWT tokens (7 day expiration)
+  - httpOnly cookies + localStorage
+  - Supports: Bearer token + Cookie
+
+Middleware (/middleware.ts):
+  - Validates JWT exists
+  - Does NOT check role
+  - Does NOT check permissions
+  - Public routes: /api/auth/*, /request-inscription, /tour/*
+
+Public Routes (No Auth):
+  - POST /api/auth/register
+  - POST /api/auth/login
+  - POST /api/inscription-request
+  - GET /api/billing/plans
+  - GET /api/tours-public/*
+  - All /tour/:shareToken (public viewers)
+
+========== 9. FRONTEND ROUTE PROTECTION ==========
+
+Dashboard:
+  - Requires authentication
+  - Admin panel conditionally rendered (based on role)
+  - Frontend enforces ADMIN role check (not reliable)
+
+Admin Panel:
+  - Frontend: Redirects non-ADMIN to dashboard
+  - API: Requires ADMIN role verification
+  - Dual protection (frontend + backend)
+
+========== 10. PLAN LIMIT ENFORCEMENT ==========
+
+Tour Creation:
+  - Checked: canCreateTour() function
+  - Enforced: Trial expiration check
+  - Enforced: Tour count limit
+  - Exempt: ADMIN role bypasses all
+
+Image Upload:
+  - Checked: canAddImagesToTour() function
+  - Enforced: Image count limit
+  - Enforced: Storage usage limit
+  - Exempt: ADMIN role bypasses all
+
+Storage Limits:
+  - Checked: canAddStorage() function
+  - Enforced: Per-organization storage quota
+  - Tracked: usedStorageMb in Organization model
+  - Exempt: ADMIN role bypasses all
+
+========== 11. IMPLEMENTED vs EXPECTED ==========
+
+Properly Implemented:
+  ✓ JWT authentication
+  ✓ Admin dashboard access control
+  ✓ Inscription request management (frontend & API)
+  ✓ Plan limit enforcement
+  ✓ ADMIN exemption logic
+  ✓ Trial expiration checks
+
+Not Implemented / Disabled:
+  ✗ Role-based tour/image/hotspot permissions
+  ✗ Organization data isolation checks
+  ✗ VIEWER role enforcement
+  ✗ Auto-creation on inscription approval
+  ✗ Tour creator ownership protection
+  ✗ ADMIN invitation capability
+  ✗ Audit logging for permission changes
+
+========== 12. KEY FILES FOR REFERENCE ==========
+
+Schema Definition:
+  /home/ubuntu/own/panoramate/prisma/schema.prisma
+
+Authentication:
+  /home/ubuntu/own/panoramate/src/lib/auth.ts
+  /home/ubuntu/own/panoramate/src/middleware.ts
+
+Plan Limits:
+  /home/ubuntu/own/panoramate/src/lib/plan-limits.ts
+  /home/ubuntu/own/panoramate/src/lib/stripe.ts
+
+Registration/Invitations:
+  /home/ubuntu/own/panoramate/src/app/api/auth/register/route.ts
+  /home/ubuntu/own/panoramate/src/app/api/team/route.ts
+  /home/ubuntu/own/panoramate/src/app/api/team/accept-invite/route.ts
+
+Tour Management:
+  /home/ubuntu/own/panoramate/src/app/api/tours/route.ts
+  /home/ubuntu/own/panoramate/src/app/api/tours/[id]/route.ts
+
+Admin Panel:
+  /home/ubuntu/own/panoramate/src/app/(dashboard)/admin/inscriptions/page.tsx
+  /home/ubuntu/own/panoramate/src/app/api/admin/inscriptions/route.ts
+  /home/ubuntu/own/panoramate/src/app/api/inscription-request/[id]/approve/route.ts
+
+========== 13. RISK ASSESSMENT ==========
+
+CRITICAL RISKS:
+  1. Data isolation not enforced (potential org data leaks)
+  2. All authenticated users have same permissions
+  3. VIEWER role not enforced (anyone can view everything)
+
+HIGH RISKS:
+  1. ADMIN exemption with no audit trail
+  2. Team member removal without verification
+  3. No creator verification on resource operations
+
+MEDIUM RISKS:
+  1. Missing email notifications on approval
+  2. Incomplete inscription request workflow
+  3. Public registration disabled (UX impact)
+
+LOW RISKS:
+  1. Trial expiration UI warnings missing
+  2. Storage quota discrepancy (200 vs 500 MB)
+  3. Session table defined but not used
+
+========== 14. RECOMMENDATIONS ==========
+
+URGENT:
+  1. Implement organization scoping checks
+  2. Verify user owns resource before allow operations
+  3. Enforce VIEWER as read-only role
+
+IMPORTANT:
+  1. Complete inscription auto-creation on approval
+  2. Send notification emails on approval/rejection
+  3. Add audit logging for admin actions
+  4. Implement rate limiting for ADMIN exemption
+
+NICE TO HAVE:
+  1. Add trial expiration UI warnings
+  2. Use Session table for session tracking
+  3. Fix storage quota discrepancy
+  4. Document rationale for disabled checks
+
+========== FULL ANALYSIS ==========
+
+Complete analysis with code references available in:
+  /home/ubuntu/own/panoramate/RBAC_ANALYSIS.md
+
+This file contains:
+  - Detailed permission matrix
+  - Code snippets and line references
+  - Complete disabled restrictions list
+  - Authentication flow diagrams
+  - Critical security findings with severity levels
+  - Complete endpoint protection summary

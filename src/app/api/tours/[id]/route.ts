@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAuthUser } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { deleteFile } from '@/lib/storage';
+import { canAccessTour, logAuditEvent } from '@/lib/access-control';
 
 export async function GET(
   request: NextRequest,
@@ -40,7 +41,15 @@ export async function GET(
       );
     }
 
-    // RESTRICTION DISABLED: all authenticated users can access all tours
+    // Check if user has access to this tour (organization isolation)
+    const accessCheck = await canAccessTour(authPayload, params.id, 'read');
+    if (!accessCheck.allowed) {
+      return NextResponse.json(
+        { error: accessCheck.reason || 'Access denied' },
+        { status: 403 }
+      );
+    }
+
     return NextResponse.json(
       { success: true, data: tour },
       { status: 200 }
@@ -75,7 +84,15 @@ export async function PATCH(
       );
     }
 
-    // RESTRICTION DISABLED: all authenticated users can access all tours
+    // Check if user has access to this tour (organization isolation + VIEWER read-only)
+    const accessCheck = await canAccessTour(authPayload, params.id, 'write');
+    if (!accessCheck.allowed) {
+      return NextResponse.json(
+        { error: accessCheck.reason || 'Access denied' },
+        { status: 403 }
+      );
+    }
+
     const body = await request.json();
     const { title, description, status, settings, customLogoUrl, backgroundAudioUrl, backgroundAudioVolume, showSceneMenu, showHotspotTitles } = body;
 
@@ -99,6 +116,15 @@ export async function PATCH(
         },
       },
     });
+
+    // Log audit event
+    await logAuditEvent(
+      authPayload.userId,
+      'UPDATE_TOUR',
+      'Tour',
+      params.id,
+      { title, status }
+    );
 
     return NextResponse.json(
       { success: true, data: updatedTour },
@@ -135,7 +161,15 @@ export async function DELETE(
       );
     }
 
-    // RESTRICTION DISABLED: all authenticated users can access all tours
+    // Check if user has access to this tour (organization isolation + VIEWER read-only)
+    const accessCheck = await canAccessTour(authPayload, params.id, 'write');
+    if (!accessCheck.allowed) {
+      return NextResponse.json(
+        { error: accessCheck.reason || 'Access denied' },
+        { status: 403 }
+      );
+    }
+
     // Delete all images and files
     for (const image of tour.images) {
       await deleteFile(image.filename);
@@ -145,6 +179,15 @@ export async function DELETE(
     await db.tour.delete({
       where: { id: params.id },
     });
+
+    // Log audit event
+    await logAuditEvent(
+      authPayload.userId,
+      'DELETE_TOUR',
+      'Tour',
+      params.id,
+      { title: tour.id }
+    );
 
     return NextResponse.json(
       { success: true, message: 'Tour deleted' },

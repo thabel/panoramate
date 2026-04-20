@@ -61,14 +61,14 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Create user
+    // Create user - first user of organization is now ADMIN (replaces OWNER)
     const user = await db.user.create({
       data: {
         email,
         password: hashedPassword,
         firstName,
         lastName,
-        role: 'OWNER',
+        role: 'ADMIN',
         organizationId: organization.id,
       },
     });
