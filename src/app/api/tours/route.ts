@@ -21,8 +21,10 @@ export async function GET(request: NextRequest) {
 
     const skip = (page - 1) * limit;
 
-    // RESTRICTION DISABLED: all authenticated users can see all tours
-    const where: any = {};
+    // Filter by organization (only see tours in user's organization)
+    const where: any = {
+      organizationId: authPayload.organizationId,
+    };
 
     if (search) {
       where.OR = [

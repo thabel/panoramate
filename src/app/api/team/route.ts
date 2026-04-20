@@ -66,13 +66,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // RESTRICTION DISABLED: all users can invite members (role checks removed)
+    // Only ADMIN and MEMBER can invite (VIEWER cannot invite)
+    if (authPayload.role !== 'ADMIN' && authPayload.role !== 'MEMBER') {
+      return NextResponse.json({ error: 'You do not have permission to invite members' }, { status: 403 });
+    }
+
     const body = await request.json();
     const { email, role = 'MEMBER' } = body;
-    // if ROLE ADMIN then reject
-    if (authPayload.role === 'ADMIN') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
 
 
     if (!email) {
