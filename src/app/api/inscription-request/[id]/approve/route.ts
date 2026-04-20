@@ -5,7 +5,7 @@ import { jwtVerify } from 'jose';
 
 const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || 'your-secret-key');
 
-async function verifyAdminAuth(request: NextRequest) {
+async function verifySuperAdminAuth(request: NextRequest) {
   try {
     const authHeader = request.headers.get('authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -16,13 +16,13 @@ async function verifyAdminAuth(request: NextRequest) {
     const verified = await jwtVerify(token, JWT_SECRET);
     const userId = verified.payload.userId as string;
 
-    // Get user and check if admin
+    // Get user and check if SUPER_ADMIN (only SUPER_ADMIN can approve inscriptions)
     const user = await db.user.findUnique({
       where: { id: userId },
       include: { organization: true },
     });
 
-    if (!user || user.role !== 'ADMIN') {
+    if (!user || user.role !== 'SUPER_ADMIN') {
       return null;
     }
 
@@ -37,11 +37,11 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
-    // Verify admin auth
-    const admin = await verifyAdminAuth(request);
-    if (!admin) {
+    // Verify SUPER_ADMIN auth (only SUPER_ADMIN can approve inscriptions)
+    const superAdmin = await verifySuperAdminAuth(request);
+    if (!superAdmin) {
       return NextResponse.json(
-        { error: 'Unauthorized' },
+        { error: 'Unauthorized - SUPER_ADMIN access required' },
         { status: 401 }
       );
     }
@@ -73,7 +73,7 @@ export async function POST(
       event: 'inscription_request_approved',
       id,
       email: updated.email,
-      approvedBy: admin.id,
+      approvedBy: superAdmin.id,
     });
 
     return NextResponse.json(

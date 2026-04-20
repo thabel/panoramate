@@ -3,7 +3,7 @@ import { db } from '@/lib/db';
 import { verifyJWT } from '@/lib/auth';
 import { logger } from '@/lib/logger';
 
-async function verifyAdminAuth(request: NextRequest) {
+async function verifySuperAdminAuth(request: NextRequest) {
   try {
     const token = request.cookies.get('token')?.value;
     const authHeader = request.headers.get('authorization');
@@ -22,13 +22,13 @@ async function verifyAdminAuth(request: NextRequest) {
       return null;
     }
 
-    // Get user and check if admin
+    // Get user and check if SUPER_ADMIN (only SUPER_ADMIN can manage inscriptions)
     const user = await db.user.findUnique({
       where: { id: payload.userId as string },
       include: { organization: true },
     });
 
-    if (!user || user.role !== 'ADMIN') {
+    if (!user || user.role !== 'SUPER_ADMIN') {
       return null;
     }
 
@@ -40,11 +40,11 @@ async function verifyAdminAuth(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
-    // Verify admin auth
-    const admin = await verifyAdminAuth(request);
-    if (!admin) {
+    // Verify SUPER_ADMIN auth (only SUPER_ADMIN can view inscriptions)
+    const superAdmin = await verifySuperAdminAuth(request);
+    if (!superAdmin) {
       return NextResponse.json(
-        { error: 'Unauthorized - Admin access required' },
+        { error: 'Unauthorized - SUPER_ADMIN access required' },
         { status: 401 }
       );
     }
@@ -75,8 +75,8 @@ export async function GET(request: NextRequest) {
     ]);
 
     logger.info({
-      event: 'admin_fetch_inscriptions',
-      adminId: admin.id,
+      event: 'super_admin_fetch_inscriptions',
+      superAdminId: superAdmin.id,
       status,
       count: requests.length,
     });
