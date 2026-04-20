@@ -35,6 +35,20 @@
 - Proposer des formations en ligne, en présentiel et en hybride.
 - Structurer la partie formation en ligne.
 
+- Possibilité  d'ajouter les formations dans un panier et payer sa 
+formation [ Payement per link ]
+    TODO: On se décide soit quel technicoly de paiement on va choisir .
+
+    Reseaux de formateur 
+    20h , 
+    A la fin de la formation on 
+
+    min et max de demarage de formation { min , max }
+
+    []
+
+    Donner l'acces au formateur pour stocker 
+
 ## Personnalisation
 - Permettre d’utiliser son propre icône.
 
@@ -144,3 +158,4 @@ ajouter mais les personnes ne peuvent voir que leur tour par default.
 
 
 * TODO: ajouter une fleche qui te montre aller tout droit
+
