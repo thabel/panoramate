@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { logger } from '@/lib/logger';
+import { sendEmail, getEmailTemplate } from '@/lib/email';
 
 interface InscriptionRequestData {
   type: 'FREE' | 'PROFESSIONAL';
@@ -91,10 +92,39 @@ export async function POST(request: NextRequest) {
       data: data,
     });
 
+    // Send confirmation email to the user
+    // Note: This may fail if the email is fake/invalid, but we don't want to block the request
+    const confirmationTemplate = getEmailTemplate('welcome', {
+      firstName: data.firstName,
+      appUrl: process.env.NEXT_PUBLIC_APP_URL || 'https://app.panoramate.com',
+    });
+
+    const emailResult = await sendEmail(
+      email,
+      'Thank you for your Panoramate registration request',
+      confirmationTemplate.html
+    );
+
+    if (!emailResult.success) {
+      logger.warn({
+        event: 'inscription_confirmation_email_failed',
+        email,
+        inscriptionId: inscriptionRequest.id,
+        error: emailResult.error,
+      });
+      // Don't fail the request - user still submitted even if email failed
+    } else {
+      logger.info({
+        event: 'inscription_confirmation_email_sent',
+        email,
+        inscriptionId: inscriptionRequest.id,
+      });
+    }
+
     return NextResponse.json(
       {
         success: true,
-        message: 'Inscription request submitted successfully',
+        message: 'Inscription request submitted successfully. Please check your email.',
         data: {
           id: inscriptionRequest.id,
           email: inscriptionRequest.email,
