@@ -40,17 +40,17 @@ export default function AdminInscriptionsPage() {
     rejected: 0,
   });
 
-  // Check if user is admin
+  // Check if user is SUPER_ADMIN
   useEffect(() => {
-    if (!authLoading && user && user.role !== 'ADMIN') {
+    if (!authLoading && user && user.role !== 'SUPER_ADMIN') {
       router.push('/dashboard');
-      toast.error('Admin access required');
+      toast.error('SUPER_ADMIN access required');
     }
   }, [authLoading, user, router]);
 
   // Fetch inscription requests
   useEffect(() => {
-    if (!user || user.role !== 'ADMIN') {
+    if (!user || user.role !== 'SUPER_ADMIN') {
       return;
     }
 
