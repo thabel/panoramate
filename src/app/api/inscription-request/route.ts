@@ -101,7 +101,7 @@ export async function POST(request: NextRequest) {
 
     const emailResult = await sendEmail(
       email,
-      'Thank you for your Panoramate registration request',
+      'Thank you for your registration request on BATIVY',
       confirmationTemplate.html
     );
 
