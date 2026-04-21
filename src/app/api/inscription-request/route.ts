@@ -92,16 +92,17 @@ export async function POST(request: NextRequest) {
       data: data,
     });
 
-    // Send confirmation email to the user
+    // Send pending confirmation email to the user
     // Note: This may fail if the email is fake/invalid, but we don't want to block the request
-    const confirmationTemplate = getEmailTemplate('welcome', {
+    const confirmationTemplate = getEmailTemplate('inscription-pending', {
       firstName: data.firstName,
+      planType: data.type,
       appUrl: process.env.NEXT_PUBLIC_APP_URL || 'https://app.panoramate.com',
     });
 
     const emailResult = await sendEmail(
       email,
-      'Thank you for your registration request on BATIVY',
+      confirmationTemplate.subject,
       confirmationTemplate.html
     );
 
