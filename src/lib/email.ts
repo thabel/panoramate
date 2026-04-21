@@ -1,55 +1,15 @@
 import nodemailer from 'nodemailer';
 
 /**
- * Email Configuration
- * Supports multiple email providers via environment variables
- */
-
-export interface EmailConfig {
-  host: string;
-  port: number;
-  secure: boolean;
-  auth: {
-    user: string;
-    pass: string;
-  };
-  from: {
-    name: string;
-    email: string;
-  };
-}
-
-/**
- * Get email transporter based on configuration
- */
-export function getEmailTransporter(): nodemailer.Transporter | null {
-  const provider = process.env.EMAIL_PROVIDER || 'smtp';
-
-  if (provider === 'smtp') {
-    return createSMTPTransporter();
-  } else if (provider === 'sendgrid') {
-    return createSendGridTransporter();
-  } else if (provider === 'mailgun') {
-    return createMailgunTransporter();
-  }
-
-  console.warn('Email provider not configured or unknown provider');
-  return null;
-}
-
-/**
- * Create SMTP transporter (Gmail, Postmark, Custom SMTP, etc.)
+ * Get email transporter using standard SMTP
  * Environment variables:
- * - EMAIL_PROVIDER=smtp
  * - EMAIL_SMTP_HOST
  * - EMAIL_SMTP_PORT
  * - EMAIL_SMTP_SECURE (true/false)
  * - EMAIL_SMTP_USER
  * - EMAIL_SMTP_PASS
- * - EMAIL_FROM_NAME
- * - EMAIL_FROM_ADDRESS
  */
-function createSMTPTransporter(): nodemailer.Transporter {
+export function getEmailTransporter(): nodemailer.Transporter {
   return nodemailer.createTransport({
     host: process.env.EMAIL_SMTP_HOST || 'localhost',
     port: parseInt(process.env.EMAIL_SMTP_PORT || '587'),
@@ -59,48 +19,6 @@ function createSMTPTransporter(): nodemailer.Transporter {
       pass: process.env.EMAIL_SMTP_PASS || '',
     },
   });
-}
-
-/**
- * Create SendGrid transporter
- * Environment variables:
- * - EMAIL_PROVIDER=sendgrid
- * - SENDGRID_API_KEY
- * - EMAIL_FROM_NAME
- * - EMAIL_FROM_ADDRESS
- */
-function createSendGridTransporter(): nodemailer.Transporter {
-  const sgTransport = require('nodemailer-sendgrid-transport');
-
-  return nodemailer.createTransport(
-    sgTransport({
-      auth: {
-        api_key: process.env.SENDGRID_API_KEY || '',
-      },
-    })
-  );
-}
-
-/**
- * Create Mailgun transporter
- * Environment variables:
- * - EMAIL_PROVIDER=mailgun
- * - MAILGUN_API_KEY
- * - MAILGUN_DOMAIN
- * - EMAIL_FROM_NAME
- * - EMAIL_FROM_ADDRESS
- */
-function createMailgunTransporter(): nodemailer.Transporter {
-  const mgTransport = require('nodemailer-mailgun-transport');
-
-  return nodemailer.createTransport(
-    mgTransport({
-      auth: {
-        api_key: process.env.MAILGUN_API_KEY || '',
-        domain: process.env.MAILGUN_DOMAIN || '',
-      },
-    })
-  );
 }
 
 /**
@@ -124,15 +42,10 @@ export async function sendEmail(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const transporter = getEmailTransporter();
-    if (!transporter) {
-      console.warn('Email transporter not configured');
-      return { success: false, error: 'Email service not configured' };
-    }
-
     const sender = getSenderEmail();
 
     const result = await transporter.sendMail({
-      from: `${sender.name} <${sender.email}>`,
+      from: `"${sender.name}" <${sender.email}>`,
       to: Array.isArray(to) ? to.join(', ') : to,
       subject,
       html,
