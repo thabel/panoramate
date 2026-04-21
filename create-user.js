@@ -187,8 +187,34 @@ async function main() {
 
       console.log();
     } else {
-      console.log('❌ Error creating user:');
-      console.log(JSON.stringify(response.data, null, 2));
+      console.log('❌ Error creating user:\n');
+      console.log(`Status: ${response.status}\n`);
+
+      if (response.data && typeof response.data === 'object') {
+        if (response.data.error) {
+          console.log(`Error: ${response.data.error}`);
+        }
+        if (response.data.details) {
+          console.log(`Details: ${response.data.details}`);
+        }
+        if (response.data.type) {
+          console.log(`Type: ${response.data.type}`);
+        }
+        if (response.data.received) {
+          console.log('\nReceived fields:');
+          console.log(JSON.stringify(response.data.received, null, 2));
+        }
+
+        console.log('\nFull response:');
+        console.log(JSON.stringify(response.data, null, 2));
+      } else {
+        console.log(JSON.stringify(response.data, null, 2));
+      }
+
+      console.log('\n⚠️  Make sure:');
+      console.log('   1. Development server is running (npm run dev)');
+      console.log('   2. Database is properly configured in .env.local');
+      console.log('   3. DATABASE_URL is set correctly');
     }
   } catch (error) {
     console.error('❌ Error:', error.message);
