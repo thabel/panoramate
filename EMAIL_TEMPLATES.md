@@ -351,10 +351,11 @@ getEmailTemplate('admin-notification', {
 
 | Template | Usage | When | Can Fail? |
 |----------|-------|------|-----------|
-| **welcome** | User onboarding | Registration/Approval | ⚠️ Non-blocking |
+| **inscription-pending** | Request under review | After inscription form submission | ⚠️ Non-blocking |
 | **invitation** | Team collaboration | Member invite | ❌ Should log |
-| **inscription-approved** | Account approval | After SUPER_ADMIN approval | ❌ Should log |
+| **inscription-approved** | Account approval + password | After SUPER_ADMIN approval | ❌ Should log |
 | **inscription-rejected** | Rejection notice | After SUPER_ADMIN rejection | ❌ Should log |
+| **welcome** | User onboarding | Direct registration (not inscription) | ⚠️ Non-blocking |
 | **password-reset** | Account recovery | Future implementation | ❌ Should log |
 | **admin-notification** | Internal alerts | Future use | ⚠️ Non-blocking |
 

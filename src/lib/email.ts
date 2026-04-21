@@ -69,6 +69,7 @@ export async function sendEmail(
 export type EmailTemplate =
   | 'welcome'
   | 'invitation'
+  | 'inscription-pending'
   | 'inscription-approved'
   | 'inscription-rejected'
   | 'password-reset'
@@ -86,6 +87,8 @@ export function getEmailTemplate(
       return getWelcomeTemplate(data);
     case 'invitation':
       return getInvitationTemplate(data);
+    case 'inscription-pending':
+      return getInscriptionPendingTemplate(data);
     case 'inscription-approved':
       return getInscriptionApprovedTemplate(data);
     case 'inscription-rejected':
@@ -140,6 +143,34 @@ function getInvitationTemplate(data: {
         </a>
       </p>
       <p>This invitation will expire in 7 days.</p>
+    `,
+  };
+}
+
+function getInscriptionPendingTemplate(data: {
+  firstName: string;
+  planType: string; // FREE or PROFESSIONAL
+  appUrl: string;
+}): { subject: string; html: string } {
+  return {
+    subject: 'Thank you for your Panoramate registration request',
+    html: `
+      <h2>Thank you for your request, ${data.firstName}!</h2>
+      <p>We've received your registration request for the <strong>${data.planType === 'PROFESSIONAL' ? 'Professional' : 'Free Trial'}</strong> plan.</p>
+
+      <h3>What happens next?</h3>
+      <p>Our team will review your request to ensure we're a good fit for your needs. This typically takes 1-2 business days.</p>
+
+      <p>Once approved, you'll receive an email with your account credentials and can start creating beautiful 360° virtual tours.</p>
+
+      <p><strong>📧 Keep this email:</strong> We'll send you updates about your request status at this email address.</p>
+
+      <h3>In the meantime...</h3>
+      <p>Check out our <a href="${data.appUrl}/docs">documentation</a> or <a href="${data.appUrl}/gallery">gallery</a> to see what's possible with Panoramate.</p>
+
+      <p>If you have any questions, feel free to reach out to our team.</p>
+
+      <p><small>Reference ID: ${Date.now()}</small></p>
     `,
   };
 }

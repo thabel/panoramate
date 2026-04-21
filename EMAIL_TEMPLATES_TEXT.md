@@ -4,7 +4,7 @@ This document shows the EXACT text that users will see in their email clients.
 
 ---
 
-## 1️⃣ WELCOME EMAIL (Inscription Confirmation)
+## 1️⃣ INSCRIPTION PENDING EMAIL (Confirmation - Request Under Review)
 
 **Subject:** `Thank you for your Panoramate registration request`
 
@@ -15,35 +15,66 @@ This document shows the EXACT text that users will see in their email clients.
 ---
 
 ```
-Welcome to Panoramate, John!
+Thank you for your request, John!
 
-We're excited to have you on board. You can now create and share
-immersive 360° virtual tours.
+We've received your registration request for the Free Trial plan.
 
-┌─────────────────────────┐
-│  Go to Dashboard        │
-└─────────────────────────┘
-   https://app.panoramate.com/dashboard
+What happens next?
 
-If you have any questions, feel free to contact our support team.
+Our team will review your request to ensure we're a good fit for
+your needs. This typically takes 1-2 business days.
+
+Once approved, you'll receive an email with your account credentials
+and can start creating beautiful 360° virtual tours.
+
+📧 Keep this email: We'll send you updates about your request status
+at this email address.
+
+In the meantime...
+
+Check out our documentation or gallery to see what's possible with
+Panoramate.
+
+If you have any questions, feel free to reach out to our team.
+
+Reference ID: 1713607352000
 ```
 
 **Plain Text Version:**
 ```
-Welcome to Panoramate, John!
+Thank you for your request, John!
 
-We're excited to have you on board. You can now create and share
-immersive 360° virtual tours.
+We've received your registration request for the Free Trial plan.
 
-Go to Dashboard: https://app.panoramate.com/dashboard
+What happens next?
 
-If you have any questions, feel free to contact our support team.
+Our team will review your request to ensure we're a good fit for your
+needs. This typically takes 1-2 business days.
+
+Once approved, you'll receive an email with your account credentials
+and can start creating beautiful 360° virtual tours.
+
+📧 Keep this email: We'll send you updates about your request status
+at this email address.
+
+In the meantime...
+
+Check out our documentation or gallery to see what's possible with
+Panoramate.
+
+If you have any questions, feel free to reach out to our team.
+
+Reference ID: 1713607352000
 ```
 
-**Notes:**
+**Key Points:**
+- ✅ CLEARLY states request is under review
+- ✅ Sets expectations: "1-2 business days"
+- ✅ Explains next steps after approval
+- ✅ Suggests what to do while waiting
+- ✅ Reassures user updates will be sent
 - ⚠️ May FAIL if user provided fake email (non-blocking)
 - ✅ Request still succeeds if email fails
-- 📝 Check logs: "inscription_confirmation_email_sent" or "inscription_confirmation_email_failed"
 
 ---
 
