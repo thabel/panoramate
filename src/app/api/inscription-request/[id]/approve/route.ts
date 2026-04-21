@@ -43,12 +43,31 @@ function generateTemporaryPassword(): string {
 
 async function verifySuperAdminAuth(request: NextRequest) {
   try {
+    let token: string | null = null;
+
+    // Try Authorization header first
     const authHeader = request.headers.get('authorization');
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    if (authHeader?.startsWith('Bearer ')) {
+      token = authHeader.substring(7);
+    } else {
+      // Try cookie
+      const cookieHeader = request.headers.get('cookie');
+      if (cookieHeader) {
+        const cookies = cookieHeader.split(';').map(c => c.trim());
+        for (const cookie of cookies) {
+          if (cookie.startsWith('token=')) {
+            token = cookie.substring(6);
+            break;
+          }
+        }
+      }
+    }
+
+    if (!token) {
+      console.log('[APPROVE] No token found in Authorization header or cookie');
       return null;
     }
 
-    const token = authHeader.substring(7);
     const verified = await jwtVerify(token, JWT_SECRET);
     const userId = verified.payload.userId as string;
 
@@ -58,12 +77,20 @@ async function verifySuperAdminAuth(request: NextRequest) {
       include: { organization: true },
     });
 
-    if (!user || user.role !== 'SUPER_ADMIN') {
+    if (!user) {
+      console.log('[APPROVE] User not found:', userId);
       return null;
     }
 
+    if (user.role !== 'SUPER_ADMIN') {
+      console.log('[APPROVE] User is not SUPER_ADMIN:', user.role);
+      return null;
+    }
+
+    console.log('[APPROVE] SUPER_ADMIN verified:', user.id);
     return user;
   } catch (error) {
+    console.error('[APPROVE] Auth verification error:', error instanceof Error ? error.message : error);
     return null;
   }
 }
@@ -73,9 +100,12 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
+    console.log('[APPROVE] Request received for inscription:', params.id);
+
     // Verify SUPER_ADMIN auth (only SUPER_ADMIN can approve inscriptions)
     const superAdmin = await verifySuperAdminAuth(request);
     if (!superAdmin) {
+      console.warn('[APPROVE] Unauthorized - no valid SUPER_ADMIN token');
       return NextResponse.json(
         { error: 'Unauthorized - SUPER_ADMIN access required' },
         { status: 401 }
