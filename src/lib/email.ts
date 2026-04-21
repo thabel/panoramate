@@ -163,14 +163,8 @@ function getInscriptionPendingTemplate(data: {
 
       <p>Once approved, you'll receive an email with your account credentials and can start creating beautiful 360° virtual tours.</p>
 
-      <p><strong>📧 Keep this email:</strong> We'll send you updates about your request status at this email address.</p>
+      <p><strong> Keep this email:</strong> We'll send you updates about your request status at this email address.</p>
 
-      <h3>In the meantime...</h3>
-      <p>Check out our <a href="${data.appUrl}/docs">documentation</a> or <a href="${data.appUrl}/gallery">gallery</a> to see what's possible with Panoramate.</p>
-
-      <p>If you have any questions, feel free to reach out to our team.</p>
-
-      <p><small>Reference ID: ${Date.now()}</small></p>
     `,
   };
 }
