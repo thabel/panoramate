@@ -151,13 +151,13 @@ export default function AdminInscriptionsPage() {
     );
   }
 
-  if (user && user.role !== 'ADMIN') {
+  if (user && user.role !== 'SUPER_ADMIN') {
     return (
       <Alert variant="error">
         <AlertCircle size={20} />
         <div>
           <h3 className="font-semibold">Access Denied</h3>
-          <p>You don't have permission to access the admin panel.</p>
+          <p>You don't have permission to access the admin panel. SUPER_ADMIN access required.</p>
         </div>
       </Alert>
     );
