@@ -1,6 +1,6 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { db } from '@/lib/db';
-import { hashPassword, getAuthUser, generateSlug } from '@/lib/auth';
+import { hashPassword } from '@/lib/auth';
 
 /**
  * Admin endpoint to create users via API
@@ -10,13 +10,27 @@ import { hashPassword, getAuthUser, generateSlug } from '@/lib/auth';
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('[CREATE-USER] Request received');
+
     const body = await request.json();
+    console.log('[CREATE-USER] Body parsed:', {
+      email: body.email,
+      firstName: body.firstName,
+      role: body.role,
+      organizationName: body.organizationName
+    });
+
     const { email, firstName, lastName, password, role, organizationName, organizationSlug } = body;
 
     // Validate required fields
     if (!email || !firstName || !lastName || !password || !role) {
+      console.warn('[CREATE-USER] Missing required fields:', { email, firstName, lastName, role });
       return NextResponse.json(
-        { error: 'Missing required fields: email, firstName, lastName, password, role' },
+        {
+          error: 'Missing required fields',
+          details: 'email, firstName, lastName, password, and role are required',
+          received: { email: !!email, firstName: !!firstName, lastName: !!lastName, password: !!password, role: !!role }
+        },
         { status: 400 }
       );
     }
@@ -24,25 +38,36 @@ export async function POST(request: NextRequest) {
     // Validate role
     const validRoles = ['SUPER_ADMIN', 'ADMIN', 'MEMBER', 'VIEWER'];
     if (!validRoles.includes(role)) {
+      console.warn('[CREATE-USER] Invalid role:', role);
       return NextResponse.json(
-        { error: `Invalid role. Must be one of: ${validRoles.join(', ')}` },
+        {
+          error: 'Invalid role',
+          details: `Must be one of: ${validRoles.join(', ')}`,
+          received: role
+        },
         { status: 400 }
       );
     }
 
     // Check if user already exists
+    console.log('[CREATE-USER] Checking if user exists:', email);
     const existingUser = await db.user.findUnique({
       where: { email },
     });
 
     if (existingUser) {
+      console.warn('[CREATE-USER] User already exists:', email);
       return NextResponse.json(
-        { error: `User with email ${email} already exists` },
+        {
+          error: 'User already exists',
+          details: `A user with email ${email} already exists in the system`
+        },
         { status: 409 }
       );
     }
 
     // Create or get organization
+    console.log('[CREATE-USER] Processing organization:', { organizationName, organizationSlug });
     let organization;
 
     if (organizationName && organizationSlug) {
@@ -52,9 +77,11 @@ export async function POST(request: NextRequest) {
       });
 
       if (existingOrg) {
+        console.log('[CREATE-USER] Using existing organization:', organizationSlug);
         organization = existingOrg;
       } else {
         // Create new organization
+        console.log('[CREATE-USER] Creating new organization:', organizationName);
         organization = await db.organization.create({
           data: {
             name: organizationName,
@@ -64,9 +91,11 @@ export async function POST(request: NextRequest) {
             trialEndsAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
           },
         });
+        console.log('[CREATE-USER] Organization created:', organization.id);
       }
     } else {
       // Use or create default test organization
+      console.log('[CREATE-USER] Using/creating default organization (test-org)');
       organization = await db.organization.upsert({
         where: { slug: 'test-org' },
         update: {},
@@ -81,9 +110,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Hash password
+    console.log('[CREATE-USER] Hashing password');
     const hashedPassword = await hashPassword(password);
 
     // Create user
+    console.log('[CREATE-USER] Creating user:', { email, firstName, role, organizationId: organization.id });
     const user = await db.user.create({
       data: {
         email,
@@ -98,6 +129,8 @@ export async function POST(request: NextRequest) {
         organization: true,
       },
     });
+
+    console.log('[CREATE-USER] User created successfully:', user.id);
 
     // Return success response (without password)
     return NextResponse.json(
@@ -121,9 +154,21 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     );
   } catch (error) {
-    console.error('Error creating user:', error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const errorStack = error instanceof Error ? error.stack : '';
+
+    console.error('[CREATE-USER] ERROR:', {
+      message: errorMessage,
+      stack: errorStack,
+      error: error
+    });
+
     return NextResponse.json(
-      { error: 'Failed to create user. Check server logs for details.' },
+      {
+        error: 'Failed to create user',
+        details: errorMessage,
+        type: error instanceof Error ? error.constructor.name : 'Unknown'
+      },
       { status: 500 }
     );
   }
