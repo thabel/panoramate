@@ -20,12 +20,17 @@ cp .env.docker .env.local
 Then edit `.env.local` with your actual configuration. **IMPORTANT:** Update these secrets:
 
 ```bash
-# REQUIRED - Set strong, unique passwords
-DB_ROOT_PASSWORD=your_strong_root_password_here
-DB_PASSWORD=your_strong_db_password_here
+# REQUIRED - Database URL (no defaults, must set explicitly)
+DATABASE_URL=mysql://panoramate_user:your_strong_password@db:3306/panoramate
 
 # REQUIRED - JWT Secret (min 32 characters)
 JWT_SECRET=your-32-character-minimum-secret-key-change-this
+
+# Database Config (for Docker container initialization)
+DB_ROOT_PASSWORD=your_strong_root_password_here
+DB_PASSWORD=your_strong_db_password_here
+DB_NAME=panoramate
+DB_USER=panoramate_user
 
 # Stripe Configuration
 STRIPE_SECRET_KEY=sk_test_...
@@ -36,9 +41,10 @@ STRIPE_WEBHOOK_SECRET=whsec_...
 
 **⚠️ SECURITY WARNING:**
 - **Never commit `.env.local` to git** (it's in `.gitignore`)
-- Use strong, unique passwords - not defaults
-- Rotate secrets regularly
-- Keep `.env.docker` as a template only - it should not contain real secrets
+- `DATABASE_URL` must be explicitly set - no secrets in docker-compose.yml
+- Use strong, unique passwords - never use defaults
+- Rotate secrets regularly in production
+- Keep `.env.docker` as a template only - never commit real secrets
 
 ### 2. Start Services
 
