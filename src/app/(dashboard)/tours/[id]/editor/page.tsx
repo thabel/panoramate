@@ -91,6 +91,20 @@ export default function TourEditorPage({
     setSceneSearchQuery('');
     setIsEditingHotspot(false);
     setSelectedHotspot(null);
+    setHotspotForm({
+      type: 'LINK',
+      title: '',
+      targetImageId: '',
+      content: '',
+      url: '',
+      videoUrl: '',
+      imageUrl: '',
+      imageUrls: '',
+      animationType: 'PULSE',
+      scale: 1.0,
+      iconUrl: '',
+      iconName: 'info',
+    });
   };
 
   const handleEditHotspot = () => {
