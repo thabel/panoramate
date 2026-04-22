@@ -17,15 +17,28 @@ Copy the Docker environment template to your local env file:
 cp .env.docker .env.local
 ```
 
-Then edit `.env.local` with your actual configuration:
+Then edit `.env.local` with your actual configuration. **IMPORTANT:** Update these secrets:
 
 ```bash
-# Edit these sections in .env.local:
-JWT_SECRET=your-32-character-minimum-secret-key
+# REQUIRED - Set strong, unique passwords
+DB_ROOT_PASSWORD=your_strong_root_password_here
+DB_PASSWORD=your_strong_db_password_here
+
+# REQUIRED - JWT Secret (min 32 characters)
+JWT_SECRET=your-32-character-minimum-secret-key-change-this
+
+# Stripe Configuration
 STRIPE_SECRET_KEY=sk_test_...
 STRIPE_PUBLISHABLE_KEY=pk_test_...
+STRIPE_WEBHOOK_SECRET=whsec_...
 # ... other Stripe keys
 ```
+
+**⚠️ SECURITY WARNING:**
+- **Never commit `.env.local` to git** (it's in `.gitignore`)
+- Use strong, unique passwords - not defaults
+- Rotate secrets regularly
+- Keep `.env.docker` as a template only - it should not contain real secrets
 
 ### 2. Start Services
 
