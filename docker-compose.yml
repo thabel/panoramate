@@ -39,7 +39,7 @@ services:
       - "${APP_PORT:-3000}:3000"
     environment:
       NODE_ENV: ${NODE_ENV:-development}
-      DATABASE_URL: "mysql://${DB_USER:-panoramate_user}:${DB_PASSWORD:-panoramate_pass}@db:3306/${DB_NAME:-panoramate}"
+      DATABASE_URL: "mysql://${DB_USER:-panoramate_user}:${DB_PASSWORD}@db:3306/${DB_NAME:-panoramate}"
       JWT_SECRET: ${JWT_SECRET}
       NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}
       NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
