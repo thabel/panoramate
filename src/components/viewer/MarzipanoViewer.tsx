@@ -349,9 +349,6 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
         // Reset the closed state on hover to allow title to reappear
         visual.classList.remove('hotspot-closed');
 
-        // Add enhanced hover animation
-        visual.style.willChange = 'transform, box-shadow, filter';
-
         // Show popover on hover
         if (onHover && hotspotData) {
           const rect = visual.getBoundingClientRect();
@@ -360,7 +357,6 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
       };
 
       visual.onmouseout = () => {
-        visual.style.willChange = 'auto';
         if (onHover) {
           onHover(null, null);
         }
