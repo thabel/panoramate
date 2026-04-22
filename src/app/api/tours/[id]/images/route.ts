@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { saveUploadedFile, deleteFile } from '@/lib/storage';
 import { PLAN_LIMITS } from '@/lib/stripe';
 import { canAddImagesToTour, canAddStorage } from '@/lib/plan-limits';
+import { canAccessTour, canAccessImage, logAuditEvent } from '@/lib/access-control';
 
 export async function POST(
   request: NextRequest,
@@ -25,6 +26,15 @@ export async function POST(
       return NextResponse.json(
         { error: 'Tour not found' },
         { status: 404 }
+      );
+    }
+
+    // Check if user can access this tour (organization isolation + VIEWER read-only)
+    const accessCheck = await canAccessTour(authPayload, params.id, 'write');
+    if (!accessCheck.allowed) {
+      return NextResponse.json(
+        { error: accessCheck.reason || 'Access denied' },
+        { status: 403 }
       );
     }
 

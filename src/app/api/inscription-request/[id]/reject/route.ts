@@ -3,7 +3,7 @@ import { db } from '@/lib/db';
 import { verifyJWT } from '@/lib/auth';
 import { logger } from '@/lib/logger';
 
-async function verifyAdminAuth(request: NextRequest) {
+async function verifySuperAdminAuth(request: NextRequest) {
   try {
     const token = request.cookies.get('token')?.value;
     const authHeader = request.headers.get('authorization');
@@ -22,13 +22,13 @@ async function verifyAdminAuth(request: NextRequest) {
       return null;
     }
 
-    // Get user and check if admin
+    // Get user and check if SUPER_ADMIN (only SUPER_ADMIN can reject inscriptions)
     const user = await db.user.findUnique({
       where: { id: payload.userId as string },
       include: { organization: true },
     });
 
-    if (!user || user.role !== 'ADMIN') {
+    if (!user || user.role !== 'SUPER_ADMIN') {
       return null;
     }
 
@@ -43,11 +43,11 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
-    // Verify admin auth
-    const admin = await verifyAdminAuth(request);
-    if (!admin) {
+    // Verify SUPER_ADMIN auth (only SUPER_ADMIN can reject inscriptions)
+    const superAdmin = await verifySuperAdminAuth(request);
+    if (!superAdmin) {
       return NextResponse.json(
-        { error: 'Unauthorized - Admin access required' },
+        { error: 'Unauthorized - SUPER_ADMIN access required' },
         { status: 401 }
       );
     }
@@ -89,7 +89,7 @@ export async function POST(
       event: 'inscription_request_rejected',
       id,
       email: updated.email,
-      rejectedBy: admin.id,
+      rejectedBy: superAdmin.id,
     });
 
     return NextResponse.json(

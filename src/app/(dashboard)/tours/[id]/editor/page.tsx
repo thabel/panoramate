@@ -91,6 +91,20 @@ export default function TourEditorPage({
     setSceneSearchQuery('');
     setIsEditingHotspot(false);
     setSelectedHotspot(null);
+    setHotspotForm({
+      type: 'LINK',
+      title: '',
+      targetImageId: '',
+      content: '',
+      url: '',
+      videoUrl: '',
+      imageUrl: '',
+      imageUrls: '',
+      animationType: 'PULSE',
+      scale: 1.0,
+      iconUrl: '',
+      iconName: 'info',
+    });
   };
 
   const handleEditHotspot = () => {
@@ -656,7 +670,7 @@ export default function TourEditorPage({
                   <div className="mb-4">
                     <p className="mb-2 text-[10px] font-bold text-dark-500 uppercase tracking-wider">Main Actions</p>
                     <div className="grid grid-cols-4 gap-2">
-                      {['MapPin', 'info'].map((iconName) => (
+                      {['MapPin', 'info' , 'Marker'].map((iconName) => (
                         <button
                           key={iconName}
                           disabled={isEditingHotspot}
@@ -685,7 +699,7 @@ export default function TourEditorPage({
                     <p className="mb-2 text-[10px] font-bold text-dark-500 uppercase tracking-wider">Other Icons</p>
                     <div className="grid grid-cols-4 gap-2">
                       {Object.keys(HOTSPOT_ICONS_SVG)
-                        .filter((name) => !['info', 'MapPin'].includes(name))
+                        .filter((name) => !['info', 'MapPin', 'Marker'].includes(name))
                         .map((iconName) => (
                           <button
                             key={iconName}
@@ -970,7 +984,7 @@ export default function TourEditorPage({
             BATIVY
           </div>
           <div className="w-px h-6 bg-dark-700" />
-          <h1 className="text-lg font-semibold text-white truncate max-w-[200px]">{tour.title}</h1>
+          <h1 className="text-lg font-semibold text-white truncate max-w-[200px]">{currentScene.title}</h1>
           <div className="w-px h-6 bg-dark-700" />
           <div className="flex items-center gap-2">
             <Badge variant="default" className="ml-2">
