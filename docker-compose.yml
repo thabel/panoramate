@@ -7,10 +7,10 @@ services:
     container_name: panoramate-db
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-rootpassword}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
       MYSQL_DATABASE: ${DB_NAME:-panoramate}
       MYSQL_USER: ${DB_USER:-panoramate_user}
-      MYSQL_PASSWORD: ${DB_PASSWORD:-panoramate_pass}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
       MYSQL_ROOT_HOST: '%'
     ports:
       - "${DB_PORT:-3306}:3306"
