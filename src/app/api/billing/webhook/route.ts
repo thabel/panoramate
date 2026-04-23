@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { stripe } from '@/lib/stripe';
 import { db } from '@/lib/db';
+import { v4 as uuidv4 } from 'uuid';
 
 const PLAN_CONFIG: Record<string, any> = {
   STARTER: {
@@ -90,36 +91,30 @@ async function handleCheckoutSessionCompleted(session: any) {
   if (!session.subscription) return;
 
   const subscription = await stripe.subscriptions.retrieve(session.subscription);
-  const org = await db.organization.findFirst({
-    where: {
-      stripeCustomerId: session.customer,
-    },
-  });
+  const org = await db.queryOne(
+    'SELECT * FROM organizations WHERE stripeCustomerId = ?',
+    [session.customer]
+  ) as any;
 
   if (!org) return;
 
   const planType = session.metadata?.planType || 'STARTER';
   const planConfig = PLAN_CONFIG[planType] || PLAN_CONFIG.STARTER;
+  const currentPeriodEnd = new Date(subscription.current_period_end * 1000);
 
-  await db.organization.update({
-    where: { id: org.id },
-    data: {
-      plan: planType,
-      stripeSubscriptionId: session.subscription,
-      stripePriceId: subscription.items.data[0]?.price.id,
-      subscriptionStatus: 'ACTIVE',
-      currentPeriodEnd: new Date(subscription.current_period_end * 1000),
-      ...planConfig,
-    },
-  });
+  await db.execute(
+    `UPDATE organizations
+     SET plan = ?, stripeSubscriptionId = ?, stripePriceId = ?, subscriptionStatus = ?, currentPeriodEnd = ?, maxTours = ?, maxImagesPerTour = ?, totalStorageMb = ?, updatedAt = NOW()
+     WHERE id = ?`,
+    [planType, session.subscription, subscription.items.data[0]?.price.id, 'ACTIVE', currentPeriodEnd, planConfig.maxTours, planConfig.maxImagesPerTour, planConfig.totalStorageMb, org.id]
+  );
 }
 
 async function handleSubscriptionUpdated(subscription: any) {
-  const org = await db.organization.findFirst({
-    where: {
-      stripeSubscriptionId: subscription.id,
-    },
-  });
+  const org = await db.queryOne(
+    'SELECT * FROM organizations WHERE stripeSubscriptionId = ?',
+    [subscription.id]
+  ) as any;
 
   if (!org) return;
 
@@ -132,94 +127,89 @@ async function handleSubscriptionUpdated(subscription: any) {
       ? 'CANCELED'
       : 'INCOMPLETE';
 
-  await db.organization.update({
-    where: { id: org.id },
-    data: {
-      subscriptionStatus: status,
-      currentPeriodEnd: new Date(subscription.current_period_end * 1000),
-    },
-  });
+  const currentPeriodEnd = new Date(subscription.current_period_end * 1000);
+
+  await db.execute(
+    'UPDATE organizations SET subscriptionStatus = ?, currentPeriodEnd = ?, updatedAt = NOW() WHERE id = ?',
+    [status, currentPeriodEnd, org.id]
+  );
 }
 
 async function handleSubscriptionDeleted(subscription: any) {
-  const org = await db.organization.findFirst({
-    where: {
-      stripeSubscriptionId: subscription.id,
-    },
-  });
+  const org = await db.queryOne(
+    'SELECT * FROM organizations WHERE stripeSubscriptionId = ?',
+    [subscription.id]
+  ) as any;
 
   if (!org) return;
 
-  await db.organization.update({
-    where: { id: org.id },
-    data: {
-      plan: 'FREE_TRIAL',
-      subscriptionStatus: 'CANCELED',
-      stripeSubscriptionId: null,
-      stripePriceId: null,
-      maxTours: 1,
-      maxImagesPerTour: 10,
-      totalStorageMb: 200,
-    },
-  });
+  await db.execute(
+    `UPDATE organizations
+     SET plan = ?, subscriptionStatus = ?, stripeSubscriptionId = NULL, stripePriceId = NULL, maxTours = ?, maxImagesPerTour = ?, totalStorageMb = ?, updatedAt = NOW()
+     WHERE id = ?`,
+    ['FREE_TRIAL', 'CANCELED', 1, 10, 200, org.id]
+  );
 }
 
 async function handleInvoicePaid(invoice: any) {
-  const org = await db.organization.findFirst({
-    where: {
-      stripeCustomerId: invoice.customer,
-    },
-  });
+  const org = await db.queryOne(
+    'SELECT * FROM organizations WHERE stripeCustomerId = ?',
+    [invoice.customer]
+  ) as any;
 
   if (!org) return;
 
-  await db.invoice.upsert({
-    where: { stripeInvoiceId: invoice.id },
-    update: {
-      status: 'PAID',
-      paidAt: new Date(invoice.paid_at * 1000),
-    },
-    create: {
-      organizationId: org.id,
-      stripeInvoiceId: invoice.id,
-      invoiceNumber: invoice.number,
-      amount: invoice.amount_paid,
-      currency: invoice.currency,
-      status: 'PAID',
-      pdfUrl: invoice.pdf,
-      hostedUrl: invoice.hosted_invoice_url,
-      periodStart: new Date(invoice.period_start * 1000),
-      periodEnd: new Date(invoice.period_end * 1000),
-      paidAt: new Date(invoice.paid_at * 1000),
-    },
-  });
+  // Check if invoice already exists
+  const existingInvoice = await db.queryOne(
+    'SELECT id FROM invoices WHERE stripeInvoiceId = ?',
+    [invoice.id]
+  ) as any;
+
+  const paidAt = new Date(invoice.paid_at * 1000);
+  const periodStart = new Date(invoice.period_start * 1000);
+  const periodEnd = new Date(invoice.period_end * 1000);
+
+  if (existingInvoice) {
+    await db.execute(
+      'UPDATE invoices SET status = ?, paidAt = ?, updatedAt = NOW() WHERE stripeInvoiceId = ?',
+      ['PAID', paidAt, invoice.id]
+    );
+  } else {
+    await db.execute(
+      `INSERT INTO invoices (id, organizationId, stripeInvoiceId, invoiceNumber, amount, currency, status, pdfUrl, hostedUrl, periodStart, periodEnd, paidAt, createdAt, updatedAt)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
+      [uuidv4(), org.id, invoice.id, invoice.number, invoice.amount_paid, invoice.currency, 'PAID', invoice.pdf, invoice.hosted_invoice_url, periodStart, periodEnd, paidAt]
+    );
+  }
 }
 
 async function handleInvoicePaymentFailed(invoice: any) {
-  const org = await db.organization.findFirst({
-    where: {
-      stripeCustomerId: invoice.customer,
-    },
-  });
+  const org = await db.queryOne(
+    'SELECT * FROM organizations WHERE stripeCustomerId = ?',
+    [invoice.customer]
+  ) as any;
 
   if (!org) return;
 
-  await db.invoice.upsert({
-    where: { stripeInvoiceId: invoice.id },
-    update: {
-      status: 'OPEN',
-    },
-    create: {
-      organizationId: org.id,
-      stripeInvoiceId: invoice.id,
-      invoiceNumber: invoice.number,
-      amount: invoice.amount_due,
-      currency: invoice.currency,
-      status: 'OPEN',
-      pdfUrl: invoice.pdf,
-      hostedUrl: invoice.hosted_invoice_url,
-      periodStart: new Date(invoice.period_start * 1000),
-      periodEnd: new Date(invoice.period_end * 1000),
-    },
-  });
+  // Check if invoice already exists
+  const existingInvoice = await db.queryOne(
+    'SELECT id FROM invoices WHERE stripeInvoiceId = ?',
+    [invoice.id]
+  ) as any;
+
+  const periodStart = new Date(invoice.period_start * 1000);
+  const periodEnd = new Date(invoice.period_end * 1000);
+
+  if (existingInvoice) {
+    await db.execute(
+      'UPDATE invoices SET status = ?, updatedAt = NOW() WHERE stripeInvoiceId = ?',
+      ['OPEN', invoice.id]
+    );
+  } else {
+    await db.execute(
+      `INSERT INTO invoices (id, organizationId, stripeInvoiceId, invoiceNumber, amount, currency, status, pdfUrl, hostedUrl, periodStart, periodEnd, createdAt, updatedAt)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
+      [uuidv4(), org.id, invoice.id, invoice.number, invoice.amount_due, invoice.currency, 'OPEN', invoice.pdf, invoice.hosted_invoice_url, periodStart, periodEnd]
+    );
+  }
 }

@@ -10,7 +10,7 @@ export const runtime = 'nodejs';
 export async function GET() {
   try {
     // Check database connectivity
-    await db.$queryRaw`SELECT 1`;
+    await db.queryOne('SELECT 1');
 
     return NextResponse.json(
       {

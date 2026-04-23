@@ -4,6 +4,7 @@ import { logger } from '@/lib/logger';
 import { jwtVerify } from 'jose';
 import { hashPassword, generateSlug } from '@/lib/auth';
 import { sendEmail, getEmailTemplate } from '@/lib/email';
+import { v4 as uuidv4 } from 'uuid';
 
 const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || 'your-secret-key');
 
@@ -72,10 +73,13 @@ async function verifySuperAdminAuth(request: NextRequest) {
     const userId = verified.payload.userId as string;
 
     // Get user and check if SUPER_ADMIN (only SUPER_ADMIN can approve inscriptions)
-    const user = await db.user.findUnique({
-      where: { id: userId },
-      include: { organization: true },
-    });
+    const user = await db.queryOne(
+      `SELECT u.*, o.id as org_id, o.name as org_name, o.slug as org_slug, o.plan as org_plan
+       FROM users u
+       LEFT JOIN organizations o ON u.organizationId = o.id
+       WHERE u.id = ?`,
+      [userId]
+    );
 
     if (!user) {
       console.log('[APPROVE] User not found:', userId);
@@ -88,7 +92,19 @@ async function verifySuperAdminAuth(request: NextRequest) {
     }
 
     console.log('[APPROVE] SUPER_ADMIN verified:', user.id);
-    return user;
+
+    // Transform to match Prisma structure
+    const userWithOrg = {
+      ...user,
+      organization: user.org_id ? {
+        id: user.org_id,
+        name: user.org_name,
+        slug: user.org_slug,
+        plan: user.org_plan
+      } : null
+    };
+
+    return userWithOrg;
   } catch (error) {
     console.error('[APPROVE] Auth verification error:', error instanceof Error ? error.message : error);
     return null;
@@ -115,9 +131,10 @@ export async function POST(
     const { id } = params;
 
     // Get the inscription request
-    const inscriptionRequest = await db.inscriptionRequest.findUnique({
-      where: { id },
-    });
+    const inscriptionRequest = await db.queryOne(
+      'SELECT * FROM inscription_requests WHERE id = ?',
+      [id]
+    );
 
     if (!inscriptionRequest) {
       return NextResponse.json(
@@ -134,9 +151,10 @@ export async function POST(
     }
 
     // Check if user already exists
-    const existingUser = await db.user.findUnique({
-      where: { email: inscriptionRequest.email },
-    });
+    const existingUser = await db.queryOne(
+      'SELECT * FROM users WHERE email = ?',
+      [inscriptionRequest.email]
+    );
 
     if (existingUser) {
       return NextResponse.json(
@@ -153,39 +171,55 @@ export async function POST(
     const organizationName = `${inscriptionRequest.firstName} ${inscriptionRequest.lastName}'s Organization`;
     const slug = generateSlug(organizationName);
 
-    const organization = await db.organization.create({
-      data: {
-        name: organizationName,
-        slug,
-        plan: inscriptionRequest.type === 'PROFESSIONAL' ? 'PROFESSIONAL' : 'FREE_TRIAL',
-        subscriptionStatus: inscriptionRequest.type === 'PROFESSIONAL' ? 'ACTIVE' : 'TRIALING',
-        trialEndsAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), // 14 days
-        maxTours: inscriptionRequest.type === 'PROFESSIONAL' ? 20 : 1,
-        maxImagesPerTour: inscriptionRequest.type === 'PROFESSIONAL' ? 200 : 10,
-        totalStorageMb: inscriptionRequest.type === 'PROFESSIONAL' ? 10240 : 500,
-      },
+    const organizationId = uuidv4();
+    const userId = uuidv4();
+    const now = new Date();
+    const trialEndsAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000); // 14 days
+
+    const plan = inscriptionRequest.type === 'PROFESSIONAL' ? 'PROFESSIONAL' : 'FREE_TRIAL';
+    const subscriptionStatus = inscriptionRequest.type === 'PROFESSIONAL' ? 'ACTIVE' : 'TRIALING';
+    const maxTours = inscriptionRequest.type === 'PROFESSIONAL' ? 20 : 1;
+    const maxImagesPerTour = inscriptionRequest.type === 'PROFESSIONAL' ? 200 : 10;
+    const totalStorageMb = inscriptionRequest.type === 'PROFESSIONAL' ? 10240 : 500;
+
+    // Create organization, user, and update inscription in a transaction
+    await db.transaction(async (connection) => {
+      // Create organization
+      await connection.execute(
+        `INSERT INTO organizations (id, name, slug, plan, subscriptionStatus, trialEndsAt, maxTours, maxImagesPerTour, totalStorageMb, createdAt, updatedAt)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [organizationId, organizationName, slug, plan, subscriptionStatus, trialEndsAt, maxTours, maxImagesPerTour, totalStorageMb, now, now]
+      );
+
+      // Create user account (ADMIN role for organization)
+      await connection.execute(
+        `INSERT INTO users (id, email, password, firstName, lastName, role, organizationId, createdAt, updatedAt)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [userId, inscriptionRequest.email, hashedPassword, inscriptionRequest.firstName, inscriptionRequest.lastName, 'ADMIN', organizationId, now, now]
+      );
+
+      // Update inscription request status to APPROVED
+      await connection.execute(
+        'UPDATE inscription_requests SET status = ?, approvedAt = ?, updatedAt = ? WHERE id = ?',
+        ['APPROVED', now, now, id]
+      );
     });
 
-    // Create user account (ADMIN role for organization)
-    const user = await db.user.create({
-      data: {
-        email: inscriptionRequest.email,
-        password: hashedPassword,
-        firstName: inscriptionRequest.firstName,
-        lastName: inscriptionRequest.lastName,
-        role: 'ADMIN', // First user of org is ADMIN
-        organizationId: organization.id,
-      },
-    });
+    // Fetch the created records
+    const organization = await db.queryOne(
+      'SELECT * FROM organizations WHERE id = ?',
+      [organizationId]
+    );
 
-    // Update inscription request status to APPROVED
-    const updated = await db.inscriptionRequest.update({
-      where: { id },
-      data: {
-        status: 'APPROVED',
-        approvedAt: new Date(),
-      },
-    });
+    const user = await db.queryOne(
+      'SELECT * FROM users WHERE id = ?',
+      [userId]
+    );
+
+    const updated = await db.queryOne(
+      'SELECT * FROM inscription_requests WHERE id = ?',
+      [id]
+    );
 
     // Send approval email with temporary password
     const approvalTemplate = getEmailTemplate('inscription-approved', {

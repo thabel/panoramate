@@ -17,10 +17,10 @@ export async function POST(
     }
 
     // Check tour exists and is owned by user's org
-    const tour = await db.tour.findUnique({
-      where: { id: params.id },
-      include: { images: true },
-    });
+    const tour = await db.queryOne(
+      'SELECT * FROM Tour WHERE id = ?',
+      [params.id]
+    );
 
     if (!tour) {
       return NextResponse.json(
@@ -28,6 +28,13 @@ export async function POST(
         { status: 404 }
       );
     }
+
+    // Get tour images count
+    const imagesCountResult: any = await db.queryOne(
+      'SELECT COUNT(*) as count FROM TourImage WHERE tourId = ?',
+      [params.id]
+    );
+    const tourImagesCount = imagesCountResult?.count || 0;
 
     // Check if user can access this tour (organization isolation + VIEWER read-only)
     const accessCheck = await canAccessTour(authPayload, params.id, 'write');
@@ -38,9 +45,10 @@ export async function POST(
       );
     }
 
-    const org = await db.organization.findUnique({
-      where: { id: authPayload.organizationId },
-    });
+    const org = await db.queryOne(
+      'SELECT * FROM Organization WHERE id = ?',
+      [authPayload.organizationId]
+    );
 
     if (!org) {
       return NextResponse.json(
@@ -99,29 +107,43 @@ export async function POST(
         }
 
         totalStorageAdded += sizeMb;
-        const order = tour.images.length + createdImages.length;
+        const order = tourImagesCount + createdImages.length;
 
-        const image = await db.tourImage.create({
-          data: {
-            tourId: tour.id,
+        // Create image
+        const imageId = require('crypto').randomUUID();
+        await db.execute(
+          `INSERT INTO TourImage (
+            id, tourId, filename, originalName, mimeType, sizeMb,
+            width, height, \`order\`, title, initialYaw, initialPitch, initialFov, createdAt
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
+          [
+            imageId,
+            tour.id,
             filename,
-            originalName: file.name,
-            mimeType: file.type,
+            file.name,
+            file.type,
             sizeMb,
             width,
             height,
             order,
-            title: file.name.split('.')[0],
-          },
-        });
+            file.name.split('.')[0],
+            0, // initialYaw
+            0, // initialPitch
+            90, // initialFov
+          ]
+        );
 
         // Update organization storage
-        await db.organization.update({
-          where: { id: org.id },
-          data: {
-            usedStorageMb: org.usedStorageMb + sizeMb,
-          },
-        });
+        await db.execute(
+          'UPDATE Organization SET usedStorageMb = usedStorageMb + ? WHERE id = ?',
+          [sizeMb, org.id]
+        );
+
+        // Fetch created image
+        const image = await db.queryOne(
+          'SELECT * FROM TourImage WHERE id = ?',
+          [imageId]
+        );
 
         createdImages.push(image);
       } catch (error) {
@@ -172,10 +194,13 @@ export async function DELETE(
       );
     }
 
-    const image = await db.tourImage.findUnique({
-      where: { id: imageId },
-      include: { tour: true },
-    });
+    const image: any = await db.queryOne(
+      `SELECT ti.*, t.organizationId
+       FROM TourImage ti
+       JOIN Tour t ON ti.tourId = t.id
+       WHERE ti.id = ?`,
+      [imageId]
+    );
 
     if (!image) {
       return NextResponse.json(
@@ -189,19 +214,22 @@ export async function DELETE(
     await deleteFile(image.filename);
 
     // Update organization storage
-    await db.organization.update({
-      where: { id: image.tour.organizationId },
-      data: {
-        usedStorageMb: {
-          decrement: image.sizeMb,
-        },
-      },
-    });
+    await db.execute(
+      'UPDATE Organization SET usedStorageMb = usedStorageMb - ? WHERE id = ?',
+      [image.sizeMb, image.organizationId]
+    );
 
-    // Delete image (cascade will delete hotspots)
-    await db.tourImage.delete({
-      where: { id: imageId },
-    });
+    // Delete hotspots first
+    await db.execute(
+      'DELETE FROM Hotspot WHERE imageId = ?',
+      [imageId]
+    );
+
+    // Delete image
+    await db.execute(
+      'DELETE FROM TourImage WHERE id = ?',
+      [imageId]
+    );
 
     return NextResponse.json(
       { success: true, message: 'Image deleted' },
@@ -236,10 +264,10 @@ export async function PATCH(
       );
     }
 
-    const image = await db.tourImage.findUnique({
-      where: { id: imageId },
-      include: { tour: true },
-    });
+    const image = await db.queryOne(
+      'SELECT * FROM TourImage WHERE id = ?',
+      [imageId]
+    );
 
     if (!image) {
       return NextResponse.json(
@@ -249,15 +277,39 @@ export async function PATCH(
     }
 
     // RESTRICTION DISABLED: all authenticated users can update images
-    const updatedImage = await db.tourImage.update({
-      where: { id: imageId },
-      data: {
-        title: title !== undefined ? title : undefined,
-        initialYaw: initialYaw !== undefined ? initialYaw : undefined,
-        initialPitch: initialPitch !== undefined ? initialPitch : undefined,
-        initialFov: initialFov !== undefined ? initialFov : undefined,
-      },
-    });
+    // Build UPDATE query dynamically
+    const updates: string[] = [];
+    const values: any[] = [];
+
+    if (title !== undefined) {
+      updates.push('title = ?');
+      values.push(title);
+    }
+    if (initialYaw !== undefined) {
+      updates.push('initialYaw = ?');
+      values.push(initialYaw);
+    }
+    if (initialPitch !== undefined) {
+      updates.push('initialPitch = ?');
+      values.push(initialPitch);
+    }
+    if (initialFov !== undefined) {
+      updates.push('initialFov = ?');
+      values.push(initialFov);
+    }
+
+    if (updates.length > 0) {
+      values.push(imageId);
+      await db.execute(
+        `UPDATE TourImage SET ${updates.join(', ')} WHERE id = ?`,
+        values
+      );
+    }
+
+    const updatedImage = await db.queryOne(
+      'SELECT * FROM TourImage WHERE id = ?',
+      [imageId]
+    );
 
     return NextResponse.json(
       {

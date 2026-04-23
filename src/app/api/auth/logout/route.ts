@@ -8,9 +8,7 @@ export async function POST(request: NextRequest) {
 
     if (user) {
       // Delete all sessions for this user
-      await db.session.deleteMany({
-        where: { userId: user.userId },
-      });
+      await db.execute('DELETE FROM sessions WHERE userId = ?', [user.userId]);
     }
 
     const response = NextResponse.json(

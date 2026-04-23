@@ -1,6 +1,7 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { db } from '@/lib/db';
 import { hashPassword } from '@/lib/auth';
+import { v4 as uuidv4 } from 'uuid';
 
 /**
  * Admin endpoint to create users via API
@@ -51,9 +52,10 @@ export async function POST(request: NextRequest) {
 
     // Check if user already exists
     console.log('[CREATE-USER] Checking if user exists:', email);
-    const existingUser = await db.user.findUnique({
-      where: { email },
-    });
+    const existingUser = await db.queryOne(
+      'SELECT * FROM users WHERE email = ?',
+      [email]
+    );
 
     if (existingUser) {
       console.warn('[CREATE-USER] User already exists:', email);
@@ -72,9 +74,10 @@ export async function POST(request: NextRequest) {
 
     if (organizationName && organizationSlug) {
       // Check if org already exists
-      const existingOrg = await db.organization.findUnique({
-        where: { slug: organizationSlug },
-      });
+      const existingOrg = await db.queryOne(
+        'SELECT * FROM organizations WHERE slug = ?',
+        [organizationSlug]
+      );
 
       if (existingOrg) {
         console.log('[CREATE-USER] Using existing organization:', organizationSlug);
@@ -82,31 +85,48 @@ export async function POST(request: NextRequest) {
       } else {
         // Create new organization
         console.log('[CREATE-USER] Creating new organization:', organizationName);
-        organization = await db.organization.create({
-          data: {
-            name: organizationName,
-            slug: organizationSlug,
-            plan: 'FREE_TRIAL',
-            subscriptionStatus: 'TRIALING',
-            trialEndsAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
-          },
-        });
+        const orgId = uuidv4();
+        const now = new Date();
+        const trialEndsAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
+
+        await db.execute(
+          `INSERT INTO organizations (id, name, slug, plan, subscriptionStatus, trialEndsAt, createdAt, updatedAt)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+          [orgId, organizationName, organizationSlug, 'FREE_TRIAL', 'TRIALING', trialEndsAt, now, now]
+        );
+
+        organization = await db.queryOne(
+          'SELECT * FROM organizations WHERE id = ?',
+          [orgId]
+        );
         console.log('[CREATE-USER] Organization created:', organization.id);
       }
     } else {
       // Use or create default test organization
       console.log('[CREATE-USER] Using/creating default organization (test-org)');
-      organization = await db.organization.upsert({
-        where: { slug: 'test-org' },
-        update: {},
-        create: {
-          name: 'Test Organization',
-          slug: 'test-org',
-          plan: 'FREE_TRIAL',
-          subscriptionStatus: 'TRIALING',
-          trialEndsAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
-        },
-      });
+      const existingTestOrg = await db.queryOne(
+        'SELECT * FROM organizations WHERE slug = ?',
+        ['test-org']
+      );
+
+      if (existingTestOrg) {
+        organization = existingTestOrg;
+      } else {
+        const orgId = uuidv4();
+        const now = new Date();
+        const trialEndsAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
+
+        await db.execute(
+          `INSERT INTO organizations (id, name, slug, plan, subscriptionStatus, trialEndsAt, createdAt, updatedAt)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+          [orgId, 'Test Organization', 'test-org', 'FREE_TRIAL', 'TRIALING', trialEndsAt, now, now]
+        );
+
+        organization = await db.queryOne(
+          'SELECT * FROM organizations WHERE id = ?',
+          [orgId]
+        );
+      }
     }
 
     // Hash password
@@ -115,20 +135,19 @@ export async function POST(request: NextRequest) {
 
     // Create user
     console.log('[CREATE-USER] Creating user:', { email, firstName, role, organizationId: organization.id });
-    const user = await db.user.create({
-      data: {
-        email,
-        password: hashedPassword,
-        firstName,
-        lastName,
-        role,
-        isVerified: true,
-        organizationId: organization.id,
-      },
-      include: {
-        organization: true,
-      },
-    });
+    const userId = uuidv4();
+    const now = new Date();
+
+    await db.execute(
+      `INSERT INTO users (id, email, password, firstName, lastName, role, isVerified, organizationId, createdAt, updatedAt)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [userId, email, hashedPassword, firstName, lastName, role, true, organization.id, now, now]
+    );
+
+    const user = await db.queryOne(
+      'SELECT * FROM users WHERE id = ?',
+      [userId]
+    );
 
     console.log('[CREATE-USER] User created successfully:', user.id);
 

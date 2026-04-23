@@ -23,16 +23,30 @@ async function verifySuperAdminAuth(request: NextRequest) {
     }
 
     // Get user and check if SUPER_ADMIN (only SUPER_ADMIN can reject inscriptions)
-    const user = await db.user.findUnique({
-      where: { id: payload.userId as string },
-      include: { organization: true },
-    });
+    const user = await db.queryOne(
+      `SELECT u.*, o.id as org_id, o.name as org_name, o.slug as org_slug, o.plan as org_plan
+       FROM users u
+       LEFT JOIN organizations o ON u.organizationId = o.id
+       WHERE u.id = ?`,
+      [payload.userId as string]
+    );
 
     if (!user || user.role !== 'SUPER_ADMIN') {
       return null;
     }
 
-    return user;
+    // Transform to match Prisma structure
+    const userWithOrg = {
+      ...user,
+      organization: user.org_id ? {
+        id: user.org_id,
+        name: user.org_name,
+        slug: user.org_slug,
+        plan: user.org_plan
+      } : null
+    };
+
+    return userWithOrg;
   } catch (error) {
     return null;
   }
@@ -58,9 +72,10 @@ export async function POST(
     const { id } = params;
 
     // Get the inscription request
-    const inscriptionRequest = await db.inscriptionRequest.findUnique({
-      where: { id },
-    });
+    const inscriptionRequest = await db.queryOne(
+      'SELECT * FROM inscription_requests WHERE id = ?',
+      [id]
+    );
 
     if (!inscriptionRequest) {
       return NextResponse.json(
@@ -77,13 +92,16 @@ export async function POST(
     }
 
     // Update status to REJECTED
-    const updated = await db.inscriptionRequest.update({
-      where: { id },
-      data: {
-        status: 'REJECTED',
-        rejectionReason: rejectionReason || undefined,
-      },
-    });
+    const now = new Date();
+    await db.execute(
+      'UPDATE inscription_requests SET status = ?, rejectionReason = ?, updatedAt = ? WHERE id = ?',
+      ['REJECTED', rejectionReason || null, now, id]
+    );
+
+    const updated = await db.queryOne(
+      'SELECT * FROM inscription_requests WHERE id = ?',
+      [id]
+    );
 
     logger.info({
       event: 'inscription_request_rejected',

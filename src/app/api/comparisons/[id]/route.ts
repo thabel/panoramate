@@ -13,14 +13,10 @@ export async function GET(
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const comparison = await db.comparison.findUnique({
-            where: { id: params.id },
-            include: {
-                images: {
-                    orderBy: { captureDate: 'asc' },
-                },
-            },
-        });
+        const comparison = await db.queryOne(
+            'SELECT * FROM comparisons WHERE id = ?',
+            [params.id]
+        );
 
         if (!comparison) {
             return NextResponse.json(
@@ -31,7 +27,17 @@ export async function GET(
 
         // CHECK: authPayload.organizationId === comparison.organizationId
 
-        return NextResponse.json({ success: true, data: comparison });
+        const images: any = await db.query(
+            'SELECT * FROM comparison_images WHERE comparisonId = ? ORDER BY captureDate ASC',
+            [params.id]
+        );
+
+        const comparisonData = {
+            ...comparison,
+            images: images || []
+        };
+
+        return NextResponse.json({ success: true, data: comparisonData });
     } catch (error) {
         console.error('Get comparison error:', error);
         return NextResponse.json(
@@ -51,10 +57,10 @@ export async function DELETE(
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const comparison = await db.comparison.findUnique({
-            where: { id: params.id },
-            include: { images: true },
-        });
+        const comparison = await db.queryOne(
+            'SELECT * FROM comparisons WHERE id = ?',
+            [params.id]
+        );
 
         if (!comparison) {
             return NextResponse.json(
@@ -63,23 +69,28 @@ export async function DELETE(
             );
         }
 
-        // Delete files
-        for (const image of comparison.images) {
-            await deleteFile(image.filename);
+        const images: any = await db.query(
+            'SELECT * FROM comparison_images WHERE comparisonId = ?',
+            [params.id]
+        );
 
-            // Update organization storage
-            await db.organization.update({
-                where: { id: comparison.organizationId },
-                data: {
-                    usedStorageMb: {
-                        decrement: image.sizeMb,
-                    },
-                },
-            });
-        }
+        // Delete files and update storage in a transaction
+        await db.transaction(async (connection) => {
+            for (const image of images) {
+                await deleteFile(image.filename);
 
-        await db.comparison.delete({
-            where: { id: params.id },
+                // Update organization storage
+                await connection.execute(
+                    'UPDATE organizations SET usedStorageMb = usedStorageMb - ? WHERE id = ?',
+                    [image.sizeMb, comparison.organizationId]
+                );
+            }
+
+            // Delete comparison (CASCADE will delete images)
+            await connection.execute(
+                'DELETE FROM comparisons WHERE id = ?',
+                [params.id]
+            );
         });
 
         return NextResponse.json({ success: true, message: 'Comparison deleted' });

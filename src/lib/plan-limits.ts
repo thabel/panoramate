@@ -36,9 +36,10 @@ export async function canCreateTour(authPayload: AuthPayload): Promise<{
   }
 
   // Get organization
-  const org = await db.organization.findUnique({
-    where: { id: authPayload.organizationId },
-  });
+  const org = await db.queryOne(
+    'SELECT * FROM Organization WHERE id = ?',
+    [authPayload.organizationId]
+  );
 
   if (!org) {
     return {
@@ -48,7 +49,7 @@ export async function canCreateTour(authPayload: AuthPayload): Promise<{
   }
 
   // Check if trial has expired for FREE_TRIAL plan
-  if (org.plan === 'FREE_TRIAL' && isTrialExpired(org.trialEndsAt)) {
+  if (org.plan === 'FREE_TRIAL' && isTrialExpired(new Date(org.trialEndsAt))) {
     return {
       allowed: false,
       reason: 'Your free trial has expired. Please upgrade your plan.',
@@ -56,9 +57,11 @@ export async function canCreateTour(authPayload: AuthPayload): Promise<{
   }
 
   // Check tour limit
-  const tourCount = await db.tour.count({
-    where: { organizationId: authPayload.organizationId },
-  });
+  const tourCountResult: any = await db.queryOne(
+    'SELECT COUNT(*) as count FROM Tour WHERE organizationId = ?',
+    [authPayload.organizationId]
+  );
+  const tourCount = tourCountResult?.count || 0;
 
   const planLimits = PLAN_LIMITS[org.plan as keyof typeof PLAN_LIMITS];
   if (!planLimits) {
@@ -96,9 +99,10 @@ export async function canAddImagesToTour(
   }
 
   // Get organization
-  const org = await db.organization.findUnique({
-    where: { id: authPayload.organizationId },
-  });
+  const org = await db.queryOne(
+    'SELECT * FROM Organization WHERE id = ?',
+    [authPayload.organizationId]
+  );
 
   if (!org) {
     return {
@@ -108,7 +112,7 @@ export async function canAddImagesToTour(
   }
 
   // Check if trial has expired
-  if (org.plan === 'FREE_TRIAL' && isTrialExpired(org.trialEndsAt)) {
+  if (org.plan === 'FREE_TRIAL' && isTrialExpired(new Date(org.trialEndsAt))) {
     return {
       allowed: false,
       reason: 'Your free trial has expired. Please upgrade your plan.',
@@ -116,9 +120,11 @@ export async function canAddImagesToTour(
   }
 
   // Get current image count in this tour
-  const imageCount = await db.tourImage.count({
-    where: { tourId },
-  });
+  const imageCountResult: any = await db.queryOne(
+    'SELECT COUNT(*) as count FROM TourImage WHERE tourId = ?',
+    [tourId]
+  );
+  const imageCount = imageCountResult?.count || 0;
 
   const planLimits = PLAN_LIMITS[org.plan as keyof typeof PLAN_LIMITS];
   if (!planLimits) {
@@ -157,9 +163,10 @@ export async function canAddStorage(
     return { allowed: true };
   }
 
-  const org = await db.organization.findUnique({
-    where: { id: authPayload.organizationId },
-  });
+  const org = await db.queryOne(
+    'SELECT * FROM Organization WHERE id = ?',
+    [authPayload.organizationId]
+  );
 
   if (!org) {
     return {

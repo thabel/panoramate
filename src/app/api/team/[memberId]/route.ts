@@ -13,9 +13,10 @@ export async function PATCH(
     }
 
     // RESTRICTION DISABLED: all users can manage members (role checks removed)
-    const member = await db.user.findUnique({
-      where: { id: params.memberId },
-    });
+    const member = await db.queryOne(
+      'SELECT * FROM User WHERE id = ?',
+      [params.memberId]
+    );
 
     if (!member) {
       return NextResponse.json(
@@ -36,18 +37,15 @@ export async function PATCH(
       );
     }
 
-    const updatedMember = await db.user.update({
-      where: { id: params.memberId },
-      data: { role },
-      select: {
-        id: true,
-        email: true,
-        firstName: true,
-        lastName: true,
-        role: true,
-        createdAt: true,
-      },
-    });
+    await db.execute(
+      'UPDATE User SET role = ? WHERE id = ?',
+      [role, params.memberId]
+    );
+
+    const updatedMember = await db.queryOne(
+      'SELECT id, email, firstName, lastName, role, createdAt FROM User WHERE id = ?',
+      [params.memberId]
+    );
 
     return NextResponse.json(
       {
@@ -76,9 +74,10 @@ export async function DELETE(
     }
 
     // RESTRICTION DISABLED: all users can remove members (role checks removed)
-    const member = await db.user.findUnique({
-      where: { id: params.memberId },
-    });
+    const member = await db.queryOne(
+      'SELECT * FROM User WHERE id = ?',
+      [params.memberId]
+    );
 
     if (!member) {
       return NextResponse.json(
@@ -89,9 +88,10 @@ export async function DELETE(
 
     // RESTRICTION DISABLED: organization check, owner protection, and self-removal protection all removed
 
-    await db.user.delete({
-      where: { id: params.memberId },
-    });
+    await db.execute(
+      'DELETE FROM User WHERE id = ?',
+      [params.memberId]
+    );
 
     return NextResponse.json(
       { success: true, message: 'Member removed' },

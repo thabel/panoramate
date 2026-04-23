@@ -15,12 +15,7 @@ RUN npm ci --no-audit
 
 COPY . .
 
-# Only pass DATABASE_URL which is required for prisma generate
-# Runtime config comes from .env file via docker-compose
-ARG DATABASE_URL="mysql://user:password@db:3306/db"
-ENV DATABASE_URL=$DATABASE_URL
-
-RUN npx prisma generate
+# Build Next.js (no Prisma generation needed with mysql2)
 RUN npm run build
 
 
@@ -40,16 +35,15 @@ RUN apt-get update && apt-get install -y \
   && rm -rf /var/lib/apt/lists/*
 
 COPY package*.json ./
-RUN npm ci --no-audit
+RUN npm ci --no-audit --omit=dev
 
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
-COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/next.config.js ./next.config.js
 
 RUN mkdir -p /app/uploads
 
 EXPOSE 3000
 
-# Start based on NODE_ENV from runtime
+# Start Next.js production server
 CMD ["node_modules/.bin/next", "start"]

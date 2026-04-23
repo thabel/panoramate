@@ -3,10 +3,16 @@ import { db } from '@/lib/db';
 
 export async function GET(request: NextRequest) {
   try {
-    const plans = await db.plan.findMany({
-      where: { isActive: true },
-      orderBy: { maxTours: 'asc' },
-    });
+    const plans: any = await db.query(
+      'SELECT * FROM Plan WHERE isActive = ? ORDER BY maxTours ASC',
+      [true]
+    );
+
+    // Parse JSON features field
+    const plansData = plans.map((p: any) => ({
+      ...p,
+      features: typeof p.features === 'string' ? JSON.parse(p.features) : p.features,
+    }));
 
     if (plans.length === 0) {
       // Return hardcoded plans if no seed data
@@ -86,7 +92,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(
       {
         success: true,
-        data: plans,
+        data: plansData,
       },
       { status: 200 }
     );

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { logger } from '@/lib/logger';
 import { sendEmail, getEmailTemplate } from '@/lib/email';
+import { v4 as uuidv4 } from 'uuid';
 
 interface InscriptionRequestData {
   type: 'FREE' | 'PROFESSIONAL';
@@ -21,24 +22,6 @@ export async function POST(request: NextRequest) {
   try {
     const data: InscriptionRequestData = await request.json();
     const email = data.email?.trim().toLowerCase();
-    const prismaInscriptionRequest = (db as any).inscriptionRequest;
-
-    if (
-      !prismaInscriptionRequest ||
-      typeof prismaInscriptionRequest.findUnique !== 'function' ||
-      typeof prismaInscriptionRequest.create !== 'function'
-    ) {
-      logger.error({
-        event: 'inscription_request_delegate_missing',
-        hasDb: Boolean(db),
-        hasInscriptionRequest: Boolean(prismaInscriptionRequest),
-      });
-
-      return NextResponse.json(
-        { error: 'Database client is not ready. Please restart the server and try again.' },
-        { status: 500 }
-      );
-    }
 
     // Validate required fields
     if (!data.type || !data.firstName || !data.lastName || !email) {
@@ -56,9 +39,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if email already exists
-    const existingRequest = await prismaInscriptionRequest.findUnique({
-      where: { email },
-    });
+    const existingRequest = await db.queryOne(
+      'SELECT * FROM inscription_requests WHERE email = ?',
+      [email]
+    );
 
     if (existingRequest) {
       return NextResponse.json(
@@ -68,22 +52,35 @@ export async function POST(request: NextRequest) {
     }
 
     // Create inscription request
-    const inscriptionRequest = await prismaInscriptionRequest.create({
-      data: {
-        type: data.type,
-        firstName: data.firstName,
-        lastName: data.lastName,
+    const inscriptionId = uuidv4();
+    const now = new Date();
+
+    await db.execute(
+      `INSERT INTO inscription_requests (id, type, firstName, lastName, email, phone, company, country, numberOfTours, imagesPerTour, teamMembers, frequency, status, createdAt, updatedAt)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        inscriptionId,
+        data.type,
+        data.firstName,
+        data.lastName,
         email,
-        phone: data.phone,
-        company: data.company,
-        country: data.country,
-        numberOfTours: data.numberOfTours ? parseInt(String(data.numberOfTours)) : null,
-        imagesPerTour: data.imagesPerTour ? parseInt(String(data.imagesPerTour)) : null,
-        teamMembers: data.teamMembers ? parseInt(String(data.teamMembers)) : null,
-        frequency: data.frequency,
-        status: 'PENDING',
-      },
-    });
+        data.phone || null,
+        data.company || null,
+        data.country || null,
+        data.numberOfTours ? parseInt(String(data.numberOfTours)) : null,
+        data.imagesPerTour ? parseInt(String(data.imagesPerTour)) : null,
+        data.teamMembers ? parseInt(String(data.teamMembers)) : null,
+        data.frequency || null,
+        'PENDING',
+        now,
+        now
+      ]
+    );
+
+    const inscriptionRequest = await db.queryOne(
+      'SELECT * FROM inscription_requests WHERE id = ?',
+      [inscriptionId]
+    );
 
     // Log the inscription request
     console.info({

@@ -20,9 +20,10 @@ export async function POST(
     }
 
     // Check tour exists and is owned by user's org
-    const tour = await db.tour.findUnique({
-      where: { id: params.id },
-    });
+    const tour = await db.queryOne(
+      'SELECT * FROM Tour WHERE id = ?',
+      [params.id]
+    );
 
     if (!tour) {
       return NextResponse.json(
@@ -32,9 +33,10 @@ export async function POST(
     }
 
     // Check organization exists
-    const org = await db.organization.findUnique({
-      where: { id: authPayload.organizationId },
-    });
+    const org = await db.queryOne(
+      'SELECT * FROM Organization WHERE id = ?',
+      [authPayload.organizationId]
+    );
 
     if (!org) {
       return NextResponse.json(
@@ -129,9 +131,10 @@ export async function DELETE(
     }
 
     // Check tour exists
-    const tour = await db.tour.findUnique({
-      where: { id: params.id },
-    });
+    const tour = await db.queryOne(
+      'SELECT * FROM Tour WHERE id = ?',
+      [params.id]
+    );
 
     if (!tour) {
       return NextResponse.json(

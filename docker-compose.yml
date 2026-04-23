@@ -42,8 +42,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      args:
-        DATABASE_URL: ${DATABASE_URL}
 
     container_name: bativy-app
     restart: unless-stopped
@@ -53,7 +51,14 @@ services:
 
     environment:
       NODE_ENV: development
-      DATABASE_URL: ${DATABASE_URL}
+
+      # MySQL connection (mysql2 driver)
+      DATABASE_HOST: ${DATABASE_HOST:-db}
+      DATABASE_PORT: ${DATABASE_PORT:-3306}
+      DATABASE_USER: ${DATABASE_USER:-bativy}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD:-bativy_password}
+      DATABASE_NAME: ${DATABASE_NAME:-bativy}
+
       JWT_SECRET: ${JWT_SECRET}
 
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}

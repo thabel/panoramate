@@ -17,10 +17,10 @@ export async function canAccessTour(
   tourId: string,
   action: 'read' | 'write' = 'read'
 ): Promise<{ allowed: boolean; reason?: string }> {
-  const tour = await db.tour.findUnique({
-    where: { id: tourId },
-    select: { organizationId: true },
-  });
+  const tour = await db.queryOne(
+    'SELECT organizationId FROM Tour WHERE id = ?',
+    [tourId]
+  );
 
   if (!tour) {
     return { allowed: false, reason: 'Tour not found' };
@@ -53,21 +53,20 @@ export async function canAccessImage(
   imageId: string,
   action: 'read' | 'write' = 'read'
 ): Promise<{ allowed: boolean; reason?: string }> {
-  const image = await db.tourImage.findUnique({
-    where: { id: imageId },
-    select: {
-      tour: {
-        select: { organizationId: true },
-      },
-    },
-  });
+  const image = await db.queryOne(
+    `SELECT t.organizationId
+     FROM TourImage ti
+     JOIN Tour t ON ti.tourId = t.id
+     WHERE ti.id = ?`,
+    [imageId]
+  );
 
   if (!image) {
     return { allowed: false, reason: 'Image not found' };
   }
 
   // Check organization membership
-  if (image.tour.organizationId !== authPayload.organizationId) {
+  if (image.organizationId !== authPayload.organizationId) {
     return {
       allowed: false,
       reason: 'You do not have access to this image',
@@ -93,25 +92,21 @@ export async function canAccessHotspot(
   hotspotId: string,
   action: 'read' | 'write' = 'read'
 ): Promise<{ allowed: boolean; reason?: string }> {
-  const hotspot = await db.hotspot.findUnique({
-    where: { id: hotspotId },
-    select: {
-      image: {
-        select: {
-          tour: {
-            select: { organizationId: true },
-          },
-        },
-      },
-    },
-  });
+  const hotspot = await db.queryOne(
+    `SELECT t.organizationId
+     FROM Hotspot h
+     JOIN TourImage ti ON h.imageId = ti.id
+     JOIN Tour t ON ti.tourId = t.id
+     WHERE h.id = ?`,
+    [hotspotId]
+  );
 
   if (!hotspot) {
     return { allowed: false, reason: 'Hotspot not found' };
   }
 
   // Check organization membership
-  if (hotspot.image.tour.organizationId !== authPayload.organizationId) {
+  if (hotspot.organizationId !== authPayload.organizationId) {
     return {
       allowed: false,
       reason: 'You do not have access to this hotspot',
@@ -142,17 +137,19 @@ export async function logAuditEvent(
   userAgent?: string
 ) {
   try {
-    await db.auditLog.create({
-      data: {
+    await db.execute(
+      `INSERT INTO AuditLog (id, userId, action, resourceType, resourceId, changes, ipAddress, userAgent, createdAt)
+       VALUES (UUID(), ?, ?, ?, ?, ?, ?, ?, NOW())`,
+      [
         userId,
         action,
         resourceType,
         resourceId,
-        changes: changes || undefined,
-        ipAddress,
-        userAgent,
-      },
-    });
+        changes ? JSON.stringify(changes) : null,
+        ipAddress || null,
+        userAgent || null,
+      ]
+    );
   } catch (error) {
     console.error('Failed to log audit event:', error);
     // Don't throw - audit logging failure should not break the main operation

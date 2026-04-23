@@ -1,4 +1,4 @@
-import { PlanType, UserRole, TourStatus, HotspotType, AnimationType, SubscriptionStatus } from '../../prisma/generated';
+import { PlanType, UserRole, TourStatus, HotspotType, AnimationType, SubscriptionStatus } from '@/lib/types';
 
 export interface AuthUser {
   id: string;
