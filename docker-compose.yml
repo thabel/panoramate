@@ -1,0 +1,124 @@
+version: "3.9"
+
+services:
+  # ======================
+  # MYSQL DATABASE
+  # ======================
+  db:
+    image: mysql:8.0
+    container_name: bativy-db
+    restart: unless-stopped
+
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${DATABASE_NAME}
+      MYSQL_USER: ${DATABASE_USER}
+      MYSQL_PASSWORD: ${DATABASE_PASSWORD}
+      MYSQL_ROOT_HOST: "%"
+
+    ports:
+      - "${DB_PORT:-3306}:3306"
+
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./docker/mysql/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+
+    networks:
+      - bativy-network
+
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 10s
+      retries: 5
+      interval: 10s
+
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+
+
+  # ======================
+  # NEXT.JS APP (DEV)
+  # ======================
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    container_name: bativy-app
+    restart: unless-stopped
+
+    ports:
+      - "${APP_PORT:-3000}:3000"
+
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: ${DATABASE_URL}
+      JWT_SECRET: ${JWT_SECRET}
+
+      NEXTAUTH_URL: http://localhost:3000
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+
+      EMAIL_PROVIDER: smtp
+      EMAIL_SMTP_HOST: mailhog
+      EMAIL_SMTP_PORT: 1025
+      EMAIL_SMTP_SECURE: "false"
+
+      EMAIL_FROM_NAME: Bativy
+      EMAIL_FROM_ADDRESS: noreply@bativy.com
+    args:
+      DATABASE_URL: ${DATABASE_URL}
+      JWT_SECRET: ${JWT_SECRET}
+      NEXTAUTH_URL: ${NEXTAUTH_URL}
+      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
+      STRIPE_PUBLISHABLE_KEY: ${STRIPE_PUBLISHABLE_KEY}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
+      STRIPE_PRICE_STARTER_MONTHLY: ${STRIPE_PRICE_STARTER_MONTHLY}
+      STRIPE_PRICE_PROFESSIONAL_MONTHLY: ${STRIPE_PRICE_PROFESSIONAL_MONTHLY}
+      STRIPE_PRICE_ENTERPRISE_MONTHLY: ${STRIPE_PRICE_ENTERPRISE_MONTHLY}
+    depends_on:
+      db:
+        condition: service_healthy
+      mailhog:
+        condition: service_started
+
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/.next
+
+    networks:
+      - bativy-network
+
+    command: npm run dev
+
+
+  # ======================
+  # MAILHOG (EMAIL TESTING)
+  # ======================
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: bativy-mailhog
+    restart: unless-stopped
+
+    ports:
+      - "${MAILHOG_WEB_PORT:-1080}:1080"
+      - "${MAILHOG_SMTP_PORT:-1025}:1025"
+
+    networks:
+      - bativy-network
+
+
+# ======================
+# VOLUMES
+# ======================
+volumes:
+  db_data:
+    driver: local
+
+
+# ======================
+# NETWORK
+# ======================
+networks:
+  bativy-network:
+    driver: bridge
