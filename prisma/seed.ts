@@ -1,7 +1,19 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from './generated';
+import { PrismaMariaDb } from "@prisma/adapter-mariadb";
 import bcrypt from 'bcryptjs';
 
-const prisma = new PrismaClient();
+const pool = new PrismaMariaDb({
+  database: process.env.DATABASE_NAME,
+  host: process.env.DATABASE_HOST,
+  port: Number(process.env.DATABASE_PORT),
+  user: process.env.DATABASE_USER,
+  password: process.env.DATABASE_PASSWORD,
+  allowPublicKeyRetrieval: true,
+});
+
+const prisma = new PrismaClient({
+  adapter: pool,
+});
 
 async function main() {
   // Create plans
@@ -132,7 +144,7 @@ async function main() {
       password: hashedPassword,
       firstName: 'Demo',
       lastName: 'User',
-      role: 'OWNER',
+      role: 'ADMIN',
       organizationId: demoOrg.id,
     },
   });

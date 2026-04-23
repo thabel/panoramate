@@ -58,14 +58,14 @@ export async function GET(request: NextRequest) {
         ti.initialFov as firstImage_initialFov,
         ti.createdAt as firstImage_createdAt,
         ti.tourId as firstImage_tourId
-      FROM Tour t
-      LEFT JOIN User u ON t.createdById = u.id
+      FROM tours t
+      LEFT JOIN users u ON t.createdById = u.id
       LEFT JOIN (
         SELECT ti1.*
-        FROM TourImage ti1
+        FROM tour_images ti1
         INNER JOIN (
           SELECT tourId, MIN(\`order\`) as minOrder
-          FROM TourImage
+          FROM tour_images
           GROUP BY tourId
         ) ti2 ON ti1.tourId = ti2.tourId AND ti1.\`order\` = ti2.minOrder
       ) ti ON t.id = ti.tourId
@@ -76,7 +76,7 @@ export async function GET(request: NextRequest) {
 
     const countQuery = `
       SELECT COUNT(*) as total
-      FROM Tour t
+      FROM tours t
       WHERE ${whereClause}
     `;
 
@@ -173,7 +173,7 @@ export async function POST(request: NextRequest) {
 
     // Get organization
     const org = await db.queryOne(
-      'SELECT * FROM Organization WHERE id = ?',
+      'SELECT * FROM organizations WHERE id = ?',
       [authPayload.organizationId]
     );
 
@@ -206,7 +206,7 @@ export async function POST(request: NextRequest) {
     });
 
     await db.execute(
-      `INSERT INTO Tour (
+      `INSERT INTO tours (
         id, title, description, status, shareToken, settings,
         organizationId, createdById, createdAt, updatedAt, isPublic,
         viewCount, backgroundAudioVolume, showSceneMenu, showHotspotTitles
@@ -234,8 +234,8 @@ export async function POST(request: NextRequest) {
         t.*,
         u.firstName as createdBy_firstName,
         u.lastName as createdBy_lastName
-       FROM Tour t
-       JOIN User u ON t.createdById = u.id
+       FROM tours t
+       JOIN users u ON t.createdById = u.id
        WHERE t.id = ?`,
       [tourId]
     );

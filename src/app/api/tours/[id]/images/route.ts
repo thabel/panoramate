@@ -18,7 +18,7 @@ export async function POST(
 
     // Check tour exists and is owned by user's org
     const tour = await db.queryOne(
-      'SELECT * FROM Tour WHERE id = ?',
+      'SELECT * FROM tours WHERE id = ?',
       [params.id]
     );
 
@@ -31,7 +31,7 @@ export async function POST(
 
     // Get tour images count
     const imagesCountResult: any = await db.queryOne(
-      'SELECT COUNT(*) as count FROM TourImage WHERE tourId = ?',
+      'SELECT COUNT(*) as count FROM tour_images WHERE tourId = ?',
       [params.id]
     );
     const tourImagesCount = imagesCountResult?.count || 0;
@@ -46,7 +46,7 @@ export async function POST(
     }
 
     const org = await db.queryOne(
-      'SELECT * FROM Organization WHERE id = ?',
+      'SELECT * FROM organizations WHERE id = ?',
       [authPayload.organizationId]
     );
 
@@ -112,7 +112,7 @@ export async function POST(
         // Create image
         const imageId = require('crypto').randomUUID();
         await db.execute(
-          `INSERT INTO TourImage (
+          `INSERT INTO tour_images (
             id, tourId, filename, originalName, mimeType, sizeMb,
             width, height, \`order\`, title, initialYaw, initialPitch, initialFov, createdAt
           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
@@ -135,13 +135,13 @@ export async function POST(
 
         // Update organization storage
         await db.execute(
-          'UPDATE Organization SET usedStorageMb = usedStorageMb + ? WHERE id = ?',
+          'UPDATE organizations SET usedStorageMb = usedStorageMb + ? WHERE id = ?',
           [sizeMb, org.id]
         );
 
         // Fetch created image
         const image = await db.queryOne(
-          'SELECT * FROM TourImage WHERE id = ?',
+          'SELECT * FROM tour_images WHERE id = ?',
           [imageId]
         );
 
@@ -196,8 +196,8 @@ export async function DELETE(
 
     const image: any = await db.queryOne(
       `SELECT ti.*, t.organizationId
-       FROM TourImage ti
-       JOIN Tour t ON ti.tourId = t.id
+       FROM tour_images ti
+       JOIN tours t ON ti.tourId = t.id
        WHERE ti.id = ?`,
       [imageId]
     );
@@ -215,7 +215,7 @@ export async function DELETE(
 
     // Update organization storage
     await db.execute(
-      'UPDATE Organization SET usedStorageMb = usedStorageMb - ? WHERE id = ?',
+      'UPDATE organizations SET usedStorageMb = usedStorageMb - ? WHERE id = ?',
       [image.sizeMb, image.organizationId]
     );
 
@@ -227,7 +227,7 @@ export async function DELETE(
 
     // Delete image
     await db.execute(
-      'DELETE FROM TourImage WHERE id = ?',
+      'DELETE FROM tour_images WHERE id = ?',
       [imageId]
     );
 
@@ -265,7 +265,7 @@ export async function PATCH(
     }
 
     const image = await db.queryOne(
-      'SELECT * FROM TourImage WHERE id = ?',
+      'SELECT * FROM tour_images WHERE id = ?',
       [imageId]
     );
 
@@ -301,13 +301,13 @@ export async function PATCH(
     if (updates.length > 0) {
       values.push(imageId);
       await db.execute(
-        `UPDATE TourImage SET ${updates.join(', ')} WHERE id = ?`,
+        `UPDATE tour_images SET ${updates.join(', ')} WHERE id = ?`,
         values
       );
     }
 
     const updatedImage = await db.queryOne(
-      'SELECT * FROM TourImage WHERE id = ?',
+      'SELECT * FROM tour_images WHERE id = ?',
       [imageId]
     );
 

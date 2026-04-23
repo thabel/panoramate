@@ -14,8 +14,8 @@ export async function GET(
         o.name as org_name,
         o.slug as org_slug,
         o.logoUrl as org_logoUrl
-       FROM Tour t
-       JOIN Organization o ON t.organizationId = o.id
+       FROM tours t
+       JOIN organizations o ON t.organizationId = o.id
        WHERE t.shareToken = ?`,
       [params.shareToken]
     );
@@ -36,14 +36,14 @@ export async function GET(
 
     // Get images with hotspots
     const imagesRaw: any = await db.query(
-      'SELECT * FROM TourImage WHERE tourId = ? ORDER BY `order` ASC',
+      'SELECT * FROM tour_images WHERE tourId = ? ORDER BY `order` ASC',
       [tourRow.id]
     );
 
     const images = await Promise.all(
       imagesRaw.map(async (img: any) => {
         const hotspots: any = await db.query(
-          'SELECT * FROM Hotspot WHERE imageId = ? ORDER BY createdAt ASC',
+          'SELECT * FROM hotspots WHERE imageId = ? ORDER BY createdAt ASC',
           [img.id]
         );
         return {
@@ -86,7 +86,7 @@ export async function GET(
 
     // Increment view count
     await db.execute(
-      'UPDATE Tour SET viewCount = viewCount + 1 WHERE id = ?',
+      'UPDATE tours SET viewCount = viewCount + 1 WHERE id = ?',
       [tour.id]
     );
 

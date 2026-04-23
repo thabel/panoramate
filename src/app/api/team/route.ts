@@ -13,14 +13,14 @@ export async function GET(request: NextRequest) {
     const [members, pendingInvitations]: any = await Promise.all([
       db.query(
         `SELECT id, email, firstName, lastName, role, avatarUrl, createdAt
-         FROM User
+         FROM users
          WHERE organizationId = ?
          ORDER BY createdAt ASC`,
         [authPayload.organizationId]
       ),
       db.query(
         `SELECT id, email, role, createdAt, expiresAt
-         FROM Invitation
+         FROM invitations
          WHERE organizationId = ? AND acceptedAt IS NULL
          ORDER BY createdAt DESC`,
         [authPayload.organizationId]
@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Only ADMIN and MEMBER can invite (VIEWER cannot invite)
-    if (authPayload.role !== 'ADMIN' && authPayload.role !== 'MEMBER') {
+  if (authPayload.role !== 'ADMIN' && authPayload.role !== 'MEMBER' &&  authPayload.role !== 'SUPER_ADMIN') {
       return NextResponse.json({ error: 'You do not have permission to invite members' }, { status: 403 });
     }
 
@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
 
     // Check if user already exists in org
     const existingUser = await db.queryOne(
-      'SELECT * FROM User WHERE email = ?',
+      'SELECT * FROM users WHERE email = ?',
       [email]
     );
 
@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
 
     // Check if invitation already exists
     const existingInvitation = await db.queryOne(
-      `SELECT * FROM Invitation
+      `SELECT * FROM invitations
        WHERE email = ? AND organizationId = ? AND acceptedAt IS NULL`,
       [email, authPayload.organizationId]
     );
@@ -102,13 +102,13 @@ export async function POST(request: NextRequest) {
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
 
     await db.execute(
-      `INSERT INTO Invitation (id, email, role, token, expiresAt, organizationId, invitedById, createdAt)
+      `INSERT INTO invitations (id, email, role, token, expiresAt, organizationId, invitedById, createdAt)
        VALUES (?, ?, ?, ?, ?, ?, ?, NOW())`,
       [invitationId, email, role, token, expiresAt, authPayload.organizationId, authPayload.userId]
     );
 
     const invitation = await db.queryOne(
-      'SELECT * FROM Invitation WHERE id = ?',
+      'SELECT * FROM invitations WHERE id = ?',
       [invitationId]
     );
 

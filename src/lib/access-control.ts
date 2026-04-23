@@ -18,7 +18,7 @@ export async function canAccessTour(
   action: 'read' | 'write' = 'read'
 ): Promise<{ allowed: boolean; reason?: string }> {
   const tour = await db.queryOne(
-    'SELECT organizationId FROM Tour WHERE id = ?',
+    'SELECT organizationId FROM tours WHERE id = ?',
     [tourId]
   );
 
@@ -55,8 +55,8 @@ export async function canAccessImage(
 ): Promise<{ allowed: boolean; reason?: string }> {
   const image = await db.queryOne(
     `SELECT t.organizationId
-     FROM TourImage ti
-     JOIN Tour t ON ti.tourId = t.id
+     FROM tour_images ti
+     JOIN tours t ON ti.tourId = t.id
      WHERE ti.id = ?`,
     [imageId]
   );
@@ -94,9 +94,9 @@ export async function canAccessHotspot(
 ): Promise<{ allowed: boolean; reason?: string }> {
   const hotspot = await db.queryOne(
     `SELECT t.organizationId
-     FROM Hotspot h
-     JOIN TourImage ti ON h.imageId = ti.id
-     JOIN Tour t ON ti.tourId = t.id
+     FROM hotspots h
+     JOIN tour_images ti ON h.imageId = ti.id
+     JOIN tours t ON ti.tourId = t.id
      WHERE h.id = ?`,
     [hotspotId]
   );
@@ -138,7 +138,7 @@ export async function logAuditEvent(
 ) {
   try {
     await db.execute(
-      `INSERT INTO AuditLog (id, userId, action, resourceType, resourceId, changes, ipAddress, userAgent, createdAt)
+      `INSERT INTO audit_logs (id, userId, action, resourceType, resourceId, changes, ipAddress, userAgent, createdAt)
        VALUES (UUID(), ?, ?, ?, ?, ?, ?, ?, NOW())`,
       [
         userId,

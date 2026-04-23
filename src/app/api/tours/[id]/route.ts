@@ -22,8 +22,8 @@ export async function GET(
         u.firstName as createdBy_firstName,
         u.lastName as createdBy_lastName,
         u.email as createdBy_email
-       FROM Tour t
-       JOIN User u ON t.createdById = u.id
+       FROM tours t
+       JOIN users u ON t.createdById = u.id
        WHERE t.id = ?`,
       [params.id]
     );
@@ -37,7 +37,7 @@ export async function GET(
 
     // Get images with hotspots
     const imagesRaw: any = await db.query(
-      'SELECT * FROM TourImage WHERE tourId = ? ORDER BY `order` ASC',
+      'SELECT * FROM tour_images WHERE tourId = ? ORDER BY `order` ASC',
       [params.id]
     );
 
@@ -45,7 +45,7 @@ export async function GET(
     const images = await Promise.all(
       imagesRaw.map(async (img: any) => {
         const hotspots: any = await db.query(
-          'SELECT * FROM Hotspot WHERE imageId = ? ORDER BY createdAt ASC',
+          'SELECT * FROM hotspots WHERE imageId = ? ORDER BY createdAt ASC',
           [img.id]
         );
         return {
@@ -103,7 +103,7 @@ export async function PATCH(
     }
 
     const tour = await db.queryOne(
-      'SELECT * FROM Tour WHERE id = ?',
+      'SELECT * FROM tours WHERE id = ?',
       [params.id]
     );
 
@@ -171,25 +171,25 @@ export async function PATCH(
     values.push(params.id);
 
     await db.execute(
-      `UPDATE Tour SET ${updates.join(', ')} WHERE id = ?`,
+      `UPDATE tours SET ${updates.join(', ')} WHERE id = ?`,
       values
     );
 
     // Fetch updated tour with images and hotspots
     const updatedTourRow: any = await db.queryOne(
-      'SELECT * FROM Tour WHERE id = ?',
+      'SELECT * FROM tours WHERE id = ?',
       [params.id]
     );
 
     const imagesRaw: any = await db.query(
-      'SELECT * FROM TourImage WHERE tourId = ? ORDER BY `order` ASC',
+      'SELECT * FROM tour_images WHERE tourId = ? ORDER BY `order` ASC',
       [params.id]
     );
 
     const images = await Promise.all(
       imagesRaw.map(async (img: any) => {
         const hotspots: any = await db.query(
-          'SELECT * FROM Hotspot WHERE imageId = ? ORDER BY createdAt ASC',
+          'SELECT * FROM hotspots WHERE imageId = ? ORDER BY createdAt ASC',
           [img.id]
         );
         return {
@@ -241,7 +241,7 @@ export async function DELETE(
     }
 
     const tour = await db.queryOne(
-      'SELECT * FROM Tour WHERE id = ?',
+      'SELECT * FROM tours WHERE id = ?',
       [params.id]
     );
 
@@ -263,7 +263,7 @@ export async function DELETE(
 
     // Get all images to delete files
     const images: any = await db.query(
-      'SELECT * FROM TourImage WHERE tourId = ?',
+      'SELECT * FROM tour_images WHERE tourId = ?',
       [params.id]
     );
 
@@ -274,19 +274,19 @@ export async function DELETE(
 
     // Delete hotspots first (foreign key constraint)
     await db.execute(
-      'DELETE FROM Hotspot WHERE imageId IN (SELECT id FROM TourImage WHERE tourId = ?)',
+      'DELETE FROM hotspots WHERE imageId IN (SELECT id FROM tour_images WHERE tourId = ?)',
       [params.id]
     );
 
     // Delete images
     await db.execute(
-      'DELETE FROM TourImage WHERE tourId = ?',
+      'DELETE FROM tour_images WHERE tourId = ?',
       [params.id]
     );
 
     // Delete tour
     await db.execute(
-      'DELETE FROM Tour WHERE id = ?',
+      'DELETE FROM tours WHERE id = ?',
       [params.id]
     );
 

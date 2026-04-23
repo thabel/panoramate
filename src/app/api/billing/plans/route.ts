@@ -4,7 +4,7 @@ import { db } from '@/lib/db';
 export async function GET(request: NextRequest) {
   try {
     const plans: any = await db.query(
-      'SELECT * FROM Plan WHERE isActive = ? ORDER BY maxTours ASC',
+      'SELECT * FROM plans WHERE isActive = ? ORDER BY maxTours ASC',
       [true]
     );
 

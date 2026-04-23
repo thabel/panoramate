@@ -37,7 +37,7 @@ export async function canCreateTour(authPayload: AuthPayload): Promise<{
 
   // Get organization
   const org = await db.queryOne(
-    'SELECT * FROM Organization WHERE id = ?',
+    'SELECT * FROM organizations WHERE id = ?',
     [authPayload.organizationId]
   );
 
@@ -58,7 +58,7 @@ export async function canCreateTour(authPayload: AuthPayload): Promise<{
 
   // Check tour limit
   const tourCountResult: any = await db.queryOne(
-    'SELECT COUNT(*) as count FROM Tour WHERE organizationId = ?',
+    'SELECT COUNT(*) as count FROM tours WHERE organizationId = ?',
     [authPayload.organizationId]
   );
   const tourCount = tourCountResult?.count || 0;
@@ -100,7 +100,7 @@ export async function canAddImagesToTour(
 
   // Get organization
   const org = await db.queryOne(
-    'SELECT * FROM Organization WHERE id = ?',
+    'SELECT * FROM organizations WHERE id = ?',
     [authPayload.organizationId]
   );
 
@@ -121,7 +121,7 @@ export async function canAddImagesToTour(
 
   // Get current image count in this tour
   const imageCountResult: any = await db.queryOne(
-    'SELECT COUNT(*) as count FROM TourImage WHERE tourId = ?',
+    'SELECT COUNT(*) as count FROM tour_images WHERE tourId = ?',
     [tourId]
   );
   const imageCount = imageCountResult?.count || 0;
@@ -164,7 +164,7 @@ export async function canAddStorage(
   }
 
   const org = await db.queryOne(
-    'SELECT * FROM Organization WHERE id = ?',
+    'SELECT * FROM organizations WHERE id = ?',
     [authPayload.organizationId]
   );
 

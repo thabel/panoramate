@@ -15,7 +15,7 @@ export async function GET(
     }
 
     const image = await db.queryOne(
-      'SELECT * FROM TourImage WHERE id = ?',
+      'SELECT * FROM tour_images WHERE id = ?',
       [params.imageId]
     );
 
@@ -28,7 +28,7 @@ export async function GET(
 
     // Get hotspots for this image
     const hotspots: any = await db.query(
-      'SELECT * FROM Hotspot WHERE imageId = ? ORDER BY createdAt ASC',
+      'SELECT * FROM hotspots WHERE imageId = ? ORDER BY createdAt ASC',
       [params.imageId]
     );
 
@@ -113,7 +113,7 @@ export async function POST(
     }
 
     const image = await db.queryOne(
-      'SELECT * FROM TourImage WHERE id = ?',
+      'SELECT * FROM tour_images WHERE id = ?',
       [params.imageId]
     );
 
@@ -127,7 +127,7 @@ export async function POST(
     // RESTRICTION DISABLED: all authenticated users can create hotspots
     const hotspotId = require('crypto').randomUUID();
     await db.execute(
-      `INSERT INTO Hotspot (
+      `INSERT INTO hotspots (
         id, imageId, type, yaw, pitch, rotation, targetImageId,
         title, content, url, videoUrl, imageUrl, imageUrls,
         animationType, iconUrl, iconName, color, scale, metadata,
@@ -157,7 +157,7 @@ export async function POST(
     );
 
     const hotspot: any = await db.queryOne(
-      'SELECT * FROM Hotspot WHERE id = ?',
+      'SELECT * FROM hotspots WHERE id = ?',
       [hotspotId]
     );
 
@@ -226,7 +226,7 @@ export async function PATCH(
     }
 
     const hotspot: any = await db.queryOne(
-      'SELECT * FROM Hotspot WHERE id = ?',
+      'SELECT * FROM hotspots WHERE id = ?',
       [hotspotId]
     );
 
@@ -344,12 +344,12 @@ export async function PATCH(
     values.push(hotspotId);
 
     await db.execute(
-      `UPDATE Hotspot SET ${updates.join(', ')} WHERE id = ?`,
+      `UPDATE hotspots SET ${updates.join(', ')} WHERE id = ?`,
       values
     );
 
     const updatedHotspot: any = await db.queryOne(
-      'SELECT * FROM Hotspot WHERE id = ?',
+      'SELECT * FROM hotspots WHERE id = ?',
       [hotspotId]
     );
 
@@ -397,7 +397,7 @@ export async function DELETE(
     }
 
     const hotspot = await db.queryOne(
-      'SELECT * FROM Hotspot WHERE id = ?',
+      'SELECT * FROM hotspots WHERE id = ?',
       [hotspotId]
     );
 
@@ -410,7 +410,7 @@ export async function DELETE(
 
     // RESTRICTION DISABLED: all authenticated users can delete hotspots
     await db.execute(
-      'DELETE FROM Hotspot WHERE id = ?',
+      'DELETE FROM hotspots WHERE id = ?',
       [hotspotId]
     );
 

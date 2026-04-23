@@ -34,6 +34,28 @@ services:
 
     command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
 
+    # ======================
+  # PHPMYADMIN
+  # ======================
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin:latest
+    container_name: bativy-phpmyadmin
+    restart: unless-stopped
+
+    ports:
+      - "8081:80"
+
+    environment:
+      PMA_HOST: db
+      PMA_PORT: 3306
+      PMA_ARBITRARY: 0
+
+    depends_on:
+      db:
+        condition: service_healthy
+
+    networks:
+      - bativy-network
 
   # ======================
   # NEXT.JS APP (DEV)

@@ -14,7 +14,7 @@ export async function GET(
     }
 
     const tour = await db.queryOne(
-      'SELECT * FROM Tour WHERE id = ?',
+      'SELECT * FROM tours WHERE id = ?',
       [params.id]
     );
 
@@ -65,7 +65,7 @@ export async function POST(
     }
 
     const tour = await db.queryOne(
-      'SELECT * FROM Tour WHERE id = ?',
+      'SELECT * FROM tours WHERE id = ?',
       [params.id]
     );
 
@@ -80,12 +80,12 @@ export async function POST(
     // Generate new share token and make public
     const newShareToken = uuidv4();
     await db.execute(
-      'UPDATE Tour SET isPublic = ?, shareToken = ?, updatedAt = NOW() WHERE id = ?',
+      'UPDATE tours SET isPublic = ?, shareToken = ?, updatedAt = NOW() WHERE id = ?',
       [true, newShareToken, params.id]
     );
 
     const updatedTour = await db.queryOne(
-      'SELECT * FROM Tour WHERE id = ?',
+      'SELECT * FROM tours WHERE id = ?',
       [params.id]
     );
 
@@ -128,7 +128,7 @@ export async function DELETE(
     }
 
     const tour = await db.queryOne(
-      'SELECT * FROM Tour WHERE id = ?',
+      'SELECT * FROM tours WHERE id = ?',
       [params.id]
     );
 
@@ -143,12 +143,12 @@ export async function DELETE(
     // Make private and generate new token
     const newShareToken = uuidv4();
     await db.execute(
-      'UPDATE Tour SET isPublic = ?, shareToken = ?, updatedAt = NOW() WHERE id = ?',
+      'UPDATE tours SET isPublic = ?, shareToken = ?, updatedAt = NOW() WHERE id = ?',
       [false, newShareToken, params.id]
     );
 
     const updatedTour = await db.queryOne(
-      'SELECT * FROM Tour WHERE id = ?',
+      'SELECT * FROM tours WHERE id = ?',
       [params.id]
     );
 

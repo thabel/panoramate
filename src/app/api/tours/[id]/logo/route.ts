@@ -14,7 +14,7 @@ export async function POST(
     }
 
     const tour = await db.queryOne(
-      'SELECT * FROM Tour WHERE id = ?',
+      'SELECT * FROM tours WHERE id = ?',
       [params.id]
     );
 
@@ -48,7 +48,7 @@ export async function POST(
     }
 
     await db.execute(
-      'UPDATE Tour SET customLogoUrl = ?, updatedAt = NOW() WHERE id = ?',
+      'UPDATE tours SET customLogoUrl = ?, updatedAt = NOW() WHERE id = ?',
       [filename, params.id]
     );
 
@@ -75,7 +75,7 @@ export async function DELETE(
     }
 
     const tour = await db.queryOne(
-      'SELECT * FROM Tour WHERE id = ?',
+      'SELECT * FROM tours WHERE id = ?',
       [params.id]
     );
 
@@ -89,7 +89,7 @@ export async function DELETE(
     }
 
     await db.execute(
-      'UPDATE Tour SET customLogoUrl = NULL, updatedAt = NOW() WHERE id = ?',
+      'UPDATE tours SET customLogoUrl = NULL, updatedAt = NOW() WHERE id = ?',
       [params.id]
     );
 

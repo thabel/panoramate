@@ -21,7 +21,7 @@ export async function POST(
 
     // Check tour exists and is owned by user's org
     const tour = await db.queryOne(
-      'SELECT * FROM Tour WHERE id = ?',
+      'SELECT * FROM tours WHERE id = ?',
       [params.id]
     );
 
@@ -132,7 +132,7 @@ export async function DELETE(
 
     // Check tour exists
     const tour = await db.queryOne(
-      'SELECT * FROM Tour WHERE id = ?',
+      'SELECT * FROM tours WHERE id = ?',
       [params.id]
     );
 
