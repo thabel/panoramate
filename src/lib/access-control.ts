@@ -148,7 +148,7 @@ export async function logAuditEvent(
         action,
         resourceType,
         resourceId,
-        changes: changes ? JSON.stringify(changes) : null,
+        changes: changes || undefined,
         ipAddress,
         userAgent,
       },

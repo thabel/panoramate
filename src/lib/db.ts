@@ -7,6 +7,8 @@ const pool = new PrismaMariaDb({
   port: Number(process.env.DATABASE_PORT),
   user: process.env.DATABASE_USER,
   password: process.env.DATABASE_PASSWORD,
+    allowPublicKeyRetrieval: true,
+
 });
 
 export const db = new PrismaClient({

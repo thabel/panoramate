@@ -52,7 +52,7 @@ jobs:
             echo "=================================="
             echo "5. Run migrations (safe)"
             echo "=================================="
-            npx prisma migrate deploy
+            timeout 30 npx prisma migrate deploy
 
             echo "=================================="
             echo "6. Build Next.js"

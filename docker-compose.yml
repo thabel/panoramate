@@ -1,124 +1,114 @@
-version: '3.9'
+version: "3.9"
 
 services:
-  # MySQL Database
+  # ======================
+  # MYSQL DATABASE
+  # ======================
   db:
     image: mysql:8.0
-    container_name: panoramate-db
+    container_name: bativy-db
     restart: unless-stopped
+
     environment:
       MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
-      MYSQL_DATABASE: ${DB_NAME:-panoramate}
-      MYSQL_USER: ${DB_USER:-panoramate_user}
-      MYSQL_PASSWORD: ${DB_PASSWORD}
-      MYSQL_ROOT_HOST: '%'
+      MYSQL_DATABASE: ${DATABASE_NAME}
+      MYSQL_USER: ${DATABASE_USER}
+      MYSQL_PASSWORD: ${DATABASE_PASSWORD}
+      MYSQL_ROOT_HOST: "%"
+
     ports:
       - "${DB_PORT:-3306}:3306"
+
     volumes:
       - db_data:/var/lib/mysql
       - ./docker/mysql/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+
     networks:
-      - panoramate-network
+      - bativy-network
+
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       timeout: 10s
       retries: 5
       interval: 10s
+
     command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
 
-  # Next.js Application
+
+  # ======================
+  # NEXT.JS APP (DEV)
+  # ======================
   app:
     build:
       context: .
       dockerfile: Dockerfile
-      args:
-        NODE_ENV: ${NODE_ENV:-development}
-    container_name: panoramate-app
+
+    container_name: bativy-app
     restart: unless-stopped
+
     ports:
       - "${APP_PORT:-3000}:3000"
+
     environment:
-      NODE_ENV: ${NODE_ENV:-development}
+      NODE_ENV: development
       DATABASE_URL: ${DATABASE_URL}
       JWT_SECRET: ${JWT_SECRET}
-      NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}
-      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
-      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
-      STRIPE_PUBLISHABLE_KEY: ${STRIPE_PUBLISHABLE_KEY}
-      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
-      STRIPE_PRICE_STARTER_MONTHLY: ${STRIPE_PRICE_STARTER_MONTHLY}
-      STRIPE_PRICE_PROFESSIONAL_MONTHLY: ${STRIPE_PRICE_PROFESSIONAL_MONTHLY}
-      STRIPE_PRICE_ENTERPRISE_MONTHLY: ${STRIPE_PRICE_ENTERPRISE_MONTHLY}
-      UPLOAD_DIR: ${UPLOAD_DIR:-/app/uploads}
-      MAX_FILE_SIZE_MB: ${MAX_FILE_SIZE_MB:-100}
-      EMAIL_PROVIDER: ${EMAIL_PROVIDER:-smtp}
-      EMAIL_SMTP_HOST: ${EMAIL_SMTP_HOST}
-      EMAIL_SMTP_PORT: ${EMAIL_SMTP_PORT}
-      EMAIL_SMTP_SECURE: ${EMAIL_SMTP_SECURE:-false}
-      EMAIL_SMTP_USER: ${EMAIL_SMTP_USER}
-      EMAIL_SMTP_PASS: ${EMAIL_SMTP_PASS}
-      SENDGRID_API_KEY: ${SENDGRID_API_KEY}
-      MAILGUN_API_KEY: ${MAILGUN_API_KEY}
-      MAILGUN_DOMAIN: ${MAILGUN_DOMAIN}
-      EMAIL_FROM_NAME: ${EMAIL_FROM_NAME:-Panoramate}
-      EMAIL_FROM_ADDRESS: ${EMAIL_FROM_ADDRESS:-noreply@panoramate.com}
-      MAILHOG_SMTP_HOST: ${MAILHOG_SMTP_HOST:-mailhog}
-      MAILHOG_SMTP_PORT: ${MAILHOG_SMTP_PORT:-1025}
+
+      NEXTAUTH_URL: http://localhost:3000
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+
+      EMAIL_PROVIDER: smtp
+      EMAIL_SMTP_HOST: mailhog
+      EMAIL_SMTP_PORT: 1025
+      EMAIL_SMTP_SECURE: "false"
+
+      EMAIL_FROM_NAME: Bativy
+      EMAIL_FROM_ADDRESS: noreply@bativy.com
+
     depends_on:
       db:
         condition: service_healthy
       mailhog:
         condition: service_started
+
     volumes:
-      - ./uploads:/app/uploads
-      - ./src:/app/src
+      - .:/app
       - /app/node_modules
       - /app/.next
+
     networks:
-      - panoramate-network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
-      timeout: 10s
-      retries: 5
-      interval: 30s
+      - bativy-network
+
     command: npm run dev
 
-  # MailHog for local email testing
+
+  # ======================
+  # MAILHOG (EMAIL TESTING)
+  # ======================
   mailhog:
     image: mailhog/mailhog:latest
-    container_name: panoramate-mailhog
+    container_name: bativy-mailhog
     restart: unless-stopped
+
     ports:
       - "${MAILHOG_WEB_PORT:-1080}:1080"
       - "${MAILHOG_SMTP_PORT:-1025}:1025"
+
     networks:
-      - panoramate-network
-    environment:
-      MH_STORAGE: memory
-      MH_OUTGOING_SMTP: "null"
+      - bativy-network
 
-  # Prisma Studio (optional, for database management)
-  # Uncomment to use: docker-compose up -d prisma-studio
-  # prisma-studio:
-  #   image: node:18-alpine
-  #   container_name: panoramate-prisma-studio
-  #   working_dir: /app
-  #   command: npx prisma studio
-  #   ports:
-  #     - "5555:5555"
-  #   volumes:
-  #     - .:/app
-  #   environment:
-  #     DATABASE_URL: "mysql://panoramate_user:panoramate_pass@db:3306/panoramate"
-  #   depends_on:
-  #     - db
-  #   networks:
-  #     - panoramate-network
 
+# ======================
+# VOLUMES
+# ======================
 volumes:
   db_data:
     driver: local
 
+
+# ======================
+# NETWORK
+# ======================
 networks:
-  panoramate-network:
+  bativy-network:
     driver: bridge
