@@ -84,19 +84,34 @@ export function getEmailTemplate(
 ): { subject: string; html: string; text?: string } {
   switch (type) {
     case 'welcome':
-      return getWelcomeTemplate(data);
+      return getWelcomeTemplate(data as { firstName: string; appUrl: string });
     case 'invitation':
-      return getInvitationTemplate(data);
+      return getInvitationTemplate(
+        data as {
+          senderName: string;
+          organizationName: string;
+          inviteLink: string;
+          appUrl: string;
+        }
+      );
     case 'inscription-pending':
-      return getInscriptionPendingTemplate(data);
+      return getInscriptionPendingTemplate(
+        data as { firstName: string; planType: string; appUrl: string }
+      );
     case 'inscription-approved':
-      return getInscriptionApprovedTemplate(data);
+      return getInscriptionApprovedTemplate(
+        data as { firstName: string; planName: string; appUrl: string }
+      );
     case 'inscription-rejected':
-      return getInscriptionRejectedTemplate(data);
+      return getInscriptionRejectedTemplate(
+        data as { firstName: string; reason?: string; supportEmail: string }
+      );
     case 'password-reset':
-      return getPasswordResetTemplate(data);
+      return getPasswordResetTemplate(data as { resetLink: string });
     case 'admin-notification':
-      return getAdminNotificationTemplate(data);
+      return getAdminNotificationTemplate(
+        data as { title: string; message: string; actionUrl?: string; actionText?: string }
+      );
     default:
       return {
         subject: 'Panoramate Notification',
