@@ -1,12 +1,10 @@
-version: "3.9"
-
 services:
-  # ======================
-  # MYSQL DATABASE
-  # ======================
+
+  # ─────────────────────────────────────────
+  # DATABASE
+  # ─────────────────────────────────────────
   db:
     image: mysql:8.0
-    container_name: bativy-db
     restart: unless-stopped
 
     environment:
@@ -14,75 +12,42 @@ services:
       MYSQL_DATABASE: ${DATABASE_NAME}
       MYSQL_USER: ${DATABASE_USER}
       MYSQL_PASSWORD: ${DATABASE_PASSWORD}
-      MYSQL_ROOT_HOST: "%"
-
-    ports:
-      - "${DB_PORT:-3306}:3306"
 
     volumes:
       - db_data:/var/lib/mysql
-      - ./docker/mysql/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
 
     networks:
-      - bativy-network
+      - app-network
 
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-      timeout: 10s
-      retries: 5
       interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
-    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
 
-    # ======================
-  # PHPMYADMIN
-  # ======================
-  phpmyadmin:
-    image: phpmyadmin/phpmyadmin:latest
-    container_name: bativy-phpmyadmin
-    restart: unless-stopped
-
-    ports:
-      - "8081:80"
-
-    environment:
-      PMA_HOST: db
-      PMA_PORT: 3306
-      PMA_ARBITRARY: 0
-
-    depends_on:
-      db:
-        condition: service_healthy
-
-    networks:
-      - bativy-network
-
-  # ======================
-  # NEXT.JS APP (DEV)
-  # ======================
+  # ─────────────────────────────────────────
+  # APP
+  # ─────────────────────────────────────────
   app:
     build:
       context: .
       dockerfile: Dockerfile
 
-    container_name: bativy-app
     restart: unless-stopped
 
     ports:
       - "${APP_PORT:-3000}:3000"
 
     environment:
-      NODE_ENV: development
-
-      # MySQL connection (mysql2 driver)
-      DATABASE_HOST: ${DATABASE_HOST:-db}
-      DATABASE_PORT: ${DATABASE_PORT:-3306}
-      DATABASE_USER: ${DATABASE_USER:-bativy}
-      DATABASE_PASSWORD: ${DATABASE_PASSWORD:-bativy_password}
-      DATABASE_NAME: ${DATABASE_NAME:-bativy}
-
+      DATABASE_HOST: db
+      DATABASE_PORT: 3306
+      DATABASE_NAME: ${DATABASE_NAME}
+      DATABASE_USER: ${DATABASE_USER}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD}
       JWT_SECRET: ${JWT_SECRET}
-
+      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
       STRIPE_PUBLISHABLE_KEY: ${STRIPE_PUBLISHABLE_KEY}
       STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
@@ -90,40 +55,23 @@ services:
       STRIPE_PRICE_PROFESSIONAL_MONTHLY: ${STRIPE_PRICE_PROFESSIONAL_MONTHLY}
       STRIPE_PRICE_ENTERPRISE_MONTHLY: ${STRIPE_PRICE_ENTERPRISE_MONTHLY}
 
-      NEXTAUTH_URL: http://localhost:3000
-      NEXT_PUBLIC_APP_URL: http://localhost:3000
+    volumes:
+      - uploads:/app/uploads
 
-      EMAIL_PROVIDER: smtp
-      EMAIL_SMTP_HOST: mailhog
-      EMAIL_SMTP_PORT: 1025
-      EMAIL_SMTP_SECURE: "false"
-
-      EMAIL_FROM_NAME: Bativy
-      EMAIL_FROM_ADDRESS: noreply@bativy.com
-   
     depends_on:
       db:
         condition: service_healthy
-      mailhog:
-        condition: service_started
-
-    volumes:
-      - .:/app
-      - /app/node_modules
-      - /app/.next
 
     networks:
-      - bativy-network
-
-    command: npm run dev
+      - app-network
 
 
-  # ======================
-  # MAILHOG (EMAIL TESTING)
-  # ======================
+  # ─────────────────────────────────────────
+  # MAILHOG — email testing
+  # UI at http://localhost:1080
+  # ─────────────────────────────────────────
   mailhog:
     image: mailhog/mailhog:latest
-    container_name: bativy-mailhog
     restart: unless-stopped
 
     ports:
@@ -131,20 +79,14 @@ services:
       - "${MAILHOG_SMTP_PORT:-1025}:1025"
 
     networks:
-      - bativy-network
+      - app-network
 
 
-# ======================
-# VOLUMES
-# ======================
 volumes:
   db_data:
-    driver: local
+  uploads:
 
 
-# ======================
-# NETWORK
-# ======================
 networks:
-  bativy-network:
+  app-network:
     driver: bridge
