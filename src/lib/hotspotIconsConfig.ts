@@ -12,7 +12,10 @@ export type HotspotIconType =
   | 'Link'
   | 'MapPin'
   | 'Marker'
-  | 'Video';
+  | 'Video'
+  | 'info' // Custom icons
+  | 'bed'
+  | 'card';
 
 export type HotspotFieldType = 'title' | 'targetImageId' | 'url' | 'content' | 'videoUrl' | 'imageUrls';
 
@@ -33,6 +36,28 @@ export interface IconConfig {
 }
 
 export const HOTSPOT_ICON_CONFIG: Record<HotspotIconType, IconConfig> = {
+  'info':{
+    label: 'Information',
+    description: 'Display informational text',
+    fields: [
+      {
+        name: 'title',
+        label: 'Hotspot Title',
+        type: 'text',
+        required: true,
+        placeholder: 'e.g., Property Details',
+        description: 'The label shown when hovering over this hotspot'
+      },
+      {
+        name: 'content',
+        label: 'Information Text',
+        type: 'textarea',
+        required: true,
+        placeholder: 'Enter the information you want to display...',
+        description: 'The text content shown in the information box'
+      }
+    ] 
+  },
   'ArrowRight': {
     label: 'Scene Navigation',
     description: 'Navigate to the next scene',
@@ -233,6 +258,52 @@ export const HOTSPOT_ICON_CONFIG: Record<HotspotIconType, IconConfig> = {
         description: 'Upload a video file or provide a video URL'
       }
     ]
+  },
+
+  'bed': {
+    label: 'Room Info',
+    description: 'Information about a room or bed',
+    fields: [
+      {
+        name: 'title',
+        label: 'Hotspot Title',
+        type: 'text',
+        required: true,
+        placeholder: 'e.g., Master Bedroom',
+        description: 'The label shown when hovering over this hotspot'
+      },
+      {
+        name: 'content',
+        label: 'Room Details',
+        type: 'textarea',
+        required: true,
+        placeholder: 'Enter room details, features, etc.',
+        description: 'The text content shown in the info box'
+      }
+    ]
+  },
+
+  'card': {
+    label: 'Shopping',
+    description: 'Link to a product or booking page',
+    fields: [
+      {
+        name: 'title',
+        label: 'Hotspot Title',
+        type: 'text',
+        required: true,
+        placeholder: 'e.g., Book Now',
+        description: 'The label shown when hovering over this hotspot'
+      },
+      {
+        name: 'url',
+        label: 'Link URL',
+        type: 'text',
+        required: true,
+        placeholder: 'https://example.com/booking',
+        description: 'The URL to open when clicked'
+      }
+    ]
   }
 };
 
@@ -259,6 +330,7 @@ export const validateHotspotData = (
   data: Record<string, any>
 ): { valid: boolean; errors: string[] } => {
   const errors: string[] = [];
+  console.log('Validating hotspot data:', { iconType, data });
   const config = getIconConfig(iconType);
 
   for (const field of config.fields) {

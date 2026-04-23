@@ -14,15 +14,10 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const image = await db.tourImage.findUnique({
-      where: { id: params.imageId },
-      include: {
-        tour: true,
-        hotspots: {
-          orderBy: { createdAt: 'asc' },
-        },
-      },
-    });
+    const image = await db.queryOne(
+      'SELECT * FROM tour_images WHERE id = ?',
+      [params.imageId]
+    );
 
     if (!image) {
       return NextResponse.json(
@@ -31,9 +26,21 @@ export async function GET(
       );
     }
 
+    // Get hotspots for this image
+    const hotspots: any = await db.query(
+      'SELECT * FROM hotspots WHERE imageId = ? ORDER BY createdAt ASC',
+      [params.imageId]
+    );
+
+    // Parse metadata JSON if needed
+    const hotspotsData = hotspots.map((h: any) => ({
+      ...h,
+      metadata: typeof h.metadata === 'string' ? JSON.parse(h.metadata) : h.metadata,
+    }));
+
     // RESTRICTION DISABLED: all authenticated users can view hotspots
     return NextResponse.json(
-      { success: true, data: image.hotspots },
+      { success: true, data: hotspotsData },
       { status: 200 }
     );
   } catch (error) {
@@ -105,10 +112,10 @@ export async function POST(
       );
     }
 
-    const image = await db.tourImage.findUnique({
-      where: { id: params.imageId },
-      include: { tour: true },
-    });
+    const image = await db.queryOne(
+      'SELECT * FROM tour_images WHERE id = ?',
+      [params.imageId]
+    );
 
     if (!image) {
       return NextResponse.json(
@@ -118,28 +125,46 @@ export async function POST(
     }
 
     // RESTRICTION DISABLED: all authenticated users can create hotspots
-    const hotspot = await db.hotspot.create({
-      data: {
-        imageId: params.imageId,
+    const hotspotId = require('crypto').randomUUID();
+    await db.execute(
+      `INSERT INTO hotspots (
+        id, imageId, type, yaw, pitch, rotation, targetImageId,
+        title, content, url, videoUrl, imageUrl, imageUrls,
+        animationType, iconUrl, iconName, color, scale, metadata,
+        createdAt, updatedAt
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
+      [
+        hotspotId,
+        params.imageId,
         type,
         yaw,
         pitch,
-        rotation: rotation || 0,
-        targetImageId: targetImageId || null,
-        title: title || null,
-        content: content || null,
-        url: url || null,
-        videoUrl: videoUrl || null,
-        imageUrl: imageUrl || null,
-        imageUrls: imageUrls || null,
-        animationType: animationType || 'NONE',
-        iconUrl: iconUrl || null,
-        iconName: iconName || 'info',
-        color: color || null,
-        scale: scale || 1.0,
-        metadata: metadata || null,
-      },
-    });
+        rotation || 0,
+        targetImageId || null,
+        title || null,
+        content || null,
+        url || null,
+        videoUrl || null,
+        imageUrl || null,
+        imageUrls || null,
+        animationType || 'NONE',
+        iconUrl || null,
+        iconName || 'info',
+        color || null,
+        scale || 1.0,
+        metadata ? JSON.stringify(metadata) : null,
+      ]
+    );
+
+    const hotspot: any = await db.queryOne(
+      'SELECT * FROM hotspots WHERE id = ?',
+      [hotspotId]
+    );
+
+    // Parse metadata if it's a string
+    if (hotspot.metadata && typeof hotspot.metadata === 'string') {
+      hotspot.metadata = JSON.parse(hotspot.metadata);
+    }
 
     logger.info(
       { hotspotId: hotspot.id, imageId: params.imageId, tourId: params.id, iconName },
@@ -200,20 +225,21 @@ export async function PATCH(
       );
     }
 
-    const hotspot = await db.hotspot.findUnique({
-      where: { id: hotspotId },
-      include: {
-        image: {
-          include: { tour: true },
-        },
-      },
-    });
+    const hotspot: any = await db.queryOne(
+      'SELECT * FROM hotspots WHERE id = ?',
+      [hotspotId]
+    );
 
     if (!hotspot) {
       return NextResponse.json(
         { error: 'Hotspot not found' },
         { status: 404 }
       );
+    }
+
+    // Parse metadata if it's a string
+    if (hotspot.metadata && typeof hotspot.metadata === 'string') {
+      hotspot.metadata = JSON.parse(hotspot.metadata);
     }
 
     // Validate hotspot data against icon type requirements if iconName is being changed
@@ -241,28 +267,96 @@ export async function PATCH(
     }
 
     // RESTRICTION DISABLED: all authenticated users can update hotspots
-    const updatedHotspot = await db.hotspot.update({
-      where: { id: hotspotId },
-      data: {
-        ...(type && { type }),
-        ...(yaw !== undefined && { yaw }),
-        ...(pitch !== undefined && { pitch }),
-        ...(rotation !== undefined && { rotation }),
-        ...(targetImageId !== undefined && { targetImageId }),
-        ...(title !== undefined && { title }),
-        ...(content !== undefined && { content }),
-        ...(url !== undefined && { url }),
-        ...(videoUrl !== undefined && { videoUrl }),
-        ...(imageUrl !== undefined && { imageUrl }),
-        ...(imageUrls !== undefined && { imageUrls }),
-        ...(animationType && { animationType }),
-        ...(iconUrl !== undefined && { iconUrl }),
-        ...(iconName !== undefined && { iconName }),
-        ...(color !== undefined && { color }),
-        ...(scale !== undefined && { scale }),
-        ...(metadata !== undefined && { metadata }),
-      },
-    });
+    // Build UPDATE query dynamically
+    const updates: string[] = [];
+    const values: any[] = [];
+
+    if (type) {
+      updates.push('type = ?');
+      values.push(type);
+    }
+    if (yaw !== undefined) {
+      updates.push('yaw = ?');
+      values.push(yaw);
+    }
+    if (pitch !== undefined) {
+      updates.push('pitch = ?');
+      values.push(pitch);
+    }
+    if (rotation !== undefined) {
+      updates.push('rotation = ?');
+      values.push(rotation);
+    }
+    if (targetImageId !== undefined) {
+      updates.push('targetImageId = ?');
+      values.push(targetImageId);
+    }
+    if (title !== undefined) {
+      updates.push('title = ?');
+      values.push(title);
+    }
+    if (content !== undefined) {
+      updates.push('content = ?');
+      values.push(content);
+    }
+    if (url !== undefined) {
+      updates.push('url = ?');
+      values.push(url);
+    }
+    if (videoUrl !== undefined) {
+      updates.push('videoUrl = ?');
+      values.push(videoUrl);
+    }
+    if (imageUrl !== undefined) {
+      updates.push('imageUrl = ?');
+      values.push(imageUrl);
+    }
+    if (imageUrls !== undefined) {
+      updates.push('imageUrls = ?');
+      values.push(imageUrls);
+    }
+    if (animationType) {
+      updates.push('animationType = ?');
+      values.push(animationType);
+    }
+    if (iconUrl !== undefined) {
+      updates.push('iconUrl = ?');
+      values.push(iconUrl);
+    }
+    if (iconName !== undefined) {
+      updates.push('iconName = ?');
+      values.push(iconName);
+    }
+    if (color !== undefined) {
+      updates.push('color = ?');
+      values.push(color);
+    }
+    if (scale !== undefined) {
+      updates.push('scale = ?');
+      values.push(scale);
+    }
+    if (metadata !== undefined) {
+      updates.push('metadata = ?');
+      values.push(JSON.stringify(metadata));
+    }
+
+    updates.push('updatedAt = NOW()');
+    values.push(hotspotId);
+
+    await db.execute(
+      `UPDATE hotspots SET ${updates.join(', ')} WHERE id = ?`,
+      values
+    );
+
+    const updatedHotspot: any = await db.queryOne(
+      'SELECT * FROM hotspots WHERE id = ?',
+      [hotspotId]
+    );
+
+    // Parse metadata if it's a string
+    if (updatedHotspot.metadata && typeof updatedHotspot.metadata === 'string') {
+      updatedHotspot.metadata = JSON.parse(updatedHotspot.metadata);
+    }
 
     logger.info(
       { hotspotId: updatedHotspot.id, iconName: updatedHotspot.iconName },
@@ -302,14 +396,10 @@ export async function DELETE(
       );
     }
 
-    const hotspot = await db.hotspot.findUnique({
-      where: { id: hotspotId },
-      include: {
-        image: {
-          include: { tour: true },
-        },
-      },
-    });
+    const hotspot = await db.queryOne(
+      'SELECT * FROM hotspots WHERE id = ?',
+      [hotspotId]
+    );
 
     if (!hotspot) {
       return NextResponse.json(
@@ -319,9 +409,10 @@ export async function DELETE(
     }
 
     // RESTRICTION DISABLED: all authenticated users can delete hotspots
-    await db.hotspot.delete({
-      where: { id: hotspotId },
-    });
+    await db.execute(
+      'DELETE FROM hotspots WHERE id = ?',
+      [hotspotId]
+    );
 
     logger.info({ hotspotId }, 'Hotspot deleted');
 

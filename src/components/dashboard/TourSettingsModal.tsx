@@ -2,7 +2,7 @@
 
 import { type ChangeEvent } from 'react';
 import { ImageIcon, Music, Volume2, X, Upload, Eye } from 'lucide-react';
-import { Tour } from '../../../prisma/generated';
+import { Tour } from '@/lib/types';
 import { Button } from '@/components/ui/Button';
 
 type TourSettingsModalProps = {

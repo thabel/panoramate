@@ -230,10 +230,10 @@ select:focus {
 }
 
 .marzipano-hotspot-visual:hover {
-  background: linear-gradient(135deg, #1a1a2e 0%, #0f3460 100%);
-  box-shadow: 0 0 20px rgba(99, 102, 241, 0.6),
-              inset 0 0 10px rgba(255, 255, 255, 0.1) !important;
-  transform: translate(-50%, -50%) scale(1.15);
+  /* background: linear-gradient(135deg, #1a1a2e 0%, #0f3460 100%); */
+  /* box-shadow: 0 0 20px rgba(99, 102, 241, 0.6),
+              inset 0 0 10px rgba(255, 255, 255, 0.1) !important; */
+  /* transform: translate(-50%, -50%) scale(1.15); */
   filter: brightness(1.1) drop-shadow(0 0 8px rgba(99, 102, 241, 0.4));
 }
 
@@ -242,8 +242,8 @@ select:focus {
   max-width: 280px;
   padding: 0 12px;
   opacity: 1;
-  box-shadow: 0 8px 24px rgba(99, 102, 241, 0.4),
-              inset 0 0 10px rgba(255, 255, 255, 0.1);
+  /* box-shadow: 0 8px 24px rgba(99, 102, 241, 0.4),
+              inset 0 0 10px rgba(255, 255, 255, 0.1); */
 }
 
 /* Override hover when hotspot is closed */

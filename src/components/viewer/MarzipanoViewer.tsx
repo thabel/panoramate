@@ -264,8 +264,8 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
     // Default styling for all hotspots
     visual.style.borderRadius = '50%';
     visual.style.backgroundColor = options?.color || '#3b3b3b';
-    visual.style.border = '2px solid rgba(255, 255, 255, 0.3)';
-    visual.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.3)';
+    // visual.style.border = '2px solid rgba(255, 255, 255, 0.3)';
+    // visual.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.3)';
 
     // Hot spot general stylings 
 

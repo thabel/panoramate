@@ -10,12 +10,15 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const user = await db.user.findUnique({
-      where: { id: authPayload.userId },
-      include: { organization: true },
-    });
+    const result = await db.queryOne(
+      `SELECT u.*, o.id as org_id, o.name, o.slug, o.plan, o.subscriptionStatus, o.trialEndsAt, o.currentPeriodEnd, o.maxTours, o.maxImagesPerTour, o.totalStorageMb, o.usedStorageMb
+       FROM users u
+       LEFT JOIN organizations o ON u.organizationId = o.id
+       WHERE u.id = ?`,
+      [authPayload.userId]
+    ) as any;
 
-    if (!user) {
+    if (!result) {
       return NextResponse.json(
         { error: 'User not found' },
         { status: 404 }
@@ -27,26 +30,26 @@ export async function GET(request: NextRequest) {
         success: true,
         data: {
           user: {
-            id: user.id,
-            email: user.email,
-            firstName: user.firstName,
-            lastName: user.lastName,
-            role: user.role,
-            organizationId: user.organizationId,
-            avatarUrl: user.avatarUrl,
+            id: result.id,
+            email: result.email,
+            firstName: result.firstName,
+            lastName: result.lastName,
+            role: result.role,
+            organizationId: result.organizationId,
+            avatarUrl: result.avatarUrl,
           },
           organization: {
-            id: user.organization.id,
-            name: user.organization.name,
-            slug: user.organization.slug,
-            plan: user.organization.plan,
-            subscriptionStatus: user.organization.subscriptionStatus,
-            trialEndsAt: user.organization.trialEndsAt,
-            currentPeriodEnd: user.organization.currentPeriodEnd,
-            maxTours: user.organization.maxTours,
-            maxImagesPerTour: user.organization.maxImagesPerTour,
-            totalStorageMb: user.organization.totalStorageMb,
-            usedStorageMb: user.organization.usedStorageMb,
+            id: result.org_id,
+            name: result.name,
+            slug: result.slug,
+            plan: result.plan,
+            subscriptionStatus: result.subscriptionStatus,
+            trialEndsAt: result.trialEndsAt,
+            currentPeriodEnd: result.currentPeriodEnd,
+            maxTours: result.maxTours,
+            maxImagesPerTour: result.maxImagesPerTour,
+            totalStorageMb: result.totalStorageMb,
+            usedStorageMb: result.usedStorageMb,
           },
         },
       },

@@ -57,15 +57,15 @@ RUN apt-get update && apt-get install -y \
   && rm -rf /var/lib/apt/lists/*
 
 COPY package*.json ./
-RUN npm ci --no-audit
+RUN npm ci --no-audit --omit=dev
 
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
-COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/next.config.js ./next.config.js
 
 RUN mkdir -p /app/uploads
 
 EXPOSE 3000
 
-CMD ["npm", "start"]
+# Start Next.js production server
+CMD ["node_modules/.bin/next", "start"]

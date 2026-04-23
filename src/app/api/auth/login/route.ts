@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { signJWT, comparePassword } from '@/lib/auth';
+import { User, Organization } from '@/lib/types';
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,10 +15,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const user = await db.user.findUnique({
-      where: { email },
-      include: { organization: true },
-    });
+    // Find user with organization
+    const user = await db.queryOne(
+      `SELECT u.*, o.id as org_id, o.name, o.slug, o.plan
+       FROM users u
+       LEFT JOIN organizations o ON u.organizationId = o.id
+       WHERE u.email = ?`,
+      [email]
+    ) as any;
 
     if (!user) {
       return NextResponse.json(
@@ -35,10 +40,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Update last login
-    await db.user.update({
-      where: { id: user.id },
-      data: { lastLoginAt: new Date() },
-    });
+    await db.execute('UPDATE users SET lastLoginAt = NOW() WHERE id = ?', [user.id]);
 
     // Create session token
     const token = await signJWT(
@@ -64,10 +66,10 @@ export async function POST(request: NextRequest) {
             organizationId: user.organizationId,
           },
           organization: {
-            id: user.organization.id,
-            name: user.organization.name,
-            slug: user.organization.slug,
-            plan: user.organization.plan,
+            id: user.org_id,
+            name: user.name,
+            slug: user.slug,
+            plan: user.plan,
           },
           token,
         },

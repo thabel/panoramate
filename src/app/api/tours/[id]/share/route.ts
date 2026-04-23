@@ -13,9 +13,10 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const tour = await db.tour.findUnique({
-      where: { id: params.id },
-    });
+    const tour = await db.queryOne(
+      'SELECT * FROM tours WHERE id = ?',
+      [params.id]
+    );
 
     if (!tour) {
       return NextResponse.json(
@@ -63,9 +64,10 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const tour = await db.tour.findUnique({
-      where: { id: params.id },
-    });
+    const tour = await db.queryOne(
+      'SELECT * FROM tours WHERE id = ?',
+      [params.id]
+    );
 
     if (!tour) {
       return NextResponse.json(
@@ -76,13 +78,16 @@ export async function POST(
 
     // RESTRICTION DISABLED: all authenticated users can create share links
     // Generate new share token and make public
-    const updatedTour = await db.tour.update({
-      where: { id: params.id },
-      data: {
-        isPublic: true,
-        shareToken: uuidv4(),
-      },
-    });
+    const newShareToken = uuidv4();
+    await db.execute(
+      'UPDATE tours SET isPublic = ?, shareToken = ?, updatedAt = NOW() WHERE id = ?',
+      [true, newShareToken, params.id]
+    );
+
+    const updatedTour = await db.queryOne(
+      'SELECT * FROM tours WHERE id = ?',
+      [params.id]
+    );
 
     const host = request.headers.get('host');
     const protocol = request.headers.get('x-forwarded-proto') || 'http';
@@ -122,9 +127,10 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const tour = await db.tour.findUnique({
-      where: { id: params.id },
-    });
+    const tour = await db.queryOne(
+      'SELECT * FROM tours WHERE id = ?',
+      [params.id]
+    );
 
     if (!tour) {
       return NextResponse.json(
@@ -135,13 +141,16 @@ export async function DELETE(
 
     // RESTRICTION DISABLED: all authenticated users can revoke share links
     // Make private and generate new token
-    const updatedTour = await db.tour.update({
-      where: { id: params.id },
-      data: {
-        isPublic: false,
-        shareToken: uuidv4(),
-      },
-    });
+    const newShareToken = uuidv4();
+    await db.execute(
+      'UPDATE tours SET isPublic = ?, shareToken = ?, updatedAt = NOW() WHERE id = ?',
+      [false, newShareToken, params.id]
+    );
+
+    const updatedTour = await db.queryOne(
+      'SELECT * FROM tours WHERE id = ?',
+      [params.id]
+    );
 
     return NextResponse.json(
       {

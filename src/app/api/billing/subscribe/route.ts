@@ -42,9 +42,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const org = await db.organization.findUnique({
-      where: { id: authPayload.organizationId },
-    });
+    const org = await db.queryOne(
+      'SELECT * FROM organizations WHERE id = ?',
+      [authPayload.organizationId]
+    ) as any;
 
     if (!org) {
       return NextResponse.json(
@@ -66,10 +67,10 @@ export async function POST(request: NextRequest) {
       });
       stripeCustomerId = customer.id;
 
-      await db.organization.update({
-        where: { id: org.id },
-        data: { stripeCustomerId },
-      });
+      await db.execute(
+        'UPDATE organizations SET stripeCustomerId = ? WHERE id = ?',
+        [stripeCustomerId, org.id]
+      );
     }
 
     // Get price ID
