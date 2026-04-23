@@ -100,7 +100,7 @@ services:
 
       EMAIL_FROM_NAME: Bativy
       EMAIL_FROM_ADDRESS: noreply@bativy.com
-
+   
     depends_on:
       db:
         condition: service_healthy
