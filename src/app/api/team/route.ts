@@ -10,34 +10,21 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const [members, pendingInvitations] = await Promise.all([
-      db.user.findMany({
-        where: { organizationId: authPayload.organizationId },
-        select: {
-          id: true,
-          email: true,
-          firstName: true,
-          lastName: true,
-          role: true,
-          avatarUrl: true,
-          createdAt: true,
-        },
-        orderBy: { createdAt: 'asc' },
-      }),
-      db.invitation.findMany({
-        where: {
-          organizationId: authPayload.organizationId,
-          acceptedAt: null,
-        },
-        select: {
-          id: true,
-          email: true,
-          role: true,
-          createdAt: true,
-          expiresAt: true,
-        },
-        orderBy: { createdAt: 'desc' },
-      }),
+    const [members, pendingInvitations]: any = await Promise.all([
+      db.query(
+        `SELECT id, email, firstName, lastName, role, avatarUrl, createdAt
+         FROM users
+         WHERE organizationId = ?
+         ORDER BY createdAt ASC`,
+        [authPayload.organizationId]
+      ),
+      db.query(
+        `SELECT id, email, role, createdAt, expiresAt
+         FROM invitations
+         WHERE organizationId = ? AND acceptedAt IS NULL
+         ORDER BY createdAt DESC`,
+        [authPayload.organizationId]
+      ),
     ]);
 
     return NextResponse.json(
@@ -66,13 +53,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // RESTRICTION DISABLED: all users can invite members (role checks removed)
+    // Only ADMIN and MEMBER can invite (VIEWER cannot invite)
+  if (authPayload.role !== 'ADMIN' && authPayload.role !== 'MEMBER' &&  authPayload.role !== 'SUPER_ADMIN') {
+      return NextResponse.json({ error: 'You do not have permission to invite members' }, { status: 403 });
+    }
+
     const body = await request.json();
     const { email, role = 'MEMBER' } = body;
-    // if ROLE ADMIN then reject
-    if (authPayload.role === 'ADMIN') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
 
 
     if (!email) {
@@ -83,9 +70,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user already exists in org
-    const existingUser = await db.user.findUnique({
-      where: { email },
-    });
+    const existingUser = await db.queryOne(
+      'SELECT * FROM users WHERE email = ?',
+      [email]
+    );
 
     if (existingUser && existingUser.organizationId === authPayload.organizationId) {
       return NextResponse.json(
@@ -95,13 +83,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if invitation already exists
-    const existingInvitation = await db.invitation.findFirst({
-      where: {
-        email,
-        organizationId: authPayload.organizationId,
-        acceptedAt: null,
-      },
-    });
+    const existingInvitation = await db.queryOne(
+      `SELECT * FROM invitations
+       WHERE email = ? AND organizationId = ? AND acceptedAt IS NULL`,
+      [email, authPayload.organizationId]
+    );
 
     if (existingInvitation) {
       return NextResponse.json(
@@ -112,16 +98,19 @@ export async function POST(request: NextRequest) {
 
     // Create invitation
     const token = uuidv4();
-    const invitation = await db.invitation.create({
-      data: {
-        email,
-        role,
-        token,
-        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
-        organizationId: authPayload.organizationId,
-        invitedById: authPayload.userId,
-      },
-    });
+    const invitationId = require('crypto').randomUUID();
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+
+    await db.execute(
+      `INSERT INTO invitations (id, email, role, token, expiresAt, organizationId, invitedById, createdAt)
+       VALUES (?, ?, ?, ?, ?, ?, ?, NOW())`,
+      [invitationId, email, role, token, expiresAt, authPayload.organizationId, authPayload.userId]
+    );
+
+    const invitation = await db.queryOne(
+      'SELECT * FROM invitations WHERE id = ?',
+      [invitationId]
+    );
 
     // TODO: Send email with invitation link
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';

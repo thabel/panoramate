@@ -1,5 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  output: 'standalone',
   // 1. Add this to handle Pino internals correctly in Next.js 14
   experimental: {
     serverComponentsExternalPackages: ['pino', 'pino-pretty'],

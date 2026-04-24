@@ -264,8 +264,8 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
     // Default styling for all hotspots
     visual.style.borderRadius = '50%';
     visual.style.backgroundColor = options?.color || '#3b3b3b';
-    visual.style.border = '2px solid rgba(255, 255, 255, 0.3)';
-    visual.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.3)';
+    // visual.style.border = '2px solid rgba(255, 255, 255, 0.3)';
+    // visual.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.3)';
 
     // Hot spot general stylings 
 
@@ -289,27 +289,50 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
     if (showHotspotTitles && title && type !== 'TEMP') {
       const TextAndIcon = document.createElement('div');
       TextAndIcon.classList.add('hotspot-title-icon');
-      // title element
-      const titleLabel = document.createElement("div");
+
+      // Title element with proper text handling
+      const titleLabel = document.createElement('div');
+      titleLabel.style.flex = '1';
+      titleLabel.style.overflow = 'hidden';
+      titleLabel.style.textOverflow = 'ellipsis';
+      titleLabel.style.whiteSpace = 'nowrap';
+      titleLabel.style.fontSize = '14px';
+      titleLabel.style.fontWeight = '500';
+      titleLabel.style.color = '#ffffff';
+      titleLabel.style.maxWidth = '240px';
+      titleLabel.title = title; // Show full text on tooltip
       titleLabel.textContent = title;
-      // close element 
-      var closeWrapper = document.createElement('div');
+
+      // Close element
+      const closeWrapper = document.createElement('div');
       closeWrapper.classList.add('info-hotspot-close-wrapper');
-      var closeIcon = document.createElement('img');
+      closeWrapper.style.flexShrink = '0';
+      closeWrapper.style.marginLeft = '8px';
+
+      const closeIcon = document.createElement('img');
       closeIcon.src = '/icons/close.png';
       closeIcon.classList.add('info-hotspot-close-icon');
+      closeIcon.style.cursor = 'pointer';
+      closeIcon.style.transition = 'transform 0.2s ease-out';
+
       closeWrapper.appendChild(closeIcon);
-      closeWrapper.addEventListener("click",  (e) => {
+      closeWrapper.addEventListener('mouseenter', () => {
+        closeIcon.style.transform = 'scale(1.2) rotate(90deg)';
+      });
+      closeWrapper.addEventListener('mouseleave', () => {
+        closeIcon.style.transform = 'scale(1) rotate(0deg)';
+      });
+      closeWrapper.addEventListener('click', (e) => {
         e.stopPropagation();
-        TextAndIcon.classList.remove("visible");
-        visual.classList.add("hotspot-closed");
-        console.log("Hotspot closed")
-      }
-      )
-      // TextAndIcon adding 2 childrens
+        TextAndIcon.classList.remove('visible');
+        visual.classList.add('hotspot-closed');
+        console.log('Hotspot closed');
+      });
+
+      // TextAndIcon adding 2 children
       TextAndIcon.appendChild(titleLabel);
-       TextAndIcon.appendChild(closeWrapper)
-      //
+      TextAndIcon.appendChild(closeWrapper);
+
       visual.appendChild(TextAndIcon);
     }
 
@@ -322,17 +345,18 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
       };
 
       visual.onmouseover = (e: MouseEvent) => {
+        e.preventDefault();
         // Reset the closed state on hover to allow title to reappear
         visual.classList.remove('hotspot-closed');
-        // visual.style.transform = 'translate(-50%, -50%) scale(1.15)';
+
         // Show popover on hover
         if (onHover && hotspotData) {
           const rect = visual.getBoundingClientRect();
           onHover(hotspotData, { x: rect.left, y: rect.top });
         }
       };
+
       visual.onmouseout = () => {
-        // visual.style.transform = 'translate(-50%, -50%)';
         if (onHover) {
           onHover(null, null);
         }
@@ -490,11 +514,22 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
         .marzipano-hotspot {
           z-index: 10;
         }
+
         @keyframes pulse {
-          0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.7); }
-          70% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(99, 102, 241, 0); }
-          100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(99, 102, 241, 0); }
+          0% {
+            transform: scale(1);
+            box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.7);
+          }
+          70% {
+            transform: scale(1.05);
+            box-shadow: 0 0 0 10px rgba(99, 102, 241, 0);
+          }
+          100% {
+            transform: scale(1);
+            box-shadow: 0 0 0 0 rgba(99, 102, 241, 0);
+          }
         }
+
         @keyframes hotspot-pulse {
           0% {
             box-shadow: 0 0 0 0 rgba(0, 0, 0, 0.35);
@@ -509,19 +544,47 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
             transform: scale(1);
           }
         }
-      
+
         .link-hotspot__inner__icon__rotate:hover {
           background-color: #000000;
         }
+
         .link-hotspot__inner__icon__rotate svg {
           display: block;
+          transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
+                      filter 0.3s ease-out;
         }
-      
+
+        .link-hotspot__inner__icon__rotate:hover svg {
+          transform: scale(1.15) rotate(8deg);
+          filter: brightness(1.3) drop-shadow(0 0 8px rgba(99, 102, 241, 0.6));
+        }
+
         .hotspot-cursor,
         .hotspot-cursor *,
         .hotspot-cursor canvas,
         .hotspot-cursor .marzipano-container {
           cursor: url('/icons/link.png') 16 16, crosshair !important;
+        }
+
+        /* Advanced hotspot title styling */
+        .marzipano-hotspot-visual .hotspot-title-icon > div:first-child {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+        }
+
+        .marzipano-hotspot-visual .hotspot-title-icon .info-hotspot-close-icon {
+          transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+          opacity: 0.7;
+        }
+
+        .marzipano-hotspot-visual:hover .hotspot-title-icon .info-hotspot-close-icon {
+          opacity: 1;
+        }
+
+        .info-hotspot-close-wrapper:hover .info-hotspot-close-icon {
+          filter: brightness(1.5) drop-shadow(0 0 4px rgba(255, 0, 0, 0.5));
         }
       `}</style>
     </div>

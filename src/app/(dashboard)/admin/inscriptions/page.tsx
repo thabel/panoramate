@@ -40,17 +40,17 @@ export default function AdminInscriptionsPage() {
     rejected: 0,
   });
 
-  // Check if user is admin
+  // Check if user is SUPER_ADMIN
   useEffect(() => {
-    if (!authLoading && user && user.role !== 'ADMIN') {
+    if (!authLoading && user && user.role !== 'SUPER_ADMIN') {
       router.push('/dashboard');
-      toast.error('Admin access required');
+      toast.error('SUPER_ADMIN access required');
     }
   }, [authLoading, user, router]);
 
   // Fetch inscription requests
   useEffect(() => {
-    if (!user || user.role !== 'ADMIN') {
+    if (!user || user.role !== 'SUPER_ADMIN') {
       return;
     }
 
@@ -151,13 +151,13 @@ export default function AdminInscriptionsPage() {
     );
   }
 
-  if (user && user.role !== 'ADMIN') {
+  if (user && user.role !== 'SUPER_ADMIN') {
     return (
       <Alert variant="error">
         <AlertCircle size={20} />
         <div>
           <h3 className="font-semibold">Access Denied</h3>
-          <p>You don't have permission to access the admin panel.</p>
+          <p>You don't have permission to access the admin panel. SUPER_ADMIN access required.</p>
         </div>
       </Alert>
     );

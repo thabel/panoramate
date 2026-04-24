@@ -12,6 +12,7 @@ export async function middleware(request: NextRequest) {
     '/api/billing/webhook',
     '/api/tours-public',
     '/api/inscription-request',
+    '/api/admin/create-user',
     '/tour/',
     '/login',
     '/register',

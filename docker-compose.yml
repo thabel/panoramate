@@ -1,0 +1,92 @@
+services:
+
+  # ─────────────────────────────────────────
+  # DATABASE
+  # ─────────────────────────────────────────
+  db:
+    image: mysql:8.0
+    restart: unless-stopped
+
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${DATABASE_NAME}
+      MYSQL_USER: ${DATABASE_USER}
+      MYSQL_PASSWORD: ${DATABASE_PASSWORD}
+
+    volumes:
+      - db_data:/var/lib/mysql
+
+    networks:
+      - app-network
+
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+
+  # ─────────────────────────────────────────
+  # APP
+  # ─────────────────────────────────────────
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    restart: unless-stopped
+
+    ports:
+      - "${APP_PORT:-3000}:3000"
+
+    environment:
+      DATABASE_HOST: db
+      DATABASE_PORT: 3306
+      DATABASE_NAME: ${DATABASE_NAME}
+      DATABASE_USER: ${DATABASE_USER}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
+      STRIPE_PUBLISHABLE_KEY: ${STRIPE_PUBLISHABLE_KEY}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
+      STRIPE_PRICE_STARTER_MONTHLY: ${STRIPE_PRICE_STARTER_MONTHLY}
+      STRIPE_PRICE_PROFESSIONAL_MONTHLY: ${STRIPE_PRICE_PROFESSIONAL_MONTHLY}
+      STRIPE_PRICE_ENTERPRISE_MONTHLY: ${STRIPE_PRICE_ENTERPRISE_MONTHLY}
+
+    volumes:
+      - uploads:/app/uploads
+
+    depends_on:
+      db:
+        condition: service_healthy
+
+    networks:
+      - app-network
+
+
+  # ─────────────────────────────────────────
+  # MAILHOG — email testing
+  # UI at http://localhost:1080
+  # ─────────────────────────────────────────
+  mailhog:
+    image: mailhog/mailhog:latest
+    restart: unless-stopped
+
+    ports:
+      - "${MAILHOG_WEB_PORT:-1080}:1080"
+      - "${MAILHOG_SMTP_PORT:-1025}:1025"
+
+    networks:
+      - app-network
+
+
+volumes:
+  db_data:
+  uploads:
+
+
+networks:
+  app-network:
+    driver: bridge

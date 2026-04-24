@@ -3,7 +3,7 @@ import { db } from '@/lib/db';
 import { verifyJWT } from '@/lib/auth';
 import { logger } from '@/lib/logger';
 
-async function verifyAdminAuth(request: NextRequest) {
+async function verifySuperAdminAuth(request: NextRequest) {
   try {
     const token = request.cookies.get('token')?.value;
     const authHeader = request.headers.get('authorization');
@@ -22,17 +22,31 @@ async function verifyAdminAuth(request: NextRequest) {
       return null;
     }
 
-    // Get user and check if admin
-    const user = await db.user.findUnique({
-      where: { id: payload.userId as string },
-      include: { organization: true },
-    });
+    // Get user and check if SUPER_ADMIN (only SUPER_ADMIN can manage inscriptions)
+    const user = await db.queryOne(
+      `SELECT u.*, o.id as org_id, o.name as org_name, o.slug as org_slug, o.plan as org_plan
+       FROM users u
+       LEFT JOIN organizations o ON u.organizationId = o.id
+       WHERE u.id = ?`,
+      [payload.userId as string]
+    );
 
-    if (!user || user.role !== 'ADMIN') {
+    if (!user || user.role !== 'SUPER_ADMIN') {
       return null;
     }
 
-    return user;
+    // Transform to match Prisma structure
+    const userWithOrg = {
+      ...user,
+      organization: user.org_id ? {
+        id: user.org_id,
+        name: user.org_name,
+        slug: user.org_slug,
+        plan: user.org_plan
+      } : null
+    };
+
+    return userWithOrg;
   } catch (error) {
     return null;
   }
@@ -40,11 +54,11 @@ async function verifyAdminAuth(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
-    // Verify admin auth
-    const admin = await verifyAdminAuth(request);
-    if (!admin) {
+    // Verify SUPER_ADMIN auth (only SUPER_ADMIN can view inscriptions)
+    const superAdmin = await verifySuperAdminAuth(request);
+    if (!superAdmin) {
       return NextResponse.json(
-        { error: 'Unauthorized - Admin access required' },
+        { error: 'Unauthorized - SUPER_ADMIN access required' },
         { status: 401 }
       );
     }
@@ -56,27 +70,25 @@ export async function GET(request: NextRequest) {
     const offset = parseInt(url.searchParams.get('offset') || '0');
 
     // Fetch inscription requests
-    const [requests, total] = await Promise.all([
-      db.inscriptionRequest.findMany({
-        where: {
-          status: status as any,
-        },
-        orderBy: {
-          createdAt: 'desc',
-        },
-        take: limit,
-        skip: offset,
-      }),
-      db.inscriptionRequest.count({
-        where: {
-          status: status as any,
-        },
-      }),
+    const [requests, countResult]: any = await Promise.all([
+      db.query(
+        `SELECT * FROM inscription_requests
+         WHERE status = ?
+         ORDER BY createdAt DESC
+         LIMIT ? OFFSET ?`,
+        [status, limit, offset]
+      ),
+      db.queryOne(
+        'SELECT COUNT(*) as total FROM inscription_requests WHERE status = ?',
+        [status]
+      ),
     ]);
 
+    const total = countResult?.total || 0;
+
     logger.info({
-      event: 'admin_fetch_inscriptions',
-      adminId: admin.id,
+      event: 'super_admin_fetch_inscriptions',
+      superAdminId: superAdmin.id,
       status,
       count: requests.length,
     });

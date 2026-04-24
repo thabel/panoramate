@@ -2,25 +2,26 @@ import { SignJWT, jwtVerify } from 'jose';
 import bcrypt from 'bcryptjs';
 import { cookies } from 'next/headers';
 
-const JWT_SECRET = process.env.JWT_SECRET;
-if (!JWT_SECRET || JWT_SECRET.length < 32) {
-  throw new Error('JWT_SECRET must be at least 32 characters long');
+function getKey(): Uint8Array {
+  const secret = process.env.JWT_SECRET;
+  if (!secret || secret.length < 32) {
+    throw new Error('JWT_SECRET must be at least 32 characters long');
+  }
+  return new TextEncoder().encode(secret);
 }
-
-const key = new TextEncoder().encode(JWT_SECRET);
 
 export async function signJWT(payload: any, expiresIn: string = '7d'): Promise<string> {
   const token = await new SignJWT(payload)
     .setProtectedHeader({ alg: 'HS256' })
     .setExpirationTime(expiresIn)
     .setIssuedAt()
-    .sign(key);
+    .sign(getKey());
   return token;
 }
 
 export async function verifyJWT(token: string): Promise<any> {
   try {
-    const verified = await jwtVerify(token, key);
+    const verified = await jwtVerify(token, getKey());
     return verified.payload;
   } catch (err) {
     return null;

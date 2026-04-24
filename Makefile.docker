@@ -1,0 +1,110 @@
+.PHONY: docker-help docker-up docker-down docker-logs docker-shell docker-db docker-migrate docker-seed docker-reset docker-build
+
+# Docker targets
+docker-help:
+	@echo "Panoramate Docker Commands:"
+	@echo ""
+	@echo "docker-up                 - Start all services"
+	@echo "docker-down               - Stop all services"
+	@echo "docker-logs               - View all service logs"
+	@echo "docker-logs-app           - View app logs only"
+	@echo "docker-logs-db            - View database logs only"
+	@echo "docker-shell              - Open shell in app container"
+	@echo "docker-db                 - Open MySQL CLI"
+	@echo "docker-migrate NAME=name  - Run database migration"
+	@echo "docker-seed               - Seed database with demo data"
+	@echo "docker-reset              - Reset everything (⚠️ deletes data)"
+	@echo "docker-build              - Rebuild Docker image"
+	@echo "docker-ps                 - List running containers"
+	@echo "docker-health             - Check service health"
+
+docker-up:
+	@echo "Starting Docker services..."
+	docker-compose up -d
+	@echo "Waiting for services..."
+	@sleep 3
+	@echo "✓ Services started!"
+	@echo "  App:      http://localhost:3000"
+	@echo "  MailHog:  http://localhost:1080"
+
+docker-down:
+	@echo "Stopping Docker services..."
+	docker-compose down
+	@echo "✓ Services stopped"
+
+docker-logs:
+	docker-compose logs -f
+
+docker-logs-app:
+	docker-compose logs -f app
+
+docker-logs-db:
+	docker-compose logs -f db
+
+docker-shell:
+	docker-compose exec app sh
+
+docker-db:
+	docker-compose exec db mysql -u panoramate_user -ppanoramate_pass panoramate
+
+docker-migrate:
+	@if [ -z "$(NAME)" ]; then \
+		echo "Usage: make docker-migrate NAME=migration_name"; \
+		exit 1; \
+	fi
+	docker-compose exec app npm run db:migrate -- --name $(NAME)
+
+docker-seed:
+	@echo "Seeding database..."
+	docker-compose exec app npm run db:seed
+	@echo "✓ Database seeded"
+
+docker-reset:
+	@echo "⚠️  This will delete all data!"
+	@read -p "Continue? [y/N] " -n 1 -r; \
+	echo; \
+	if [[ $$REPLY =~ ^[Yy]$$ ]]; then \
+		docker-compose down -v; \
+		docker-compose up -d; \
+		sleep 5; \
+		docker-compose exec app npm run db:push; \
+		echo "✓ Database reset and ready"; \
+	else \
+		echo "Cancelled"; \
+	fi
+
+docker-build:
+	@echo "Building Docker image..."
+	docker build -t panoramate:dev .
+	@echo "✓ Image built"
+
+docker-ps:
+	docker-compose ps
+
+docker-health:
+	@echo "Checking service health..."
+	@docker-compose exec -T app curl -s http://localhost:3000/api/health > /dev/null && echo "✓ App is healthy" || echo "✗ App is not responding"
+	@docker-compose exec -T db mysqladmin ping -h localhost > /dev/null 2>&1 && echo "✓ Database is healthy" || echo "✗ Database is not responding"
+	@docker-compose ps
+
+# Development shortcuts
+docker-dev: docker-up
+	@echo "Development environment ready!"
+
+docker-clean:
+	@echo "Cleaning Docker resources..."
+	docker-compose down
+	docker system prune -f
+	@echo "✓ Cleaned"
+
+docker-install-deps:
+	docker-compose exec app npm install
+
+docker-test:
+	docker-compose exec app npm run test
+
+docker-lint:
+	docker-compose exec app npm run lint
+
+docker-format:
+	docker-compose exec app npm run format

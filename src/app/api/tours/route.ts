@@ -19,44 +19,116 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search') || '';
     const status = searchParams.get('status') || '';
 
-    const skip = (page - 1) * limit;
+    const offset = (page - 1) * limit;
 
-    // RESTRICTION DISABLED: all authenticated users can see all tours
-    const where: any = {};
+    // Build WHERE clause
+    let whereConditions = ['t.organizationId = ?'];
+    const params: any[] = [authPayload.organizationId];
 
     if (search) {
-      where.OR = [
-        { title: { contains: search } },
-        { description: { contains: search } },
-      ];
+      whereConditions.push('(t.title LIKE ? OR t.description LIKE ?)');
+      params.push(`%${search}%`, `%${search}%`);
     }
 
     if (status) {
-      where.status = status;
+      whereConditions.push('t.status = ?');
+      params.push(status);
     }
 
-    const [tours, total] = await Promise.all([
-      db.tour.findMany({
-        where,
-        include: {
-          images: {
-            orderBy: { order: 'asc' },
-            take: 1, // Only first image for thumbnail
-          },
-          createdBy: {
-            select: {
-              firstName: true,
-              lastName: true,
-              email: true,
-            },
-          },
-        },
-        orderBy: { createdAt: 'desc' },
-        skip,
-        take: limit,
-      }),
-      db.tour.count({ where }),
+    const whereClause = whereConditions.join(' AND ');
+
+    // Get tours with first image and creator info
+    const toursQuery = `
+      SELECT
+        t.*,
+        u.firstName as createdBy_firstName,
+        u.lastName as createdBy_lastName,
+        u.email as createdBy_email,
+        ti.id as firstImage_id,
+        ti.filename as firstImage_filename,
+        ti.originalName as firstImage_originalName,
+        ti.mimeType as firstImage_mimeType,
+        ti.sizeMb as firstImage_sizeMb,
+        ti.width as firstImage_width,
+        ti.height as firstImage_height,
+        ti.order as firstImage_order,
+        ti.title as firstImage_title,
+        ti.initialYaw as firstImage_initialYaw,
+        ti.initialPitch as firstImage_initialPitch,
+        ti.initialFov as firstImage_initialFov,
+        ti.createdAt as firstImage_createdAt,
+        ti.tourId as firstImage_tourId
+      FROM tours t
+      LEFT JOIN users u ON t.createdById = u.id
+      LEFT JOIN (
+        SELECT ti1.*
+        FROM tour_images ti1
+        INNER JOIN (
+          SELECT tourId, MIN(\`order\`) as minOrder
+          FROM tour_images
+          GROUP BY tourId
+        ) ti2 ON ti1.tourId = ti2.tourId AND ti1.\`order\` = ti2.minOrder
+      ) ti ON t.id = ti.tourId
+      WHERE ${whereClause}
+      ORDER BY t.createdAt DESC
+      LIMIT ? OFFSET ?
+    `;
+
+    const countQuery = `
+      SELECT COUNT(*) as total
+      FROM tours t
+      WHERE ${whereClause}
+    `;
+
+    const [toursRaw, countResult]: any = await Promise.all([
+      db.query(toursQuery, [...params, limit, offset]),
+      db.queryOne(countQuery, params),
     ]);
+
+    // Transform results to match Prisma structure
+    const tours = toursRaw.map((row: any) => ({
+      id: row.id,
+      title: row.title,
+      description: row.description,
+      coverImageUrl: row.coverImageUrl,
+      status: row.status,
+      shareToken: row.shareToken,
+      isPublic: row.isPublic,
+      viewCount: row.viewCount,
+      settings: typeof row.settings === 'string' ? JSON.parse(row.settings) : row.settings,
+      organizationId: row.organizationId,
+      createdById: row.createdById,
+      createdAt: row.createdAt,
+      updatedAt: row.updatedAt,
+      customLogoUrl: row.customLogoUrl,
+      backgroundAudioUrl: row.backgroundAudioUrl,
+      backgroundAudioVolume: row.backgroundAudioVolume,
+      showSceneMenu: row.showSceneMenu,
+      showHotspotTitles: row.showHotspotTitles,
+      createdBy: {
+        firstName: row.createdBy_firstName,
+        lastName: row.createdBy_lastName,
+        email: row.createdBy_email,
+      },
+      images: row.firstImage_id ? [{
+        id: row.firstImage_id,
+        tourId: row.firstImage_tourId,
+        filename: row.firstImage_filename,
+        originalName: row.firstImage_originalName,
+        mimeType: row.firstImage_mimeType,
+        sizeMb: row.firstImage_sizeMb,
+        width: row.firstImage_width,
+        height: row.firstImage_height,
+        order: row.firstImage_order,
+        title: row.firstImage_title,
+        initialYaw: row.firstImage_initialYaw,
+        initialPitch: row.firstImage_initialPitch,
+        initialFov: row.firstImage_initialFov,
+        createdAt: row.firstImage_createdAt,
+      }] : [],
+    }));
+
+    const total = countResult?.total || 0;
 
     return NextResponse.json(
       {
@@ -100,9 +172,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Get organization
-    const org = await db.organization.findUnique({
-      where: { id: authPayload.organizationId },
-    });
+    const org = await db.queryOne(
+      'SELECT * FROM organizations WHERE id = ?',
+      [authPayload.organizationId]
+    );
 
     if (!org) {
       return NextResponse.json(
@@ -120,34 +193,84 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const tour = await db.tour.create({
-      data: {
-        title,
-        description: description || null,
-        status: 'DRAFT',
-        settings: settings || {
-          autorotate: true,
-          mouseViewMode: 'drag',
-          showControls: true,
-        },
-        organizationId: authPayload.organizationId,
-        createdById: authPayload.userId,
-      },
-      include: {
-        images: true,
-        createdBy: {
-          select: {
-            firstName: true,
-            lastName: true,
-          },
-        },
-      },
+    // Generate shareToken (random string)
+    const crypto = require('crypto');
+    const shareToken = crypto.randomBytes(16).toString('hex');
+
+    // Create tour
+    const tourId = crypto.randomUUID();
+    const settingsJson = JSON.stringify(settings || {
+      autorotate: true,
+      mouseViewMode: 'drag',
+      showControls: true,
     });
+
+    await db.execute(
+      `INSERT INTO tours (
+        id, title, description, status, shareToken, settings,
+        organizationId, createdById, createdAt, updatedAt, isPublic,
+        viewCount, backgroundAudioVolume, showSceneMenu, showHotspotTitles
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW(), ?, ?, ?, ?, ?)`,
+      [
+        tourId,
+        title,
+        description || null,
+        'DRAFT',
+        shareToken,
+        settingsJson,
+        authPayload.organizationId,
+        authPayload.userId,
+        false,
+        0,
+        0.5,
+        true,
+        true,
+      ]
+    );
+
+    // Fetch created tour with creator info
+    const tour: any = await db.queryOne(
+      `SELECT
+        t.*,
+        u.firstName as createdBy_firstName,
+        u.lastName as createdBy_lastName
+       FROM tours t
+       JOIN users u ON t.createdById = u.id
+       WHERE t.id = ?`,
+      [tourId]
+    );
+
+    // Transform to match Prisma structure
+    const tourResponse = {
+      id: tour.id,
+      title: tour.title,
+      description: tour.description,
+      coverImageUrl: tour.coverImageUrl,
+      status: tour.status,
+      shareToken: tour.shareToken,
+      isPublic: tour.isPublic,
+      viewCount: tour.viewCount,
+      settings: typeof tour.settings === 'string' ? JSON.parse(tour.settings) : tour.settings,
+      organizationId: tour.organizationId,
+      createdById: tour.createdById,
+      createdAt: tour.createdAt,
+      updatedAt: tour.updatedAt,
+      customLogoUrl: tour.customLogoUrl,
+      backgroundAudioUrl: tour.backgroundAudioUrl,
+      backgroundAudioVolume: tour.backgroundAudioVolume,
+      showSceneMenu: tour.showSceneMenu,
+      showHotspotTitles: tour.showHotspotTitles,
+      createdBy: {
+        firstName: tour.createdBy_firstName,
+        lastName: tour.createdBy_lastName,
+      },
+      images: [],
+    };
 
     return NextResponse.json(
       {
         success: true,
-        data: tour,
+        data: tourResponse,
       },
       { status: 201 }
     );

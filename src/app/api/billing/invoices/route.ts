@@ -13,19 +13,20 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1', 10);
     const limit = parseInt(searchParams.get('limit') || '20', 10);
 
-    const skip = (page - 1) * limit;
+    const offset = (page - 1) * limit;
 
-    const [invoices, total] = await Promise.all([
-      db.invoice.findMany({
-        where: { organizationId: authPayload.organizationId },
-        orderBy: { createdAt: 'desc' },
-        skip,
-        take: limit,
-      }),
-      db.invoice.count({
-        where: { organizationId: authPayload.organizationId },
-      }),
+    const [invoices, totalResult]: any = await Promise.all([
+      db.query(
+        'SELECT * FROM Invoice WHERE organizationId = ? ORDER BY createdAt DESC LIMIT ? OFFSET ?',
+        [authPayload.organizationId, limit, offset]
+      ),
+      db.queryOne(
+        'SELECT COUNT(*) as total FROM Invoice WHERE organizationId = ?',
+        [authPayload.organizationId]
+      ),
     ]);
+
+    const total = totalResult?.total || 0;
 
     return NextResponse.json(
       {

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAuthUser } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { saveUploadedFile } from '@/lib/storage';
+import { v4 as uuidv4 } from 'uuid';
 
 export async function POST(
     request: NextRequest,
@@ -13,10 +14,10 @@ export async function POST(
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const comparison = await db.comparison.findUnique({
-            where: { id: params.id },
-            include: { images: true },
-        });
+        const comparison = await db.queryOne(
+            'SELECT * FROM comparisons WHERE id = ?',
+            [params.id]
+        );
 
         if (!comparison) {
             return NextResponse.json(
@@ -64,28 +65,25 @@ export async function POST(
             file.name
         );
 
-        const image = await db.comparisonImage.create({
-            data: {
-                comparisonId: comparison.id,
-                filename,
-                originalName: file.name,
-                mimeType: file.type,
-                sizeMb,
-                width,
-                height,
-                captureDate,
-            },
-        });
+        const imageId = uuidv4();
+        const now = new Date();
+
+        await db.execute(
+            `INSERT INTO comparison_images (id, comparisonId, filename, originalName, mimeType, sizeMb, width, height, captureDate, createdAt)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [imageId, comparison.id, filename, file.name, file.type, sizeMb, width, height, captureDate, now]
+        );
+
+        const image = await db.queryOne(
+            'SELECT * FROM comparison_images WHERE id = ?',
+            [imageId]
+        );
 
         // Update organization storage
-        await db.organization.update({
-            where: { id: orgId },
-            data: {
-                usedStorageMb: {
-                    increment: sizeMb,
-                },
-            },
-        });
+        await db.execute(
+            'UPDATE organizations SET usedStorageMb = usedStorageMb + ? WHERE id = ?',
+            [sizeMb, orgId]
+        );
 
         return NextResponse.json(
             { success: true, data: image },

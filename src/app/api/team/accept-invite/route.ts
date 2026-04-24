@@ -21,11 +21,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Find invitation
-    const invitation = await db.invitation.findUnique({
-      where: { token },
-      include: { organization: true },
-    });
+    // Find invitation with organization
+    const invitation: any = await db.queryOne(
+      `SELECT i.*, o.id as org_id, o.name as org_name, o.slug as org_slug
+       FROM Invitation i
+       JOIN Organization o ON i.organizationId = o.id
+       WHERE i.token = ?`,
+      [token]
+    );
 
     if (!invitation) {
       return NextResponse.json(
@@ -35,7 +38,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if expired
-    if (new Date() > invitation.expiresAt) {
+    if (new Date() > new Date(invitation.expiresAt)) {
       return NextResponse.json(
         { error: 'Invitation has expired' },
         { status: 400 }
@@ -51,9 +54,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if email already exists
-    const existingUser = await db.user.findUnique({
-      where: { email: invitation.email },
-    });
+    const existingUser = await db.queryOne(
+      'SELECT * FROM User WHERE email = ?',
+      [invitation.email]
+    );
 
     if (existingUser) {
       return NextResponse.json(
@@ -66,22 +70,23 @@ export async function POST(request: NextRequest) {
     const hashedPassword = await hashPassword(password);
 
     // Create user
-    const user = await db.user.create({
-      data: {
-        email: invitation.email,
-        password: hashedPassword,
-        firstName,
-        lastName,
-        role: invitation.role,
-        organizationId: invitation.organizationId,
-      },
-    });
+    const userId = require('crypto').randomUUID();
+    await db.execute(
+      `INSERT INTO User (id, email, password, firstName, lastName, role, organizationId, isVerified, createdAt, updatedAt)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
+      [userId, invitation.email, hashedPassword, firstName, lastName, invitation.role, invitation.organizationId, true]
+    );
+
+    const user = await db.queryOne(
+      'SELECT * FROM User WHERE id = ?',
+      [userId]
+    );
 
     // Mark invitation as accepted
-    await db.invitation.update({
-      where: { id: invitation.id },
-      data: { acceptedAt: new Date() },
-    });
+    await db.execute(
+      'UPDATE Invitation SET acceptedAt = NOW() WHERE id = ?',
+      [invitation.id]
+    );
 
     return NextResponse.json(
       {
@@ -96,9 +101,9 @@ export async function POST(request: NextRequest) {
             organizationId: user.organizationId,
           },
           organization: {
-            id: invitation.organization.id,
-            name: invitation.organization.name,
-            slug: invitation.organization.slug,
+            id: invitation.org_id,
+            name: invitation.org_name,
+            slug: invitation.org_slug,
           },
         },
         message: 'Invitation accepted successfully',

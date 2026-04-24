@@ -45,7 +45,7 @@ model User {
   firstName       String
   lastName        String
   avatarUrl       String?      @db.Text
-  role            UserRole     @default(MEMBER)
+  role            UserRole     @default(ADMIN)  // Changed from MEMBER: first user of org is now ADMIN
   isVerified      Boolean      @default(false)
   lastLoginAt     DateTime?
   createdAt       DateTime     @default(now())
@@ -55,6 +55,7 @@ model User {
   sessions        Session[]
   tours           Tour[]
   comparisons     Comparison[]
+  auditLogs       AuditLog[]
 
   organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
@@ -212,10 +213,10 @@ model Invoice {
 }
 
 enum UserRole {
-  OWNER
-  ADMIN
-  MEMBER
-  VIEWER
+  SUPER_ADMIN  // SaaS platform administrator (manually assigned by developers only)
+  ADMIN        // Organization administrator (replaces OWNER)
+  MEMBER       // Standard team member
+  VIEWER       // Read-only access
 }
 
 enum PlanType {
@@ -297,6 +298,25 @@ model ComparisonImage {
 
   @@index([comparisonId], map: "comparison_images_comparisonId_fkey")
   @@map("comparison_images")
+}
+
+model AuditLog {
+  id              String   @id @default(uuid())
+  userId          String
+  action          String   // e.g., "APPROVE_INSCRIPTION", "UPDATE_USER_ROLE", "DELETE_TOUR"
+  resourceType    String   // e.g., "InscriptionRequest", "User", "Tour"
+  resourceId      String
+  changes         Json?    // JSON object with before/after values
+  ipAddress       String?
+  userAgent       String?  @db.Text
+  createdAt       DateTime @default(now())
+
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId], map: "audit_logs_userId_fkey")
+  @@index([action], map: "audit_logs_action_idx")
+  @@index([createdAt], map: "audit_logs_createdAt_idx")
+  @@map("audit_logs")
 }
 
 model InscriptionRequest {

@@ -17,17 +17,19 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const tour = await db.tour.findUnique({
-      where: { id: params.id },
-    });
+    const tour = await db.queryOne(
+      'SELECT * FROM Tour WHERE id = ?',
+      [params.id]
+    );
 
     if (!tour) {
       return NextResponse.json({ error: 'Tour not found' }, { status: 404 });
     }
 
-    const org = await db.organization.findUnique({
-      where: { id: authPayload.organizationId },
-    });
+    const org = await db.queryOne(
+      'SELECT * FROM Organization WHERE id = ?',
+      [authPayload.organizationId]
+    );
 
     if (!org) {
       return NextResponse.json({ error: 'Organization not found' }, { status: 404 });

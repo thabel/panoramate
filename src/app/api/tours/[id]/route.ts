@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAuthUser } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { deleteFile } from '@/lib/storage';
+import { canAccessTour, logAuditEvent } from '@/lib/access-control';
 
 export async function GET(
   request: NextRequest,
@@ -13,34 +14,71 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const tour = await db.tour.findUnique({
-      where: { id: params.id },
-      include: {
-        images: {
-          include: {
-            hotspots: true,
-          },
-          orderBy: { order: 'asc' },
-        },
-        createdBy: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            email: true,
-          },
-        },
-      },
-    });
+    // Get tour with images, hotspots, and creator
+    const tourRow: any = await db.queryOne(
+      `SELECT
+        t.*,
+        u.id as createdBy_id,
+        u.firstName as createdBy_firstName,
+        u.lastName as createdBy_lastName,
+        u.email as createdBy_email
+       FROM tours t
+       JOIN users u ON t.createdById = u.id
+       WHERE t.id = ?`,
+      [params.id]
+    );
 
-    if (!tour) {
+    if (!tourRow) {
       return NextResponse.json(
         { error: 'Tour not found' },
         { status: 404 }
       );
     }
 
-    // RESTRICTION DISABLED: all authenticated users can access all tours
+    // Get images with hotspots
+    const imagesRaw: any = await db.query(
+      'SELECT * FROM tour_images WHERE tourId = ? ORDER BY `order` ASC',
+      [params.id]
+    );
+
+    // Get all hotspots for these images
+    const images = await Promise.all(
+      imagesRaw.map(async (img: any) => {
+        const hotspots: any = await db.query(
+          'SELECT * FROM hotspots WHERE imageId = ? ORDER BY createdAt ASC',
+          [img.id]
+        );
+        return {
+          ...img,
+          hotspots: hotspots.map((h: any) => ({
+            ...h,
+            metadata: typeof h.metadata === 'string' ? JSON.parse(h.metadata) : h.metadata,
+          })),
+        };
+      })
+    );
+
+    const tour = {
+      ...tourRow,
+      settings: typeof tourRow.settings === 'string' ? JSON.parse(tourRow.settings) : tourRow.settings,
+      createdBy: {
+        id: tourRow.createdBy_id,
+        firstName: tourRow.createdBy_firstName,
+        lastName: tourRow.createdBy_lastName,
+        email: tourRow.createdBy_email,
+      },
+      images,
+    };
+
+    // Check if user has access to this tour (organization isolation)
+    const accessCheck = await canAccessTour(authPayload, params.id, 'read');
+    if (!accessCheck.allowed) {
+      return NextResponse.json(
+        { error: accessCheck.reason || 'Access denied' },
+        { status: 403 }
+      );
+    }
+
     return NextResponse.json(
       { success: true, data: tour },
       { status: 200 }
@@ -64,9 +102,10 @@ export async function PATCH(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const tour = await db.tour.findUnique({
-      where: { id: params.id },
-    });
+    const tour = await db.queryOne(
+      'SELECT * FROM tours WHERE id = ?',
+      [params.id]
+    );
 
     if (!tour) {
       return NextResponse.json(
@@ -75,30 +114,108 @@ export async function PATCH(
       );
     }
 
-    // RESTRICTION DISABLED: all authenticated users can access all tours
+    // Check if user has access to this tour (organization isolation + VIEWER read-only)
+    const accessCheck = await canAccessTour(authPayload, params.id, 'write');
+    if (!accessCheck.allowed) {
+      return NextResponse.json(
+        { error: accessCheck.reason || 'Access denied' },
+        { status: 403 }
+      );
+    }
+
     const body = await request.json();
     const { title, description, status, settings, customLogoUrl, backgroundAudioUrl, backgroundAudioVolume, showSceneMenu, showHotspotTitles } = body;
 
-    const updatedTour = await db.tour.update({
-      where: { id: params.id },
-      data: {
-        ...(title && { title }),
-        ...(description !== undefined && { description }),
-        ...(status && { status }),
-        ...(settings && { settings }),
-        ...(customLogoUrl !== undefined && { customLogoUrl }),
-        ...(backgroundAudioUrl !== undefined && { backgroundAudioUrl }),
-        ...(backgroundAudioVolume !== undefined && { backgroundAudioVolume }),
-        ...(showSceneMenu !== undefined && { showSceneMenu }),
-        ...(showHotspotTitles !== undefined && { showHotspotTitles }),
-      },
-      include: {
-        images: {
-          include: { hotspots: true },
-          orderBy: { order: 'asc' },
-        },
-      },
-    });
+    // Build UPDATE query dynamically
+    const updates: string[] = [];
+    const values: any[] = [];
+
+    if (title) {
+      updates.push('title = ?');
+      values.push(title);
+    }
+    if (description !== undefined) {
+      updates.push('description = ?');
+      values.push(description);
+    }
+    if (status) {
+      updates.push('status = ?');
+      values.push(status);
+    }
+    if (settings) {
+      updates.push('settings = ?');
+      values.push(JSON.stringify(settings));
+    }
+    if (customLogoUrl !== undefined) {
+      updates.push('customLogoUrl = ?');
+      values.push(customLogoUrl);
+    }
+    if (backgroundAudioUrl !== undefined) {
+      updates.push('backgroundAudioUrl = ?');
+      values.push(backgroundAudioUrl);
+    }
+    if (backgroundAudioVolume !== undefined) {
+      updates.push('backgroundAudioVolume = ?');
+      values.push(backgroundAudioVolume);
+    }
+    if (showSceneMenu !== undefined) {
+      updates.push('showSceneMenu = ?');
+      values.push(showSceneMenu);
+    }
+    if (showHotspotTitles !== undefined) {
+      updates.push('showHotspotTitles = ?');
+      values.push(showHotspotTitles);
+    }
+
+    updates.push('updatedAt = NOW()');
+    values.push(params.id);
+
+    await db.execute(
+      `UPDATE tours SET ${updates.join(', ')} WHERE id = ?`,
+      values
+    );
+
+    // Fetch updated tour with images and hotspots
+    const updatedTourRow: any = await db.queryOne(
+      'SELECT * FROM tours WHERE id = ?',
+      [params.id]
+    );
+
+    const imagesRaw: any = await db.query(
+      'SELECT * FROM tour_images WHERE tourId = ? ORDER BY `order` ASC',
+      [params.id]
+    );
+
+    const images = await Promise.all(
+      imagesRaw.map(async (img: any) => {
+        const hotspots: any = await db.query(
+          'SELECT * FROM hotspots WHERE imageId = ? ORDER BY createdAt ASC',
+          [img.id]
+        );
+        return {
+          ...img,
+          hotspots: hotspots.map((h: any) => ({
+            ...h,
+            metadata: typeof h.metadata === 'string' ? JSON.parse(h.metadata) : h.metadata,
+          })),
+        };
+      })
+    );
+
+    const updatedTour = {
+      ...updatedTourRow,
+      settings: typeof updatedTourRow.settings === 'string' ? JSON.parse(updatedTourRow.settings) : updatedTourRow.settings,
+      images,
+    };
+
+    // Log audit event
+    await logAuditEvent(
+      authPayload.userId,
+      'UPDATE_TOUR',
+      'Tour',
+      params.id,
+      { title, status }
+    );
 
     return NextResponse.json(
       { success: true, data: updatedTour },
@@ -123,10 +240,10 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const tour = await db.tour.findUnique({
-      where: { id: params.id },
-      include: { images: true },
-    });
+    const tour = await db.queryOne(
+      'SELECT * FROM tours WHERE id = ?',
+      [params.id]
+    );
 
     if (!tour) {
       return NextResponse.json(
@@ -135,16 +252,52 @@ export async function DELETE(
       );
     }
 
-    // RESTRICTION DISABLED: all authenticated users can access all tours
+    // Check if user has access to this tour (organization isolation + VIEWER read-only)
+    const accessCheck = await canAccessTour(authPayload, params.id, 'write');
+    if (!accessCheck.allowed) {
+      return NextResponse.json(
+        { error: accessCheck.reason || 'Access denied' },
+        { status: 403 }
+      );
+    }
+
+    // Get all images to delete files
+    const images: any = await db.query(
+      'SELECT * FROM tour_images WHERE tourId = ?',
+      [params.id]
+    );
+
     // Delete all images and files
-    for (const image of tour.images) {
+    for (const image of images) {
       await deleteFile(image.filename);
     }
 
-    // Delete tour (cascade will delete images and hotspots)
-    await db.tour.delete({
-      where: { id: params.id },
-    });
+    // Delete hotspots first (foreign key constraint)
+    await db.execute(
+      'DELETE FROM hotspots WHERE imageId IN (SELECT id FROM tour_images WHERE tourId = ?)',
+      [params.id]
+    );
+
+    // Delete images
+    await db.execute(
+      'DELETE FROM tour_images WHERE tourId = ?',
+      [params.id]
+    );
+
+    // Delete tour
+    await db.execute(
+      'DELETE FROM tours WHERE id = ?',
+      [params.id]
+    );
+
+    // Log audit event
+    await logAuditEvent(
+      authPayload.userId,
+      'DELETE_TOUR',
+      'Tour',
+      params.id,
+      { title: tour.id }
+    );
 
     return NextResponse.json(
       { success: true, message: 'Tour deleted' },

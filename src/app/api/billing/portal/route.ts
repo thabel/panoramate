@@ -10,9 +10,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const org = await db.organization.findUnique({
-      where: { id: authPayload.organizationId },
-    });
+    const org = await db.queryOne(
+      'SELECT * FROM organizations WHERE id = ?',
+      [authPayload.organizationId]
+    ) as any;
 
     if (!org) {
       return NextResponse.json(

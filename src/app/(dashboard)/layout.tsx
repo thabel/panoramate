@@ -56,7 +56,7 @@ export default function DashboardLayout({
   }
 
   const isTrialing = organization.plan === 'FREE_TRIAL';
-  const isAdmin = user.role === 'ADMIN';
+  const isSuperAdmin = user.role === 'SUPER_ADMIN';
 
   const navItems = [
     {
@@ -69,7 +69,7 @@ export default function DashboardLayout({
       href: '/tours',
       icon: FileStack,
     },
-   
+
     {
       label: 'Team',
       href: '/team',
@@ -85,10 +85,10 @@ export default function DashboardLayout({
       href: '/settings',
       icon: Settings,
     },
-    ...(isAdmin
+    ...(isSuperAdmin
       ? [
           {
-            label: 'Admin',
+            label: 'Admin - Inscriptions',
             href: '/admin/inscriptions',
             icon: Shield,
           },

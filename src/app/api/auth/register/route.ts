@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { signJWT, hashPassword, generateSlug, setAuthCookie } from '@/lib/auth';
+import { signJWT, hashPassword, generateSlug } from '@/lib/auth';
+import { v4 as uuidv4 } from 'uuid';
 
 export async function POST(request: NextRequest) {
   try {
@@ -30,9 +31,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user exists
-    const existingUser = await db.user.findUnique({
-      where: { email },
-    });
+    const existingUser = await db.queryOne('SELECT id FROM users WHERE email = ?', [email]);
 
     if (existingUser) {
       return NextResponse.json(
@@ -46,40 +45,34 @@ export async function POST(request: NextRequest) {
 
     // Generate organization slug
     const slug = generateSlug(organizationName);
+    const organizationId = uuidv4();
+    const userId = uuidv4();
+    const trialEndsAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
 
-    // Create organization
-    const organization = await db.organization.create({
-      data: {
-        name: organizationName,
-        slug,
-        plan: 'FREE_TRIAL',
-        subscriptionStatus: 'TRIALING',
-        trialEndsAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), // 14 days
-        maxTours: 1,
-        maxImagesPerTour: 10,
-        totalStorageMb: 200,
-      },
+    // Use transaction to create organization and user
+    await db.transaction(async (connection) => {
+      // Create organization
+      await connection.execute(
+        `INSERT INTO organizations (id, name, slug, plan, subscriptionStatus, trialEndsAt, maxTours, maxImagesPerTour, totalStorageMb, usedStorageMb, createdAt, updatedAt)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
+        [organizationId, organizationName, slug, 'FREE_TRIAL', 'TRIALING', trialEndsAt, 1, 10, 200, 0]
+      );
+
+      // Create user
+      await connection.execute(
+        `INSERT INTO users (id, email, password, firstName, lastName, role, organizationId, createdAt, updatedAt, isVerified)
+         VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW(), ?)`,
+        [userId, email, hashedPassword, firstName, lastName, 'ADMIN', organizationId, false]
+      );
     });
 
-    // Create user
-    const user = await db.user.create({
-      data: {
-        email,
-        password: hashedPassword,
-        firstName,
-        lastName,
-        role: 'OWNER',
-        organizationId: organization.id,
-      },
-    });
-
-    // Create session
+    // Create session token
     const token = await signJWT(
       {
-        userId: user.id,
-        email: user.email,
-        organizationId: organization.id,
-        role: user.role,
+        userId,
+        email,
+        organizationId,
+        role: 'ADMIN',
       },
       '7d'
     );
@@ -90,18 +83,18 @@ export async function POST(request: NextRequest) {
         success: true,
         data: {
           user: {
-            id: user.id,
-            email: user.email,
-            firstName: user.firstName,
-            lastName: user.lastName,
-            role: user.role,
-            organizationId: organization.id,
+            id: userId,
+            email,
+            firstName,
+            lastName,
+            role: 'ADMIN',
+            organizationId,
           },
           organization: {
-            id: organization.id,
-            name: organization.name,
-            slug: organization.slug,
-            plan: organization.plan,
+            id: organizationId,
+            name: organizationName,
+            slug,
+            plan: 'FREE_TRIAL',
           },
           token,
         },

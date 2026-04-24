@@ -13,9 +13,10 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const tour = await db.tour.findUnique({
-      where: { id: params.id },
-    });
+    const tour = await db.queryOne(
+      'SELECT * FROM tours WHERE id = ?',
+      [params.id]
+    );
 
     if (!tour) {
       return NextResponse.json({ error: 'Tour not found' }, { status: 404 });
@@ -46,12 +47,10 @@ export async function POST(
       await deleteFile(tour.customLogoUrl);
     }
 
-    const updatedTour = await db.tour.update({
-      where: { id: params.id },
-      data: {
-        customLogoUrl: filename,
-      },
-    });
+    await db.execute(
+      'UPDATE tours SET customLogoUrl = ?, updatedAt = NOW() WHERE id = ?',
+      [filename, params.id]
+    );
 
     return NextResponse.json({
       success: true,
@@ -75,9 +74,10 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const tour = await db.tour.findUnique({
-      where: { id: params.id },
-    });
+    const tour = await db.queryOne(
+      'SELECT * FROM tours WHERE id = ?',
+      [params.id]
+    );
 
     if (!tour) {
       return NextResponse.json({ error: 'Tour not found' }, { status: 404 });
@@ -88,12 +88,10 @@ export async function DELETE(
       await deleteFile(tour.customLogoUrl);
     }
 
-    await db.tour.update({
-      where: { id: params.id },
-      data: {
-        customLogoUrl: null,
-      },
-    });
+    await db.execute(
+      'UPDATE tours SET customLogoUrl = NULL, updatedAt = NOW() WHERE id = ?',
+      [params.id]
+    );
 
     return NextResponse.json({ success: true, message: 'Logo deleted' });
   } catch (error) {

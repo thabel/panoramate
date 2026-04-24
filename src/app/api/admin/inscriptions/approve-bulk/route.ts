@@ -3,7 +3,7 @@ import { db } from '@/lib/db';
 import { verifyJWT } from '@/lib/auth';
 import { logger } from '@/lib/logger';
 
-async function verifyAdminAuth(request: NextRequest) {
+async function verifySuperAdminAuth(request: NextRequest) {
   try {
     const token = request.cookies.get('token')?.value;
     const authHeader = request.headers.get('authorization');
@@ -22,13 +22,16 @@ async function verifyAdminAuth(request: NextRequest) {
       return null;
     }
 
-    // Get user and check if admin
-    const user = await db.user.findUnique({
-      where: { id: payload.userId as string },
-      include: { organization: true },
-    });
+    // Get user and check if SUPER_ADMIN (only SUPER_ADMIN can approve inscriptions)
+    const user = await db.queryOne(
+      `SELECT u.*, o.id as org_id, o.name, o.slug, o.plan
+       FROM users u
+       LEFT JOIN organizations o ON u.organizationId = o.id
+       WHERE u.id = ?`,
+      [payload.userId as string]
+    ) as any;
 
-    if (!user || user.role !== 'ADMIN') {
+    if (!user || user.role !== 'SUPER_ADMIN') {
       return null;
     }
 
@@ -40,11 +43,11 @@ async function verifyAdminAuth(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    // Verify admin auth
-    const admin = await verifyAdminAuth(request);
-    if (!admin) {
+    // Verify SUPER_ADMIN auth (only SUPER_ADMIN can approve inscriptions)
+    const superAdmin = await verifySuperAdminAuth(request);
+    if (!superAdmin) {
       return NextResponse.json(
-        { error: 'Unauthorized - Admin access required' },
+        { error: 'Unauthorized - SUPER_ADMIN access required' },
         { status: 401 }
       );
     }
@@ -67,12 +70,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate all IDs exist and are PENDING
-    const existingRequests = await db.inscriptionRequest.findMany({
-      where: {
-        id: { in: ids },
-        status: 'PENDING',
-      },
-    });
+    const placeholders = ids.map(() => '?').join(',');
+    const existingRequests = await db.query(
+      `SELECT id FROM inscription_requests WHERE id IN (${placeholders}) AND status = 'PENDING'`,
+      ids
+    ) as any[];
 
     if (existingRequests.length !== ids.length) {
       return NextResponse.json(
@@ -82,28 +84,24 @@ export async function POST(request: NextRequest) {
     }
 
     // Update all requests to APPROVED
-    const updated = await db.inscriptionRequest.updateMany({
-      where: {
-        id: { in: ids },
-      },
-      data: {
-        status: 'APPROVED',
-        approvedAt: new Date(),
-      },
-    });
+    const updatePlaceholders = ids.map(() => '?').join(',');
+    await db.execute(
+      `UPDATE inscription_requests SET status = 'APPROVED', approvedAt = NOW(), updatedAt = NOW() WHERE id IN (${updatePlaceholders})`,
+      ids
+    );
 
     logger.info({
       event: 'inscription_requests_approved_bulk',
-      count: updated.count,
-      approvedBy: admin.id,
+      count: ids.length,
+      approvedBy: superAdmin.id,
     });
 
     return NextResponse.json(
       {
         success: true,
-        message: `${updated.count} inscription requests approved`,
+        message: `${ids.length} inscription requests approved`,
         data: {
-          count: updated.count,
+          count: ids.length,
         },
       },
       { status: 200 }
