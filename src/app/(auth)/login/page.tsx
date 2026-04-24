@@ -59,6 +59,8 @@ export default function LoginPage() {
         localStorage.setItem('user', JSON.stringify(data.data.user));
         localStorage.setItem('organization', JSON.stringify(data.data.organization));
         toast.success(t.welcomeBackToast);
+        console.log("Login successful, redirecting to dashboard...");
+        router.refresh(); // Refresh the router state
         router.push('/dashboard');
       }
     } catch (error) {
