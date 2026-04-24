@@ -41,12 +41,7 @@ export default function TeamPage() {
 
   const fetchTeam = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('/api/team', {
-        headers: {
-          Authorization: `Bearer ${token || ''}`,
-        },
-      });
+      const response = await fetch('/api/team');
 
       if (response.ok) {
         const data = await response.json();
@@ -72,12 +67,10 @@ export default function TeamPage() {
     setIsInviting(true);
 
     try {
-      const token = localStorage.getItem('token');
       const response = await fetch('/api/team', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token || ''}`,
         },
         body: JSON.stringify(inviteFormData),
       });
@@ -102,12 +95,8 @@ export default function TeamPage() {
     if (!confirm('Remove this member?')) return;
 
     try {
-      const token = localStorage.getItem('token');
       const response = await fetch(`/api/team/${memberId}`, {
         method: 'DELETE',
-        headers: {
-          Authorization: `Bearer ${token || ''}`,
-        },
       });
 
       if (response.ok) {

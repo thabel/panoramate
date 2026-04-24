@@ -26,12 +26,7 @@ export default function TourDetailPage({
 
   const fetchTour = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`/api/tours/${params.id}`, {
-        headers: {
-          Authorization: `Bearer ${token || ''}`,
-        },
-      });
+      const response = await fetch(`/api/tours/${params.id}`);
 
       if (response.ok) {
         const data = await response.json();

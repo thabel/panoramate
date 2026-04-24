@@ -138,10 +138,8 @@ export default function TourEditorPage({
     formData.append('file', file);
 
     try {
-      const token = localStorage.getItem('token');
       const response = await fetch(`/api/tours/${tour.id}/audio`, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token || ''}` },
         body: formData,
       });
 
@@ -160,10 +158,8 @@ export default function TourEditorPage({
   const handleRemoveAudio = async () => {
     if (!tour || !confirm('Are you sure you want to remove the background audio?')) return;
     try {
-      const token = localStorage.getItem('token');
       const response = await fetch(`/api/tours/${tour.id}/audio`, {
         method: 'DELETE',
-        headers: { Authorization: `Bearer ${token || ''}` },
       });
       if (response.ok) {
         setTour({ ...tour, backgroundAudioUrl: undefined });
@@ -180,10 +176,10 @@ export default function TourEditorPage({
     if (!tour) return;
     setTour({ ...tour, backgroundAudioVolume: volume });
     try {
-      const token = localStorage.getItem('token');
-      await fetch(`/api/tours/${tour.id}`, {
+      await fetch(
+`/api/tours/${tour.id}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token || ''}` },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ backgroundAudioVolume: volume }),
       });
     } catch (error) {
@@ -193,10 +189,7 @@ export default function TourEditorPage({
 
   const fetchTour = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`/api/tours/${params.id}`, {
-        headers: { Authorization: `Bearer ${token || ''}` },
-      });
+      const response = await fetch(`/api/tours/${params.id}`);
       if (response.ok) {
         const data = await response.json();
         setTour(data.data);
@@ -230,10 +223,10 @@ export default function TourEditorPage({
     }
     if (!confirm('Are you sure you want to delete this scene?')) return;
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`/api/tours/${params.id}/images`, {
+      const response = await fetch(
+`/api/tours/${params.id}/images`, {
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token || ''}` },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ imageId }),
       });
       if (response.ok) {
@@ -272,10 +265,9 @@ export default function TourEditorPage({
     const formData = new FormData();
     formData.append('icon', file);
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`/api/tours/${tour.id}/icons`, {
+      const response = await fetch(
+`/api/tours/${tour.id}/icons`, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token || ''}` },
         body: formData,
       });
       if (response.ok) {
@@ -296,7 +288,6 @@ export default function TourEditorPage({
     if ((!newHotspotCoords && !isEditingHotspot) || !tour) return;
     try {
       const currentImageId = tour.images[currentSceneIndex].id;
-      const token = localStorage.getItem('token');
 
       const url = `/api/tours/${params.id}/images/${currentImageId}/hotspots`;
       const method = isEditingHotspot ? 'PATCH' : 'POST';
@@ -306,7 +297,7 @@ export default function TourEditorPage({
 
       const response = await fetch(url, {
         method,
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token || ''}` },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       });
 
@@ -389,10 +380,9 @@ export default function TourEditorPage({
     if (!confirm('Are you sure you want to delete this hotspot?')) return;
     try {
       const currentImageId = tour.images[currentSceneIndex].id;
-      const token = localStorage.getItem('token');
       const response = await fetch(`/api/tours/${params.id}/images/${currentImageId}/hotspots`, {
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token || ''}` },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ hotspotId: selectedHotspot.id }),
       });
       if (response.ok) {
@@ -431,10 +421,9 @@ export default function TourEditorPage({
     if (!tour || !newSceneTitle.trim()) return;
     try {
       const currentImageId = tour.images[currentSceneIndex].id;
-      const token = localStorage.getItem('token');
       const response = await fetch(`/api/tours/${params.id}/images`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token || ''}` },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ imageId: currentImageId, title: newSceneTitle.trim() }),
       });
       if (response.ok) {
@@ -460,10 +449,9 @@ export default function TourEditorPage({
     const formData = new FormData();
     formData.append('file', file);
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`/api/tours/${tour.id}/logo`, {
+      const response = await fetch(
+`/api/tours/${tour.id}/logo`, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token || ''}` },
         body: formData,
       });
       if (response.ok) {
@@ -481,10 +469,9 @@ export default function TourEditorPage({
   const handleRemoveLogo = async () => {
     if (!tour || !confirm('Are you sure you want to remove the logo?')) return;
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`/api/tours/${tour.id}/logo`, {
+      const response = await fetch(
+`/api/tours/${tour.id}/logo`, {
         method: 'DELETE',
-        headers: { Authorization: `Bearer ${token || ''}` },
       });
       if (response.ok) {
         setTour({ ...tour, customLogoUrl: undefined });
@@ -501,10 +488,10 @@ export default function TourEditorPage({
     if (!tour) return;
     setIsSaving(true);
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`/api/tours/${tour.id}`, {
+      const response = await fetch(
+`/api/tours/${tour.id}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token || ''}` },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: 'PUBLISHED', showSceneMenu, showHotspotTitles }),
       });
       if (response.ok) {
@@ -580,10 +567,9 @@ export default function TourEditorPage({
     const formData = new FormData();
     Array.from(files).forEach(file => formData.append('files', file));
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`/api/tours/${tour.id}/hotspot-uploads`, {
+      const response = await fetch(
+`/api/tours/${tour.id}/hotspot-uploads`, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token || ''}` },
         body: formData,
       });
       if (response.ok) {

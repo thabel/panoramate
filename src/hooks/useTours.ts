@@ -11,13 +11,7 @@ export function useTours() {
   const fetchTours = async () => {
     try {
       setIsLoading(true);
-      const token = localStorage.getItem('token');
-
-      const response = await fetch('/api/tours', {
-        headers: {
-          Authorization: `Bearer ${token || ''}`,
-        },
-      });
+      const response = await fetch('/api/tours');
 
       if (!response.ok) {
         throw new Error('Failed to fetch tours');
@@ -43,13 +37,10 @@ export function useTours() {
 
   const createTour = async (title: string, description?: string) => {
     try {
-      const token = localStorage.getItem('token');
-
       const response = await fetch('/api/tours', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token || ''}`,
         },
         body: JSON.stringify({
           title,
@@ -80,13 +71,8 @@ export function useTours() {
 
   const deleteTour = async (id: string) => {
     try {
-      const token = localStorage.getItem('token');
-
       const response = await fetch(`/api/tours/${id}`, {
         method: 'DELETE',
-        headers: {
-          Authorization: `Bearer ${token || ''}`,
-        },
       });
 
       if (!response.ok) {

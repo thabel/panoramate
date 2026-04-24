@@ -12,26 +12,15 @@ export function useAuth() {
   useEffect(() => {
     const fetchAuth = async () => {
       try {
-        const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
         const cachedUser = typeof window !== 'undefined' ? localStorage.getItem('user') : null;
         const cachedOrg = typeof window !== 'undefined' ? localStorage.getItem('organization') : null;
 
         if (cachedUser) setUser(JSON.parse(cachedUser));
         if (cachedOrg) setOrganization(JSON.parse(cachedOrg));
 
-        if (!token) {
-          setIsLoading(false);
-          return;
-        }
-
-        const response = await fetch('/api/auth/me', {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+        const response = await fetch('/api/auth/me');
 
         if (!response.ok) {
-          localStorage.removeItem('token');
           localStorage.removeItem('user');
           localStorage.removeItem('organization');
           setUser(null);
@@ -60,19 +49,12 @@ export function useAuth() {
 
   const logout = async () => {
     try {
-      const token = localStorage.getItem('token');
-      if (token) {
-        await fetch('/api/auth/logout', {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-      }
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+      });
     } catch (err) {
       console.error('Logout error:', err);
     } finally {
-      localStorage.removeItem('token');
       localStorage.removeItem('user');
       localStorage.removeItem('organization');
       setUser(null);

@@ -89,7 +89,6 @@ export default function RegisterPage() {
       const data = await response.json();
 
       if (data.success) {
-        localStorage.setItem('token', data.data.token);
         localStorage.setItem('user', JSON.stringify(data.data.user));
         localStorage.setItem('organization', JSON.stringify(data.data.organization));
         toast.success(t.errors.accountCreated);

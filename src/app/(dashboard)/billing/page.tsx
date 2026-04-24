@@ -16,12 +16,10 @@ export default function BillingPage() {
   const handleUpgrade = async (planType: string) => {
     try {
       setIsLoading(true);
-      const token = localStorage.getItem('token');
       const response = await fetch('/api/billing/subscribe', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token || ''}`,
         },
         body: JSON.stringify({
           planType,
@@ -45,12 +43,8 @@ export default function BillingPage() {
 
   const handlePortal = async () => {
     try {
-      const token = localStorage.getItem('token');
       const response = await fetch('/api/billing/portal', {
         method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token || ''}`,
-        },
       });
 
       if (response.ok) {

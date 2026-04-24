@@ -25,12 +25,8 @@ export const UploadZone: React.FC<UploadZoneProps> = ({ tourId, onUploadComplete
         formData.append('files', file);
       });
 
-      const token = localStorage.getItem('token');
       const response = await fetch(`/api/tours/${tourId}/images`, {
         method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token || ''}`,
-        },
         body: formData,
       });
 

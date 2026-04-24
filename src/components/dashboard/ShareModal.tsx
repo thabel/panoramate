@@ -34,12 +34,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({
   const fetchShareData = async () => {
     try {
       setIsLoading(true);
-      const token = localStorage.getItem('token');
-      const response = await fetch(`/api/tours/${tourId}/share`, {
-        headers: {
-          Authorization: `Bearer ${token || ''}`,
-        },
-      });
+      const response = await fetch(`/api/tours/${tourId}/share`);
 
       if (response.ok) {
         const data = await response.json();
@@ -58,13 +53,9 @@ export const ShareModal: React.FC<ShareModalProps> = ({
   const togglePublic = async () => {
     try {
       setIsLoading(true);
-      const token = localStorage.getItem('token');
 
       const response = await fetch(`/api/tours/${tourId}/share`, {
         method: shareData?.isPublic ? 'DELETE' : 'POST',
-        headers: {
-          Authorization: `Bearer ${token || ''}`,
-        },
       });
 
       if (response.ok) {

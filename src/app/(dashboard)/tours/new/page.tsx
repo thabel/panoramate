@@ -32,12 +32,10 @@ export default function NewTourPage() {
     setIsLoading(true);
 
     try {
-      const token = localStorage.getItem('token');
       const response = await fetch('/api/tours', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token || ''}`,
         },
         body: JSON.stringify(formData),
       });

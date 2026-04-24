@@ -19,12 +19,8 @@ export function ToursGrid({ initialTours }: ToursGridProps) {
     if (!confirm('Are you sure you want to delete this tour?')) return;
 
     try {
-      const token = localStorage.getItem('token');
       const response = await fetch(`/api/tours/${tourId}`, {
         method: 'DELETE',
-        headers: {
-          Authorization: `Bearer ${token || ''}`,
-        },
       });
 
       if (response.ok) {

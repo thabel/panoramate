@@ -20,15 +20,10 @@ export default function ToursPage() {
 
   const fetchTours = async () => {
     try {
-      const token = localStorage.getItem('token');
       const params = new URLSearchParams();
       if (search) params.append('search', search);
 
-      const response = await fetch(`/api/tours?${params}`, {
-        headers: {
-          Authorization: `Bearer ${token || ''}`,
-        },
-      });
+      const response = await fetch(`/api/tours?${params}`);
 
       if (response.ok) {
         const data = await response.json();
@@ -45,12 +40,8 @@ export default function ToursPage() {
     if (!confirm('Delete this tour?')) return;
 
     try {
-      const token = localStorage.getItem('token');
       const response = await fetch(`/api/tours/${tourId}`, {
         method: 'DELETE',
-        headers: {
-          Authorization: `Bearer ${token || ''}`,
-        },
       });
 
       if (response.ok) {
