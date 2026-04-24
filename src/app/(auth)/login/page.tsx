@@ -53,7 +53,10 @@ export default function LoginPage() {
       const data = await response.json();
 
       if (data.success) {
-        localStorage.setItem('token', data.data.token);
+        if (data.data.token) {
+          localStorage.setItem('token', data.data.token);
+        }
+        localStorage.setItem('user', JSON.stringify(data.data.user));
         localStorage.setItem('organization', JSON.stringify(data.data.organization));
         toast.success(t.welcomeBackToast);
         router.push('/dashboard');
@@ -68,7 +71,7 @@ export default function LoginPage() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <h1 className="text-2xl font-bold text-white mb-6">{t.title}</h1>
+      <h1 className="mb-6 text-2xl font-bold text-white">{t.title}</h1>
 
       <Input
         label={t.emailLabel}
@@ -112,7 +115,7 @@ export default function LoginPage() {
         {t.submit}
       </Button>
 
-      <p className="text-center text-dark-400 text-sm">
+      <p className="text-sm text-center text-dark-400">
         {t.noAccount}{' '}
         <Link href="/register" className="text-primary-400 hover:text-primary-300">
           {t.signUp}

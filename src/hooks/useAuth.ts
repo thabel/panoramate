@@ -13,6 +13,11 @@ export function useAuth() {
     const fetchAuth = async () => {
       try {
         const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+        const cachedUser = typeof window !== 'undefined' ? localStorage.getItem('user') : null;
+        const cachedOrg = typeof window !== 'undefined' ? localStorage.getItem('organization') : null;
+
+        if (cachedUser) setUser(JSON.parse(cachedUser));
+        if (cachedOrg) setOrganization(JSON.parse(cachedOrg));
 
         if (!token) {
           setIsLoading(false);
@@ -27,6 +32,10 @@ export function useAuth() {
 
         if (!response.ok) {
           localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          localStorage.removeItem('organization');
+          setUser(null);
+          setOrganization(null);
           setIsLoading(false);
           return;
         }
@@ -36,6 +45,8 @@ export function useAuth() {
         if (data.success) {
           setUser(data.data.user);
           setOrganization(data.data.organization);
+          localStorage.setItem('user', JSON.stringify(data.data.user));
+          localStorage.setItem('organization', JSON.stringify(data.data.organization));
         }
       } catch (err) {
         console.error('Auth fetch error:', err);
@@ -62,6 +73,8 @@ export function useAuth() {
       console.error('Logout error:', err);
     } finally {
       localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      localStorage.removeItem('organization');
       setUser(null);
       setOrganization(null);
       window.location.href = '/';

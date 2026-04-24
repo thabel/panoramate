@@ -38,19 +38,22 @@ export default function DashboardLayout({
   const isEditor = pathname?.includes('/editor');
 
   useEffect(() => {
+    // Only redirect if NOT loading and NO user
     if (!isLoading && !user) {
       router.push('/login');
     }
   }, [isLoading, user, router]);
 
+  // If we are still loading, show a spinner to avoid layout shifts or premature redirects
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-screen">
+      <div className="flex items-center justify-center h-screen bg-dark-900">
         <LoadingSpinner size="lg" />
       </div>
     );
   }
 
+  // If not loading but no user, return null while the redirect effect takes place
   if (!user || !organization) {
     return null;
   }

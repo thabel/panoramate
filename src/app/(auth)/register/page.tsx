@@ -90,6 +90,7 @@ export default function RegisterPage() {
 
       if (data.success) {
         localStorage.setItem('token', data.data.token);
+        localStorage.setItem('user', JSON.stringify(data.data.user));
         localStorage.setItem('organization', JSON.stringify(data.data.organization));
         toast.success(t.errors.accountCreated);
         router.push('/dashboard');
