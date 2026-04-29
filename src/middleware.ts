@@ -13,7 +13,7 @@ export async function middleware(request: NextRequest) {
     "/api/billing/webhook",
     "/api/tours-public",
     "/api/inscription-request",
-    "/api/admin/create-user",
+    "/api/uploads/",
     "/tour/",
     "/login",
     "/register",
@@ -24,7 +24,7 @@ export async function middleware(request: NextRequest) {
   const isPublicRoute = publicRoutes.some(
     (route) => pathname.startsWith(route) || pathname === "/",
   );
-
+  console.log("Route", pathname,"ispublic", isPublicRoute);
   if (isPublicRoute) {
     return NextResponse.next();
   }
