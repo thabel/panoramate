@@ -121,8 +121,19 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
     };
 
     if (!initViewer()) {
+      console.warn('Marzipano not available, retrying...');
+      let retryCount = 0;
+      const maxRetries = 60; // 30 seconds max (60 * 500ms)
+
       retryInterval = setInterval(() => {
-        if (initViewer()) clearInterval(retryInterval);
+        retryCount++;
+        if (initViewer()) {
+          console.log('Marzipano initialized successfully after', retryCount, 'retries');
+          clearInterval(retryInterval);
+        } else if (retryCount >= maxRetries) {
+          console.error('Failed to initialize Marzipano after', retryCount, 'retries');
+          clearInterval(retryInterval);
+        }
       }, 500);
     }
 
@@ -490,10 +501,11 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
   }, [autorotate]);
 
   return (
-    <div className={`w-full h-full min-h-[400px] bg-black relative ${addHotspotMode ? 'hotspot-cursor' : ''}`}>
+    <div className={`w-full h-full bg-black relative ${addHotspotMode ? 'hotspot-cursor' : ''}`}>
       <div
         ref={containerRef}
-        className="w-full h-full"
+        className="w-full h-full overflow-hidden"
+        style={{ display: 'flex' }}
       />
       {/* {hoveredHotspot && (
         <HotspotPopover

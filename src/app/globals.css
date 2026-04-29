@@ -263,3 +263,32 @@ img.info-hotspot-close-icon{
   height: 24px;
   width: 24px;
 }
+
+/* Mobile responsive styles */
+@media (max-width: 640px) {
+  .marzipano-hotspot-visual {
+    width: 36px;
+    height: 36px;
+  }
+
+  .marzipano-hotspot-visual .hotspot-title-icon {
+    left: 40px;
+    width: 0;
+    max-width: 200px;
+  }
+
+  .marzipano-hotspot-visual:hover .hotspot-title-icon {
+    width: 200px;
+    max-width: 200px;
+  }
+
+  /* Smaller font on mobile */
+  .marzipano-hotspot-visual .hotspot-title-icon > div:first-child {
+    font-size: 12px;
+  }
+
+  img.info-hotspot-close-icon {
+    height: 20px;
+    width: 20px;
+  }
+}
