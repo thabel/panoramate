@@ -144,15 +144,19 @@ export interface Tour {
   showHotspotTitles: boolean;
 }
 
-export interface TourImage {
+export interface Scene {
   id: string;
   tourId: string;
-  filename: string;
+  filename?: string | null;
   originalName: string;
   mimeType: string;
   sizeMb: number;
   width: number;
   height: number;
+  folder: string;
+  previewUrl: string;
+  tileBaseUrl: string;
+  levels?: any | null;
   order: number;
   title?: string | null;
   initialYaw: number;

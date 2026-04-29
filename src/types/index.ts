@@ -10,15 +10,19 @@ export interface AuthUser {
   avatarUrl?: string;
 }
 
-export interface TourImage {
+export interface Scene {
   id: string;
   tourId: string;
-  filename: string;
+  filename?: string;
   originalName: string;
   mimeType: string;
   sizeMb: number;
   width: number;
   height: number;
+  folder: string;
+  previewUrl: string;
+  tileBaseUrl: string;
+  levels?: any;
   order: number;
   title?: string;
   initialYaw: number;
@@ -51,7 +55,7 @@ export interface Hotspot {
   updatedAt: Date;
 }
 
-export interface ImageWithHotspots extends TourImage {
+export interface ImageWithHotspots extends Scene {
   hotspots: Hotspot[];
 }
 
@@ -71,7 +75,7 @@ export interface TourWithImages {
   organizationId: string;
   organization?: Organization;
   createdById: string;
-  images: TourImage[];
+  images: Scene[];
   createdAt: Date;
   updatedAt: Date;
 }

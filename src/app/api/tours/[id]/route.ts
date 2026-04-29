@@ -50,6 +50,7 @@ export async function GET(
         );
         return {
           ...img,
+          levels: typeof img.levels === 'string' ? JSON.parse(img.levels) : img.levels,
           hotspots: hotspots.map((h: any) => ({
             ...h,
             metadata: typeof h.metadata === 'string' ? JSON.parse(h.metadata) : h.metadata,
@@ -194,6 +195,7 @@ export async function PATCH(
         );
         return {
           ...img,
+          levels: typeof img.levels === 'string' ? JSON.parse(img.levels) : img.levels,
           hotspots: hotspots.map((h: any) => ({
             ...h,
             metadata: typeof h.metadata === 'string' ? JSON.parse(h.metadata) : h.metadata,

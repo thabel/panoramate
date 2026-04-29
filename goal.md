@@ -158,4 +158,5 @@ ajouter mais les personnes ne peuvent voir que leur tour par default.
 
 
 * TODO: ajouter une fleche qui te montre aller tout droit
-
+* Regler l'histoire de email le SMPT qu'il propose oui mais il faut l'associer avec un nom de 
+domaine.

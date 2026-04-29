@@ -114,7 +114,7 @@ model Tour {
   backgroundAudioVolume Float    @default(0.5)
   showSceneMenu      Boolean      @default(true)
   showHotspotTitles  Boolean      @default(true)
-  images             TourImage[]
+  images             Scene[]
   createdBy      User         @relation(fields: [createdById], references: [id])
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
@@ -123,15 +123,19 @@ model Tour {
   @@map("tours")
 }
 
-model TourImage {
+model Scene {
   id           String    @id @default(uuid())
   tourId       String
-  filename     String
+  filename     String?   @db.Text
   originalName String
   mimeType     String    @default("image/jpeg")
   sizeMb       Float
   width        Int
   height       Int
+  folder       String    // corresponds to sceneId (tile folder)
+  previewUrl   String    @db.Text
+  tileBaseUrl  String    @db.Text
+  levels       Json?     // stores tileSize/size config
   order        Int       @default(0)
   title        String?
   initialYaw   Float     @default(0)
@@ -167,7 +171,7 @@ model Hotspot {
   metadata      Json?
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
-  image         TourImage       @relation(fields: [imageId], references: [id], onDelete: Cascade)
+  image         Scene           @relation(fields: [imageId], references: [id], onDelete: Cascade)
 
   @@index([imageId], map: "hotspots_imageId_fkey")
   @@map("hotspots")

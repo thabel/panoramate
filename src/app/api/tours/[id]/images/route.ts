@@ -109,13 +109,24 @@ export async function POST(
         totalStorageAdded += sizeMb;
         const order = tourImagesCount + createdImages.length;
 
-        // Create image
+        // Create image (now Scene)
         const imageId = require('crypto').randomUUID();
+        const folder = imageId;
+        const tileBaseUrl = '/api/uploads';
+        const previewUrl = `/api/uploads/${folder}/preview.jpg`;
+        const levels = JSON.stringify([
+          { tileSize: 256, size: 256 },
+          { tileSize: 512, size: 512 },
+          { tileSize: 512, size: 1024 },
+          { tileSize: 512, size: 2048 }
+        ]);
+
         await db.execute(
           `INSERT INTO tour_images (
             id, tourId, filename, originalName, mimeType, sizeMb,
-            width, height, \`order\`, title, initialYaw, initialPitch, initialFov, createdAt
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
+            width, height, \`order\`, title, initialYaw, initialPitch, initialFov,
+            folder, previewUrl, tileBaseUrl, levels, createdAt
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
           [
             imageId,
             tour.id,
@@ -130,6 +141,10 @@ export async function POST(
             0, // initialYaw
             0, // initialPitch
             90, // initialFov
+            folder,
+            previewUrl,
+            tileBaseUrl,
+            levels
           ]
         );
 
@@ -255,7 +270,7 @@ export async function PATCH(
     }
 
     const body = await request.json();
-    const { imageId, title, initialYaw, initialPitch, initialFov } = body;
+    const { imageId, title, initialYaw, initialPitch, initialFov, folder, previewUrl, tileBaseUrl, levels } = body;
 
     if (!imageId) {
       return NextResponse.json(
@@ -296,6 +311,22 @@ export async function PATCH(
     if (initialFov !== undefined) {
       updates.push('initialFov = ?');
       values.push(initialFov);
+    }
+    if (folder !== undefined) {
+      updates.push('folder = ?');
+      values.push(folder);
+    }
+    if (previewUrl !== undefined) {
+      updates.push('previewUrl = ?');
+      values.push(previewUrl);
+    }
+    if (tileBaseUrl !== undefined) {
+      updates.push('tileBaseUrl = ?');
+      values.push(tileBaseUrl);
+    }
+    if (levels !== undefined) {
+      updates.push('levels = ?');
+      values.push(typeof levels === 'object' ? JSON.stringify(levels) : levels);
     }
 
     if (updates.length > 0) {
