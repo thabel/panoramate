@@ -5,19 +5,59 @@
 
 import { logger } from './logger';
 
-export const marzipanoDebug = {
+interface ImageLoadResult {
+  success: boolean;
+  width?: number;
+  height?: number;
+  url: string;
+  error?: string;
+  corsIssue?: boolean;
+  timing?: number;
+}
+
+interface ProtocolCheckResult {
+  currentProtocol: string;
+  isHttps: boolean;
+  isMixedContent: boolean;
+  warning?: string;
+}
+
+interface WebGLCheckResult {
+  webgl1: boolean;
+  webgl2: boolean;
+  powerPreference?: string;
+  message: string;
+}
+
+interface MobileIssuesResult {
+  isMobile: boolean;
+  screenSize: string;
+  memory?: number;
+  connection: string;
+  issues: string[];
+}
+
+interface HealthCheckResult {
+  protocol: ProtocolCheckResult;
+  webgl: WebGLCheckResult;
+  mobile: MobileIssuesResult;
+  imageLoad: ImageLoadResult;
+  summary: string;
+}
+
+interface MarzipanoDebugUtils {
+  testImageLoad(url: string): Promise<ImageLoadResult>;
+  checkProtocol(): ProtocolCheckResult;
+  checkWebGL(): WebGLCheckResult;
+  checkMobileIssues(): MobileIssuesResult;
+  runHealthCheck(imageUrl: string): Promise<HealthCheckResult>;
+}
+
+export const marzipanoDebug: MarzipanoDebugUtils = {
   /**
    * Test if an image can be loaded (CORS, HTTP/HTTPS, etc)
    */
-  async testImageLoad(url: string): Promise<{
-    success: boolean;
-    width?: number;
-    height?: number;
-    url: string;
-    error?: string;
-    corsIssue?: boolean;
-    timing?: number;
-  }> {
+  async testImageLoad(url: string): Promise<ImageLoadResult> {
     const startTime = performance.now();
     const img = new Image();
 
@@ -84,12 +124,7 @@ export const marzipanoDebug = {
   /**
    * Check if HTTPS/HTTP is causing issues
    */
-  checkProtocol(): {
-    currentProtocol: string;
-    isHttps: boolean;
-    isMixedContent: boolean;
-    warning?: string;
-  } {
+  checkProtocol(): ProtocolCheckResult {
     const protocol = window.location.protocol;
     const isHttps = protocol === 'https:';
 
@@ -106,12 +141,7 @@ export const marzipanoDebug = {
   /**
    * Check WebGL support
    */
-  checkWebGL(): {
-    webgl1: boolean;
-    webgl2: boolean;
-    powerPreference?: string;
-    message: string;
-  } {
+  checkWebGL(): WebGLCheckResult {
     const canvas = document.createElement('canvas');
 
     const webgl1 = !!canvas.getContext('webgl');
@@ -135,13 +165,7 @@ export const marzipanoDebug = {
   /**
    * Check Mobile-specific issues
    */
-  checkMobileIssues(): {
-    isMobile: boolean;
-    screenSize: string;
-    memory?: number;
-    connection: string;
-    issues: string[];
-  } {
+  checkMobileIssues(): MobileIssuesResult {
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
       navigator.userAgent
     );
@@ -172,13 +196,7 @@ export const marzipanoDebug = {
   /**
    * Comprehensive health check
    */
-  async runHealthCheck(imageUrl: string): Promise<{
-    protocol: any;
-    webgl: any;
-    mobile: any;
-    imageLoad: Awaited<ReturnType<typeof marzipanoDebug.testImageLoad>>;
-    summary: string;
-  }> {
+  async runHealthCheck(imageUrl: string): Promise<HealthCheckResult> {
     logger.info({}, '[Marzipano] Running comprehensive health check...');
 
     const protocol = this.checkProtocol();
