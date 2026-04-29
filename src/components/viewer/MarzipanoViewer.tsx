@@ -58,11 +58,33 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
 
   // Main Viewer Initialization
   useEffect(() => {
-    if (!containerRef.current || scenes.length === 0) return;
+    if (!containerRef.current || scenes.length === 0) {
+      logger.warn({
+        containerExists: !!containerRef.current,
+        scenesCount: scenes.length
+      }, '[Marzipano] Early return - missing container or scenes');
+      return;
+    }
+
+    // Debug device info
+    const deviceDebugInfo = {
+      userAgent: navigator.userAgent,
+      isMobile: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent),
+      screenWidth: window.innerWidth,
+      screenHeight: window.innerHeight,
+      devicePixelRatio: window.devicePixelRatio,
+      containerWidth: containerRef.current?.offsetWidth,
+      containerHeight: containerRef.current?.offsetHeight,
+      canvasWidth: containerRef.current?.querySelector('canvas')?.width,
+      canvasHeight: containerRef.current?.querySelector('canvas')?.height,
+      connectionType: (navigator as any).connection?.effectiveType || 'unknown',
+    };
+    logger.info(deviceDebugInfo, '[Marzipano] Device Debug Info');
 
     // Only re-initialize if the scene IDs or order changed
     const currentScenesIds = scenes.map(s => s.id).join(',');
     if (currentScenesIds === prevScenesIdsRef.current && viewerRef.current) {
+      logger.debug({}, '[Marzipano] Skipping re-init - same scene IDs');
       return;
     }
     prevScenesIdsRef.current = currentScenesIds;
@@ -72,11 +94,36 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
 
     const initViewer = () => {
       const Marzipano = window.Marzipano;
-      if (!Marzipano) return false;
+
+      if (!Marzipano) {
+        logger.warn({}, '[Marzipano] Marzipano library not available in window');
+        return false;
+      }
+
+      logger.debug({ marzipanoLoaded: true }, '[Marzipano] Library available');
 
       try {
         if (viewerRef.current) {
+          logger.debug({}, '[Marzipano] Destroying previous viewer');
           viewerRef.current.destroy();
+        }
+
+        // Check container dimensions BEFORE creating viewer
+        const containerRect = containerRef.current?.getBoundingClientRect();
+        logger.debug(
+          {
+            containerWidth: containerRect?.width,
+            containerHeight: containerRect?.height,
+            containerDisplay: window.getComputedStyle(containerRef.current!).display,
+          },
+          '[Marzipano] Container dimensions before viewer creation'
+        );
+
+        if (!containerRect || containerRect.width === 0 || containerRect.height === 0) {
+          logger.error(
+            { containerRect },
+            '[Marzipano] ❌ Container has zero dimensions!'
+          );
         }
 
         const viewerOpts = {
@@ -86,9 +133,49 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
         viewer = new Marzipano.Viewer(containerRef.current, viewerOpts);
         viewerRef.current = viewer;
 
+        logger.info({}, '[Marzipano] ✅ Viewer instance created successfully');
+
         const marzipanoScenes: { [key: string]: any } = {};
-        scenes.forEach((sceneData) => {
-          const source = Marzipano.ImageUrlSource.fromString(`/api/uploads/${sceneData.filename}`);
+
+        scenes.forEach((sceneData, index) => {
+          const imageUrl = `/api/uploads/${sceneData.filename}`;
+
+          logger.debug(
+            {
+              sceneIndex: index,
+              sceneId: sceneData.id,
+              imageUrl,
+              filename: sceneData.filename,
+            },
+            '[Marzipano] Creating scene'
+          );
+
+          // Test image loading separately
+          const img = new Image();
+          img.onload = () => {
+            logger.debug(
+              {
+                sceneId: sceneData.id,
+                imageWidth: img.naturalWidth,
+                imageHeight: img.naturalHeight,
+                aspectRatio: img.naturalWidth / img.naturalHeight,
+              },
+              '[Marzipano] ✅ Image loaded successfully'
+            );
+          };
+          img.onerror = (err) => {
+            logger.error(
+              {
+                sceneId: sceneData.id,
+                imageUrl,
+                error: String(err),
+              },
+              '[Marzipano] ❌ Image failed to load'
+            );
+          };
+          img.src = imageUrl;
+
+          const source = Marzipano.ImageUrlSource.fromString(imageUrl);
           const geometry = new Marzipano.EquirectGeometry([{ width: 4000 }]);
           const limiter = Marzipano.RectilinearView.limit.traditional(
             1024,
@@ -108,30 +195,72 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
 
         scenesRef.current = marzipanoScenes;
         const initialScene = marzipanoScenes[initialSceneId || scenes[0].id];
+
         if (initialScene) {
+          logger.info(
+            { initialSceneId: initialSceneId || scenes[0].id },
+            '[Marzipano] ✅ Switching to initial scene'
+          );
           initialScene.switchTo();
           setCurrentSceneId(initialSceneId || scenes[0].id);
+        } else {
+          logger.error(
+            { initialSceneId, availableScenes: Object.keys(marzipanoScenes) },
+            '[Marzipano] ❌ Initial scene not found'
+          );
+        }
+
+        // Check canvas after creation
+        const canvas = containerRef.current?.querySelector('canvas') as HTMLCanvasElement;
+        if (canvas) {
+          logger.info(
+            {
+              canvasWidth: canvas.width,
+              canvasHeight: canvas.height,
+              canvasDisplayWidth: canvas.offsetWidth,
+              canvasDisplayHeight: canvas.offsetHeight,
+              webglContext: canvas.getContext('webgl2') ? '✅ WebGL2' :
+                           canvas.getContext('webgl') ? '✅ WebGL' : '❌ No WebGL',
+            },
+            '[Marzipano] Canvas info after creation'
+          );
+        } else {
+          logger.error({}, '[Marzipano] ❌ Canvas element not found');
         }
 
         return true;
       } catch (err) {
-        console.error('Marzipano initialization error:', err);
+        logger.error(
+          { error: String(err), stack: (err as any).stack },
+          '[Marzipano] ❌ Initialization error'
+        );
         return false;
       }
     };
 
     if (!initViewer()) {
-      console.warn('Marzipano not available, retrying...');
+      logger.warn({}, '[Marzipano] First init failed, retrying...');
       let retryCount = 0;
       const maxRetries = 60; // 30 seconds max (60 * 500ms)
 
       retryInterval = setInterval(() => {
         retryCount++;
+        logger.debug(
+          { retryCount, maxRetries },
+          '[Marzipano] Retry attempt'
+        );
+
         if (initViewer()) {
-          console.log('Marzipano initialized successfully after', retryCount, 'retries');
+          logger.info(
+            { retryCount },
+            '[Marzipano] ✅ Initialized successfully after retries'
+          );
           clearInterval(retryInterval);
         } else if (retryCount >= maxRetries) {
-          console.error('Failed to initialize Marzipano after', retryCount, 'retries');
+          logger.error(
+            { retryCount, maxRetries },
+            '[Marzipano] ❌ Failed to initialize after all retries'
+          );
           clearInterval(retryInterval);
         }
       }, 500);
@@ -140,6 +269,7 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
     return () => {
       if (retryInterval) clearInterval(retryInterval);
       if (viewerRef.current) {
+        logger.debug({}, '[Marzipano] Cleaning up viewer');
         viewerRef.current.destroy();
         viewerRef.current = null;
       }
@@ -192,7 +322,10 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
   // Handle scene switching
   useEffect(() => {
     if (viewerRef.current && initialSceneId && initialSceneId !== currentSceneId) {
-      console.log('Detected scene change request to:', initialSceneId);
+      logger.debug(
+        { initialSceneId, currentSceneId },
+        '[Marzipano] Scene change requested'
+      );
 
       // Clear hover states immediately on scene change to prevent stuck popovers
       setHoveredHotspot(null);
@@ -200,11 +333,20 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
 
       const scene = scenesRef.current[initialSceneId];
       if (scene) {
-        console.log('Switching to scene:', initialSceneId);
+        logger.info(
+          { initialSceneId },
+          '[Marzipano] ✅ Switching to scene'
+        );
         scene.switchTo();
         setCurrentSceneId(initialSceneId);
       } else {
-        console.warn('Scene not found in scenesRef:', initialSceneId);
+        logger.error(
+          {
+            initialSceneId,
+            availableScenes: Object.keys(scenesRef.current),
+          },
+          '[Marzipano] ❌ Scene not found in scenesRef'
+        );
       }
     }
   }, [initialSceneId, currentSceneId]);

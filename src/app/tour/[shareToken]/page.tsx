@@ -105,13 +105,24 @@ export default function PublicTourPage({
         setShowHotspotTitles(data.data.showHotspotTitles ?? true);
         if (data.data.images && data.data.images.length > 0) {
           setCurrentSceneId(data.data.images[0].id);
+
+          // Run health check on first image
+          try {
+            const { marzipanoDebug } = await import('@/lib/marzipano-debug');
+            console.log('[Tour] Running health check on first image...');
+            const firstImageUrl = `/api/uploads/${data.data.images[0].filename}`;
+            const healthCheck = await marzipanoDebug.runHealthCheck(firstImageUrl);
+            console.log('[Tour] Health check result:', healthCheck);
+          } catch (debugErr) {
+            console.error('[Tour] Health check failed:', debugErr);
+          }
         }
       } else {
         setError('Failed to load tour');
       }
     } catch (err) {
       setError('Error loading tour');
-      console.error('Fetch tour error:', err);
+      console.error('[Tour] Fetch tour error:', err);
     } finally {
       setIsLoading(false);
     }
