@@ -176,7 +176,22 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
           img.src = imageUrl;
 
           const source = Marzipano.ImageUrlSource.fromString(imageUrl);
-          const geometry = new Marzipano.EquirectGeometry([{ width: 4000 }]);
+
+          // Reduce geometry width for mobile to prevent GPU memory issues
+          // 4000 = desktop, 2000 = mobile-friendly, 1000 = low-end devices
+          const geometryWidth = window.innerWidth < 768 ? 2000 : 4000;
+
+          logger.debug(
+            {
+              sceneId: sceneData.id,
+              deviceWidth: window.innerWidth,
+              geometryWidth,
+            },
+            '[Marzipano] Creating geometry with dynamic width'
+          );
+
+          const geometry = new Marzipano.EquirectGeometry([{ width: geometryWidth }]);
+
           const limiter = Marzipano.RectilinearView.limit.traditional(
             1024,
             (120 * Math.PI) / 180,
@@ -187,6 +202,16 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
             pitch: sceneData.initialPitch || 0,
             fov: sceneData.initialFov || (110 * Math.PI) / 180
           }, limiter);
+
+          logger.debug(
+            {
+              sceneId: sceneData.id,
+              yaw: sceneData.initialYaw || 0,
+              pitch: sceneData.initialPitch || 0,
+              fov: ((sceneData.initialFov || (110 * Math.PI) / 180) * 180) / Math.PI,
+            },
+            '[Marzipano] View parameters set'
+          );
 
           marzipanoScenes[sceneData.id] = viewer.createScene({
             source, geometry, view, pinFirstLevel: false
@@ -232,17 +257,28 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
 
             setCurrentSceneId(initialSceneIdToUse);
 
-            // Verify scene is actually the active one
-            setTimeout(() => {
+            // Verify scene is actually the active one with multiple checks
+            const verifyScene = () => {
               const currentScene = viewer.scene();
+              const canvasElement = containerRef.current?.querySelector('canvas') as HTMLCanvasElement;
+              const canvasPixels = canvasElement?.width && canvasElement?.height ?
+                canvasElement.width * canvasElement.height : 0;
+
               logger.debug(
                 {
                   requestedSceneId: initialSceneIdToUse,
-                  activeSceneId: currentScene ? 'scene exists' : 'no scene',
+                  sceneActive: !!currentScene,
+                  canvasPixels,
+                  canvasRenderingContext: canvasElement?.getContext('webgl') ? '✅ WebGL' : '❌ No WebGL',
                 },
-                '[Marzipano] Post-switchTo verification'
+                '[Marzipano] Scene verification'
               );
-            }, 100);
+            };
+
+            // Verify at different intervals
+            setTimeout(verifyScene, 100);
+            setTimeout(verifyScene, 500);
+            setTimeout(verifyScene, 1000);
           } catch (switchErr) {
             logger.error(
               {
