@@ -189,23 +189,73 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
           }, limiter);
 
           marzipanoScenes[sceneData.id] = viewer.createScene({
-            source, geometry, view, pinFirstLevel: true
+            source, geometry, view, pinFirstLevel: false
           });
+
+          logger.debug(
+            {
+              sceneId: sceneData.id,
+              created: true,
+              pinFirstLevel: false,
+            },
+            '[Marzipano] ✅ Scene created in viewer'
+          );
         });
 
         scenesRef.current = marzipanoScenes;
-        const initialScene = marzipanoScenes[initialSceneId || scenes[0].id];
+        const initialSceneIdToUse = initialSceneId || scenes[0].id;
+        const initialScene = marzipanoScenes[initialSceneIdToUse];
+
+        logger.debug(
+          {
+            initialSceneId: initialSceneIdToUse,
+            scenesCount: Object.keys(marzipanoScenes).length,
+            availableScenes: Object.keys(marzipanoScenes),
+            sceneFound: !!initialScene,
+          },
+          '[Marzipano] Scene lookup before switchTo'
+        );
 
         if (initialScene) {
-          logger.info(
-            { initialSceneId: initialSceneId || scenes[0].id },
-            '[Marzipano] ✅ Switching to initial scene'
-          );
-          initialScene.switchTo();
-          setCurrentSceneId(initialSceneId || scenes[0].id);
+          try {
+            logger.info(
+              { sceneId: initialSceneIdToUse },
+              '[Marzipano] ℹ️ About to call switchTo()'
+            );
+
+            initialScene.switchTo();
+
+            logger.info(
+              { sceneId: initialSceneIdToUse },
+              '[Marzipano] ✅ switchTo() completed successfully'
+            );
+
+            setCurrentSceneId(initialSceneIdToUse);
+
+            // Verify scene is actually the active one
+            setTimeout(() => {
+              const currentScene = viewer.scene();
+              logger.debug(
+                {
+                  requestedSceneId: initialSceneIdToUse,
+                  activeSceneId: currentScene ? 'scene exists' : 'no scene',
+                },
+                '[Marzipano] Post-switchTo verification'
+              );
+            }, 100);
+          } catch (switchErr) {
+            logger.error(
+              {
+                sceneId: initialSceneIdToUse,
+                error: String(switchErr),
+                stack: (switchErr as any).stack,
+              },
+              '[Marzipano] ❌ switchTo() threw error'
+            );
+          }
         } else {
           logger.error(
-            { initialSceneId, availableScenes: Object.keys(marzipanoScenes) },
+            { initialSceneId: initialSceneIdToUse, availableScenes: Object.keys(marzipanoScenes) },
             '[Marzipano] ❌ Initial scene not found'
           );
         }
