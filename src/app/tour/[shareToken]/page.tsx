@@ -160,7 +160,7 @@ export default function PublicTourPage({
   }
 
   return (
-    <div ref={containerRef} className="flex flex-col h-screen overflow-hidden bg-black">
+    <div ref={containerRef} className="flex flex-col h-screen min-h-screen overflow-hidden bg-black" style={{ height: '100dvh', minHeight: '100dvh' }}>
       {/* Compact Header - Top Left Corner */}
       {!isEmbed && !isFullScreen && (
         <div className="absolute z-30 max-w-xs top-4 left-4">
