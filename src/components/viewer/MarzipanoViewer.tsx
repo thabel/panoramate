@@ -89,6 +89,7 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
         const marzipanoScenes: { [key: string]: any } = {};
         scenes.forEach((sceneData) => {
           const source = Marzipano.ImageUrlSource.fromString(`/api/uploads/${sceneData.filename}`);
+          console.log('Creating Marzipano scene with source URL:', `/api/uploads/${sceneData.filename}`);
           const geometry = new Marzipano.EquirectGeometry([{ width: 4000 }]);
           const limiter = Marzipano.RectilinearView.limit.traditional(
             1024,

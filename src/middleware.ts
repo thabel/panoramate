@@ -7,13 +7,14 @@ export async function middleware(request: NextRequest) {
 
   // Public routes that don't need auth
   const publicRoutes = [
+    "/icons",
     "/api/auth/register",
     "/api/auth/login",
     "/api/auth/logout",
     "/api/billing/webhook",
     "/api/tours-public",
     "/api/inscription-request",
-    "/api/uploads/",
+    "/api/uploads/", // Question: What if some one try to upload POST a file ? it should login.
     "/tour/",
     "/login",
     "/register",
