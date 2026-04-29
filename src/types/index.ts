@@ -13,7 +13,7 @@ export interface AuthUser {
 export interface TourImage {
   id: string;
   tourId: string;
-  filename: string;
+  filename?: string; // Optional for cube geometry
   originalName: string;
   mimeType: string;
   sizeMb: number;
@@ -24,6 +24,12 @@ export interface TourImage {
   initialYaw: number;
   initialPitch: number;
   initialFov: number;
+  // Cube geometry fields
+  geometryType?: 'EQUIRECT' | 'CUBE'; // Type of geometry (default: EQUIRECT)
+  sceneId?: string; // Folder reference for cube maps (e.g., scene-uuid)
+  basePath?: string; // Base URL path for cube tiles
+  cubeMapPreviewUrl?: string; // Preview image URL for cube maps
+  availableLevels?: Array<{ tileSize: number; size: number }>; // Zoom level metadata
   createdAt: Date;
 }
 

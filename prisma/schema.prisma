@@ -124,22 +124,28 @@ model Tour {
 }
 
 model TourImage {
-  id           String    @id @default(uuid())
-  tourId       String
-  filename     String
-  originalName String
-  mimeType     String    @default("image/jpeg")
-  sizeMb       Float
-  width        Int
-  height       Int
-  order        Int       @default(0)
-  title        String?
-  initialYaw   Float     @default(0)
-  initialPitch Float     @default(0)
-  initialFov   Float     @default(1.5707963)
-  createdAt    DateTime  @default(now())
-  hotspots     Hotspot[]
-  tour         Tour      @relation(fields: [tourId], references: [id], onDelete: Cascade)
+  id               String       @id @default(uuid())
+  tourId           String
+  filename         String?      // For equirectangular images (legacy)
+  originalName     String
+  mimeType         String       @default("image/jpeg")
+  sizeMb           Float
+  width            Int
+  height           Int
+  order            Int          @default(0)
+  title            String?
+  initialYaw       Float        @default(0)
+  initialPitch     Float        @default(0)
+  initialFov       Float        @default(1.5707963)
+  // Cube geometry fields
+  geometryType     GeometryType @default(EQUIRECT) @db.VarChar(10)
+  sceneId          String?      // Folder reference for cube maps
+  basePath         String?      // Base URL path for cube tiles
+  cubeMapPreviewUrl String?     @db.Text // Preview image URL
+  availableLevels  Json?        // Zoom level metadata
+  createdAt        DateTime     @default(now())
+  hotspots         Hotspot[]
+  tour             Tour         @relation(fields: [tourId], references: [id], onDelete: Cascade)
 
   @@index([tourId], map: "tour_images_tourId_fkey")
   @@map("tour_images")
@@ -257,6 +263,11 @@ enum AnimationType {
   GLOW
   BOUNCE
   FLOAT
+}
+
+enum GeometryType {
+  EQUIRECT // Equirectangular (legacy, single panoramic image)
+  CUBE     // Cube-based geometry (6 faces with multiple zoom levels)
 }
 
 enum InvoiceStatus {

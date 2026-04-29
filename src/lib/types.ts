@@ -65,6 +65,11 @@ export enum InscriptionStatus {
   REJECTED = 'REJECTED',
 }
 
+export enum GeometryType {
+  EQUIRECT = 'EQUIRECT',
+  CUBE = 'CUBE',
+}
+
 // Models
 export interface Organization {
   id: string;
@@ -147,7 +152,7 @@ export interface Tour {
 export interface TourImage {
   id: string;
   tourId: string;
-  filename: string;
+  filename?: string | null; // Optional for cube geometry
   originalName: string;
   mimeType: string;
   sizeMb: number;
@@ -158,6 +163,11 @@ export interface TourImage {
   initialYaw: number;
   initialPitch: number;
   initialFov: number;
+  geometryType?: GeometryType | null; // EQUIRECT or CUBE
+  sceneId?: string | null; // Folder reference for cube maps
+  basePath?: string | null; // Base URL path for cube tiles
+  cubeMapPreviewUrl?: string | null; // Preview image URL for cube maps
+  availableLevels?: any | null; // Zoom level metadata
   createdAt: Date;
 }
 

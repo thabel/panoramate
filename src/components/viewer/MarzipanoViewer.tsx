@@ -138,59 +138,146 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
         const marzipanoScenes: { [key: string]: any } = {};
 
         scenes.forEach((sceneData, index) => {
-          const imageUrl = `/api/uploads/${sceneData.filename}`;
-
           logger.debug(
             {
               sceneIndex: index,
               sceneId: sceneData.id,
-              imageUrl,
-              filename: sceneData.filename,
+              geometryType: sceneData.geometryType || 'EQUIRECT',
             },
             '[Marzipano] Creating scene'
           );
 
-          // Test image loading separately
-          const img = new Image();
-          img.onload = () => {
+          // Determine geometry type and create appropriate source and geometry
+          const isUsingCube = sceneData.geometryType === 'CUBE' && sceneData.sceneId && sceneData.basePath;
+          let source: any;
+          let geometry: any;
+
+          if (isUsingCube) {
+            // Cube-based geometry
+            const urlPrefix = sceneData.basePath;
+            const cubeMapPattern = `${urlPrefix}/${sceneData.sceneId}/{z}/{f}/{y}/{x}.jpg`;
+            const previewUrl = sceneData.cubeMapPreviewUrl;
+
             logger.debug(
               {
                 sceneId: sceneData.id,
-                imageWidth: img.naturalWidth,
-                imageHeight: img.naturalHeight,
-                aspectRatio: img.naturalWidth / img.naturalHeight,
+                urlPattern: cubeMapPattern,
+                previewUrl,
+                availableLevels: sceneData.availableLevels,
               },
-              '[Marzipano] ✅ Image loaded successfully'
+              '[Marzipano] Creating cube geometry scene'
             );
-          };
-          img.onerror = (err) => {
-            logger.error(
+
+            // Test preview image loading
+            if (previewUrl) {
+              const previewImg = new Image();
+              previewImg.onload = () => {
+                logger.debug(
+                  {
+                    sceneId: sceneData.id,
+                    previewWidth: previewImg.naturalWidth,
+                    previewHeight: previewImg.naturalHeight,
+                  },
+                  '[Marzipano] ✅ Cube preview image loaded successfully'
+                );
+              };
+              previewImg.onerror = (err) => {
+                logger.error(
+                  {
+                    sceneId: sceneData.id,
+                    previewUrl,
+                    error: String(err),
+                  },
+                  '[Marzipano] ❌ Cube preview image failed to load'
+                );
+              };
+              previewImg.src = previewUrl;
+            }
+
+            source = Marzipano.ImageUrlSource.fromString(
+              cubeMapPattern,
+              {
+                cubeMapPreviewUrl: previewUrl,
+              }
+            );
+
+            // Default cube geometry levels - optimized for mobile GPU memory
+            const defaultLevels = [
+              { tileSize: 256, size: 256 },
+              { tileSize: 512, size: 512 },
+              { tileSize: 512, size: 1024 },
+              { tileSize: 512, size: 2048 },
+            ];
+
+            // Use stored levels if available, otherwise use defaults
+            const levels = sceneData.availableLevels ?
+              (Array.isArray(sceneData.availableLevels) ? sceneData.availableLevels : defaultLevels) :
+              defaultLevels;
+
+            geometry = new Marzipano.CubeGeometry(levels);
+
+            logger.debug(
+              {
+                sceneId: sceneData.id,
+                levelCount: levels.length,
+              },
+              '[Marzipano] ✅ Cube geometry created'
+            );
+          } else {
+            // Equirectangular geometry (legacy)
+            const imageUrl = `/api/uploads/${sceneData.filename}`;
+
+            logger.debug(
               {
                 sceneId: sceneData.id,
                 imageUrl,
-                error: String(err),
+                filename: sceneData.filename,
               },
-              '[Marzipano] ❌ Image failed to load'
+              '[Marzipano] Creating equirectangular geometry scene'
             );
-          };
-          img.src = imageUrl;
 
-          const source = Marzipano.ImageUrlSource.fromString(imageUrl);
+            // Test image loading separately
+            const img = new Image();
+            img.onload = () => {
+              logger.debug(
+                {
+                  sceneId: sceneData.id,
+                  imageWidth: img.naturalWidth,
+                  imageHeight: img.naturalHeight,
+                  aspectRatio: img.naturalWidth / img.naturalHeight,
+                },
+                '[Marzipano] ✅ Image loaded successfully'
+              );
+            };
+            img.onerror = (err) => {
+              logger.error(
+                {
+                  sceneId: sceneData.id,
+                  imageUrl,
+                  error: String(err),
+                },
+                '[Marzipano] ❌ Image failed to load'
+              );
+            };
+            img.src = imageUrl;
 
-          // Reduce geometry width for mobile to prevent GPU memory issues
-          // 4000 = desktop, 2000 = mobile-friendly, 1000 = low-end devices
-          const geometryWidth = window.innerWidth < 768 ? 2000 : 4000;
+            source = Marzipano.ImageUrlSource.fromString(imageUrl);
 
-          logger.debug(
-            {
-              sceneId: sceneData.id,
-              deviceWidth: window.innerWidth,
-              geometryWidth,
-            },
-            '[Marzipano] Creating geometry with dynamic width'
-          );
+            // Reduce geometry width for mobile to prevent GPU memory issues
+            // 4000 = desktop, 2000 = mobile-friendly, 1000 = low-end devices
+            const geometryWidth = window.innerWidth < 768 ? 2000 : 4000;
 
-          const geometry = new Marzipano.EquirectGeometry([{ width: geometryWidth }]);
+            logger.debug(
+              {
+                sceneId: sceneData.id,
+                deviceWidth: window.innerWidth,
+                geometryWidth,
+              },
+              '[Marzipano] Creating equirectangular geometry with dynamic width'
+            );
+
+            geometry = new Marzipano.EquirectGeometry([{ width: geometryWidth }]);
+          }
 
           const limiter = Marzipano.RectilinearView.limit.traditional(
             1024,
