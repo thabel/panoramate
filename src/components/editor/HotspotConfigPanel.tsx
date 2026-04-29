@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { TourImage } from '@/types';
+import { Scene } from '@/types';
 import { HotspotIconType } from '@/lib/hotspotIconsConfig';
 import { HotspotIconSelector } from './HotspotIconSelector';
 import { HotspotConfigForm } from './HotspotConfigForm';
@@ -12,7 +12,7 @@ interface HotspotConfigPanelProps {
   isCollapsed?: boolean;
   onCollapsedChange?: (collapsed: boolean) => void;
   onClose?: () => void;
-  tourImages: TourImage[];
+  tourImages: Scene[];
   currentImageId: string;
   selectedHotspot?: any;
   onSave: (hotspotData: Record<string, any>) => Promise<void>;

@@ -1,11 +1,11 @@
 'use client';
 
 import { useState, useRef, useEffect, useMemo } from 'react';
-import { TourImage } from '@/types';
+import { Scene } from '@/types';
 import { Layers, ChevronDown, Search, X } from 'lucide-react';
 
 interface TopSceneMenuProps {
-  scenes: TourImage[];
+  scenes: Scene[];
   currentSceneId: string | null;
   onSceneSelect: (sceneId: string) => void;
 }

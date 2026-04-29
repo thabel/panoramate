@@ -1,11 +1,11 @@
 'use client';
 
 import { useRef } from 'react';
-import { TourImage } from '@/types';
+import { Scene } from '@/types';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface SceneNavigationProps {
-  scenes: TourImage[];
+  scenes: Scene[];
   currentSceneId: string | null;
   onSceneSelect: (sceneId: string) => void;
   showMenu?: boolean;

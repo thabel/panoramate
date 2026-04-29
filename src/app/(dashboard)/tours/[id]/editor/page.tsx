@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useUI } from '@/context/UIContext';
 import { useSearchParams } from 'next/navigation';
-import { TourWithImages, TourImage } from '@/types';
+import { TourWithImages, Scene } from '@/types';
 import { MarzipanoViewer } from '@/components/viewer/MarzipanoViewer';
 import { Button } from '@/components/ui/Button';
 import { UploadZone } from '@/components/dashboard/UploadZone';
@@ -230,7 +230,7 @@ export default function TourEditorPage({
         body: JSON.stringify({ imageId }),
       });
       if (response.ok) {
-        const updatedImages = tour!.images.filter((img: TourImage) => img.id !== imageId);
+        const updatedImages = tour!.images.filter((img: Scene) => img.id !== imageId);
         setTour({ ...tour!, images: updatedImages });
         if (tour!.images[currentSceneIndex].id === imageId) {
           setCurrentSceneIndex(0);
@@ -254,7 +254,7 @@ export default function TourEditorPage({
       setHotspotForm({
         ...hotspotForm,
         type: getHotspotIconType(hotspotForm.iconName),
-        targetImageId: tour?.images.find((img: TourImage) => img.id !== tour.images[currentSceneIndex].id)?.id || '',
+        targetImageId: tour?.images.find((img: Scene) => img.id !== tour.images[currentSceneIndex].id)?.id || '',
       });
       setIsHotspotPanelOpen(true);
     }
@@ -309,7 +309,7 @@ export default function TourEditorPage({
           logger.info({ tourId: params.id, imageId: currentImageId, hotspotId: savedHotspot.id }, 'Hotspot updated successfully');
           setTour({
             ...tour,
-            images: tour.images.map((img: TourImage) =>
+            images: tour.images.map((img: Scene) =>
               img.id === currentImageId
                 ? {
                     ...img,
@@ -324,7 +324,7 @@ export default function TourEditorPage({
           logger.info({ tourId: params.id, imageId: currentImageId, hotspotId: savedHotspot.id }, 'Hotspot created successfully');
           setTour({
             ...tour,
-            images: tour.images.map((img: TourImage) =>
+            images: tour.images.map((img: Scene) =>
               img.id === currentImageId
                 ? { ...img, hotspots: [...((img as any).hotspots || []), savedHotspot] }
                 : img
@@ -388,7 +388,7 @@ export default function TourEditorPage({
       if (response.ok) {
         setTour({
           ...tour,
-          images: tour.images.map((img: TourImage) =>
+          images: tour.images.map((img: Scene) =>
             img.id === currentImageId
               ? { ...img, hotspots: (img as any).hotspots.filter((h: any) => h.id !== selectedHotspot.id) }
               : img
@@ -407,7 +407,7 @@ export default function TourEditorPage({
 
   const goToTargetScene = () => {
     if (!selectedHotspot || (selectedHotspot.type !== 'LINK' && selectedHotspot.type !== 'LINK_SCENE') || !selectedHotspot.targetImageId) return;
-    const index = tour!.images.findIndex((img: TourImage) => img.id === selectedHotspot.targetImageId);
+    const index = tour!.images.findIndex((img: Scene) => img.id === selectedHotspot.targetImageId);
     if (index !== -1) {
       setCurrentSceneIndex(index);
       setIsHotspotActionModalOpen(false);
@@ -429,7 +429,7 @@ export default function TourEditorPage({
       if (response.ok) {
         setTour({
           ...tour,
-          images: tour.images.map((img: TourImage, idx: number) =>
+          images: tour.images.map((img: Scene, idx: number) =>
             idx === currentSceneIndex ? { ...img, title: newSceneTitle.trim() } : img
           ),
         });
@@ -765,11 +765,11 @@ export default function TourEditorPage({
                       </div>
                       <div className="pr-1 space-y-1 overflow-y-auto max-h-48 scrollbar-thin">
                         {tour.images
-                          .filter((img: TourImage) =>
+                          .filter((img: Scene) =>
                             img.id !== tour.images[currentSceneIndex].id &&
                             (img.title || `Scene ${img.order + 1}`).toLowerCase().includes(sceneSearchQuery.toLowerCase())
                           )
-                          .map((img: TourImage) => (
+                          .map((img: Scene) => (
                             <button
                               key={img.id}
                               onClick={() => setHotspotForm({ ...hotspotForm, targetImageId: img.id })}
@@ -787,8 +787,8 @@ export default function TourEditorPage({
                   ) : (
                     <div className="grid grid-cols-2 gap-2 pr-1 overflow-y-auto max-h-48 scrollbar-thin">
                       {tour.images
-                        .filter((img: TourImage) => img.id !== tour.images[currentSceneIndex].id)
-                        .map((img: TourImage) => (
+                        .filter((img: Scene) => img.id !== tour.images[currentSceneIndex].id)
+                        .map((img: Scene) => (
                           <button
                             key={img.id}
                             onClick={() => setHotspotForm({ ...hotspotForm, targetImageId: img.id })}
@@ -1096,7 +1096,7 @@ export default function TourEditorPage({
             </button>
 
             <div className="flex items-center flex-1 gap-4 py-1 overflow-x-auto no-scrollbar scroll-smooth">
-              {tour.images.map((image: TourImage, index: number) => (
+              {tour.images.map((image: Scene, index: number) => (
                 <div key={image.id} className="relative flex-shrink-0 group">
                   <button
                     onClick={() => setCurrentSceneIndex(index)}

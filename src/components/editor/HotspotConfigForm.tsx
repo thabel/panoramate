@@ -7,12 +7,12 @@ import {
   getIconConfig,
   validateHotspotData,
 } from '@/lib/hotspotIconsConfig';
-import { TourImage } from '@/types';
+import { Scene } from '@/types';
 import { Search, AlertCircle } from 'lucide-react';
 
 interface HotspotConfigFormProps {
   iconName: HotspotIconType;
-  tourImages: TourImage[];
+  tourImages: Scene[];
   currentImageId: string;
   formData: Record<string, any>;
   onFormChange: (field: string, value: any) => void;
