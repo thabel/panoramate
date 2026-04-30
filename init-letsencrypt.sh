@@ -34,20 +34,21 @@ fi
 LIVE_PATH="$DATA_PATH/conf/live/${DOMAINS[0]}"
 echo "### Creating dummy certificate for ${DOMAINS[0]} ..."
 mkdir -p "$LIVE_PATH"
-docker compose -f docker-compose.yml --env-file .env.local run --rm --entrypoint \
-  "openssl req -x509 -nodes -newkey rsa:$RSA_KEY_SIZE -days 1 \
-    -keyout /etc/letsencrypt/live/${DOMAINS[0]}/privkey.pem \
-    -out    /etc/letsencrypt/live/${DOMAINS[0]}/fullchain.pem \
-    -subj '/CN=localhost'" \
+docker compose -f docker-compose.yml --env-file .env run --rm --entrypoint \
+  "/bin/sh -c 'mkdir -p /etc/letsencrypt/live/${DOMAINS[0]} && \
+    openssl req -x509 -nodes -newkey rsa:${RSA_KEY_SIZE} -days 1 \
+      -keyout /etc/letsencrypt/live/${DOMAINS[0]}/privkey.pem \
+      -out    /etc/letsencrypt/live/${DOMAINS[0]}/fullchain.pem \
+      -subj \"/CN=localhost\"'" \
   certbot
 
 # ── Start nginx with the dummy cert ─────────────────────────────────────────
 echo "### Starting nginx ..."
-docker compose -f docker-compose.yml --env-file .env.local up --force-recreate -d nginx
+docker compose -f docker-compose.yml --env-file .env up --force-recreate -d nginx
 
 # ── Delete dummy cert so certbot can issue a real one ───────────────────────
 echo "### Removing dummy certificate ..."
-docker compose -f docker-compose.yml --env-file .env.local run --rm --entrypoint \
+docker compose -f docker-compose.yml --env-file .env run --rm --entrypoint \
   "rm -Rf /etc/letsencrypt/live/${DOMAINS[0]} \
           /etc/letsencrypt/archive/${DOMAINS[0]} \
           /etc/letsencrypt/renewal/${DOMAINS[0]}.conf" \
@@ -67,7 +68,7 @@ fi
 
 # ── Request the real certificate ─────────────────────────────────────────────
 echo "### Requesting Let's Encrypt certificate for ${DOMAINS[*]} ..."
-docker compose -f docker-compose.yml --env-file .env.local run --rm --entrypoint \
+docker compose -f docker-compose.yml --env-file .env run --rm --entrypoint \
   "certbot certonly --webroot -w /var/www/certbot \
     $STAGING_ARG \
     --email $EMAIL \
@@ -79,7 +80,7 @@ docker compose -f docker-compose.yml --env-file .env.local run --rm --entrypoint
 
 # ── Reload nginx with the real certificate ───────────────────────────────────
 echo "### Reloading nginx ..."
-docker compose -f docker-compose.yml --env-file .env.local exec nginx nginx -s reload
+docker compose -f docker-compose.yml --env-file .env exec nginx nginx -s reload
 
 echo ""
 echo "Done! Your site is live at https://${DOMAINS[0]}"
