@@ -9,31 +9,28 @@ set -e
 DOMAINS=(bativy.com www.bativy.com)
 EMAIL="azmiayoub50@gmail.com"
 RSA_KEY_SIZE=4096
-DATA_PATH="./certbot"
 STAGING=0  # Set to 1 to test against Let's Encrypt staging (avoids rate limits)
 
 # ── Confirm before overwriting existing certs ───────────────────────────────
-if [ -d "$DATA_PATH" ]; then
-  read -p "Existing certbot data found. Replace existing certificate? (y/N) " decision
+if docker compose -f docker-compose.yml --env-file .env run --rm --entrypoint \
+  "/bin/sh -c 'test -f /etc/letsencrypt/live/${DOMAINS[0]}/fullchain.pem'" certbot 2>/dev/null; then
+  read -p "Existing certificate found. Replace it? (y/N) " decision
   if [ "$decision" != "Y" ] && [ "$decision" != "y" ]; then
     exit
   fi
 fi
 
-# ── Download recommended TLS parameters ─────────────────────────────────────
-if [ ! -e "$DATA_PATH/conf/options-ssl-nginx.conf" ] || [ ! -e "$DATA_PATH/conf/ssl-dhparams.pem" ]; then
-  echo "### Downloading recommended TLS parameters ..."
-  mkdir -p "$DATA_PATH/conf"
-  curl -s https://raw.githubusercontent.com/certbot/certbot/master/certbot-nginx/certbot_nginx/_internal/tls_configs/options-ssl-nginx.conf \
-    > "$DATA_PATH/conf/options-ssl-nginx.conf"
-  curl -s https://raw.githubusercontent.com/certbot/certbot/master/certbot/certbot/ssl-dhparams.pem \
-    > "$DATA_PATH/conf/ssl-dhparams.pem"
-fi
+# ── Download recommended TLS parameters inside the certbot container ────────
+echo "### Downloading recommended TLS parameters ..."
+docker compose -f docker-compose.yml --env-file .env run --rm --entrypoint \
+  "/bin/sh -c 'wget -q -O /etc/letsencrypt/options-ssl-nginx.conf \
+    https://raw.githubusercontent.com/certbot/certbot/master/certbot-nginx/certbot_nginx/_internal/tls_configs/options-ssl-nginx.conf && \
+    wget -q -O /etc/letsencrypt/ssl-dhparams.pem \
+    https://raw.githubusercontent.com/certbot/certbot/master/certbot/certbot/ssl-dhparams.pem'" \
+  certbot
 
 # ── Create a dummy certificate so nginx can start before real certs exist ───
-LIVE_PATH="$DATA_PATH/conf/live/${DOMAINS[0]}"
 echo "### Creating dummy certificate for ${DOMAINS[0]} ..."
-mkdir -p "$LIVE_PATH"
 docker compose -f docker-compose.yml --env-file .env run --rm --entrypoint \
   "/bin/sh -c 'mkdir -p /etc/letsencrypt/live/${DOMAINS[0]} && \
     openssl req -x509 -nodes -newkey rsa:${RSA_KEY_SIZE} -days 1 \
@@ -49,9 +46,9 @@ docker compose -f docker-compose.yml --env-file .env up --force-recreate -d ngin
 # ── Delete dummy cert so certbot can issue a real one ───────────────────────
 echo "### Removing dummy certificate ..."
 docker compose -f docker-compose.yml --env-file .env run --rm --entrypoint \
-  "rm -Rf /etc/letsencrypt/live/${DOMAINS[0]} \
-          /etc/letsencrypt/archive/${DOMAINS[0]} \
-          /etc/letsencrypt/renewal/${DOMAINS[0]}.conf" \
+  "/bin/sh -c 'rm -Rf /etc/letsencrypt/live/${DOMAINS[0]} \
+    /etc/letsencrypt/archive/${DOMAINS[0]} \
+    /etc/letsencrypt/renewal/${DOMAINS[0]}.conf'" \
   certbot
 
 # ── Build domain args (-d bativy.com -d www.bativy.com) ─────────────────────
@@ -74,8 +71,7 @@ docker compose -f docker-compose.yml --env-file .env run --rm --entrypoint \
     --email $EMAIL \
     $DOMAIN_ARGS \
     --rsa-key-size $RSA_KEY_SIZE \
-    --agree-tos \
-    --force-renewal" \
+    --agree-tos" \
   certbot
 
 # ── Reload nginx with the real certificate ───────────────────────────────────
