@@ -26,7 +26,7 @@ export default function Home() {
 
       {/* Hero Section */}
       <section className="px-4 py-20 mx-auto text-center max-w-7xl sm:px-6 lg:px-8">
-        <h1 className="mb-6 text-5xl font-bold leading-tight text-white md:text-6xl">
+        <h1 className="mb-6 text-4xl font-bold leading-tight text-white md:text-6xl">
           {t.hero.titlePrefix}{' '}
           <span className="text-transparent bg-gradient-to-r from-primary-400 to-primary-600 bg-clip-text">{t.hero.titleHighlight}</span>{' '}
           {t.hero.titleSuffix}
@@ -50,7 +50,7 @@ export default function Home() {
       </section>
 
       {/* Features Section */}
-      <section id="features" className="px-4 py-20 mx-auto max-w-7xl sm:px-6 lg:px-8">
+      <section id="features" className="px-4 py-12 mx-auto max-w-7xl sm:px-6 lg:px-8">
         <h2 className="mb-12 text-3xl font-bold text-center text-white">
           {t.features.sectionTitle}
         </h2>
