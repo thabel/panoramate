@@ -491,6 +491,8 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
 
     // Icon container
     const iconContainer = document.createElement('div');
+    iconContainer.className = 'hotspot-icon-container';
+    iconContainer.style.borderRadius = '50%';
     iconContainer.style.display = 'flex';
     iconContainer.style.alignItems = 'center';
     iconContainer.style.justifyContent = 'center';
@@ -501,7 +503,7 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
     const iconSvg = getHotspotIconSvg(iconName);
 
     // Default styling for all hotspots
-    visual.style.borderRadius = '50%';
+    
     visual.style.backgroundColor = options?.color || '#3b3b3b';
     // visual.style.border = '2px solid rgba(255, 255, 255, 0.3)';
     // visual.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.3)';
@@ -509,7 +511,7 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
     // Hot spot general stylings 
 
     visual.style.backgroundColor = '#3b3b3b';
-    visual.className += ' link-hotspot__inner__icon__rotate';
+    // visual.className += ' link-hotspot__inner__icon__rotate';
 
 
     iconContainer.style.color = '#ffffff';
@@ -555,12 +557,8 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
       closeIcon.style.transition = 'transform 0.2s ease-out';
 
       closeWrapper.appendChild(closeIcon);
-      closeWrapper.addEventListener('mouseenter', () => {
-        closeIcon.style.transform = 'scale(1.2) rotate(90deg)';
-      });
-      closeWrapper.addEventListener('mouseleave', () => {
-        closeIcon.style.transform = 'scale(1) rotate(0deg)';
-      });
+      
+      
       closeWrapper.addEventListener('click', (e) => {
         e.stopPropagation();
         TextAndIcon.classList.remove('visible');

@@ -147,7 +147,7 @@ select:focus {
   top: 0;
 
   transform: translate(-50%, -50%);
-  transition: transform 0.2s ease-out;
+  /* transition: transform 0.2s ease-out; */
 
   display: flex;
   align-items: center;
@@ -157,17 +157,20 @@ select:focus {
   will-change: transform;
 
   border-radius: 20px;
-  animation: hotspot-pulse 1.9s ease-in-out infinite;
+  /* animation: hotspot-pulse 1.9s ease-in-out infinite; */
 
   cursor: pointer;
-  -webkit-transition: width 0.3s ease-in-out 0.5s,
+  /* -webkit-transition: width 0.3s ease-in-out 0.5s,
                       border-radius 0.3s ease-in-out 0.5s;
   transition: width 0.3s ease-in-out 0.5s,
-              border-radius 0.3s ease-in-out 0.5s;
+              border-radius 0.3s ease-in-out 0.5s; */
 
   /* border: 2px solid red !important; */
 }
 
+.marzipano-hotspot-visual .hotspot-icon-container{
+  animation: hotspot-pulse 1.9s ease-in-out infinite;
+}
 @keyframes hotspot-pulse-hover {
   0% {
     box-shadow: 0 0 0 0 rgba(0, 0, 0, 0.35);
@@ -229,13 +232,7 @@ select:focus {
               filter 0.3s ease-out;
 }
 
-.marzipano-hotspot-visual:hover {
-  /* background: linear-gradient(135deg, #1a1a2e 0%, #0f3460 100%); */
-  /* box-shadow: 0 0 20px rgba(99, 102, 241, 0.6),
-              inset 0 0 10px rgba(255, 255, 255, 0.1) !important; */
-  /* transform: translate(-50%, -50%) scale(1.15); */
-  filter: brightness(1.1) drop-shadow(0 0 8px rgba(99, 102, 241, 0.4));
-}
+
 
 .marzipano-hotspot-visual:hover .hotspot-title-icon {
   width: 280px;

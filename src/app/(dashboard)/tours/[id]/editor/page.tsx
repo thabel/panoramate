@@ -717,7 +717,7 @@ export default function TourEditorPage({
                   </label>
                   <input
                     type="text"
-                    value={hotspotForm.title}
+                    value={hotspotForm.title || 'Hotspot'}
                     required
                     onChange={(e) => setHotspotForm({ ...hotspotForm, title: e.target.value })}
                     placeholder="e.g. Living Room"
