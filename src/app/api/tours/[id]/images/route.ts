@@ -90,15 +90,16 @@ export async function POST(
       const uint8Array = new Uint8Array(buffer);
 
       try {
-        const { filename, width, height, sizeMb } = await saveUploadedFile(
+        const { filename, mobileFilename, width, height, sizeMb, mobileSizeMb } = await saveUploadedFile(
           Buffer.from(uint8Array),
           org.id,
           tour.id,
           file.name
         );
 
-        // Check storage limit
-        const canAddStorageResult = await canAddStorage(authPayload, org.usedStorageMb + totalStorageAdded + sizeMb);
+        // Check storage limit (count both original and mobile versions)
+        const totalImageSize = sizeMb + mobileSizeMb;
+        const canAddStorageResult = await canAddStorage(authPayload, org.usedStorageMb + totalStorageAdded + totalImageSize);
         if (!canAddStorageResult.allowed) {
           return NextResponse.json(
             { error: canAddStorageResult.reason || 'Storage limit exceeded' },
@@ -106,23 +107,25 @@ export async function POST(
           );
         }
 
-        totalStorageAdded += sizeMb;
+        totalStorageAdded += totalImageSize;
         const order = tourImagesCount + createdImages.length;
 
         // Create image
         const imageId = require('crypto').randomUUID();
         await db.execute(
           `INSERT INTO tour_images (
-            id, tourId, filename, originalName, mimeType, sizeMb,
+            id, tourId, filename, mobileFilename, originalName, mimeType, sizeMb, mobileSizeMb,
             width, height, \`order\`, title, initialYaw, initialPitch, initialFov, createdAt
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
           [
             imageId,
             tour.id,
             filename,
+            mobileFilename,
             file.name,
             file.type,
             sizeMb,
+            mobileSizeMb,
             width,
             height,
             order,
@@ -210,13 +213,17 @@ export async function DELETE(
     }
 
     // RESTRICTION DISABLED: all authenticated users can delete images
-    // Delete file
+    // Delete both original and mobile versions
     await deleteFile(image.filename);
+    if (image.mobileFilename) {
+      await deleteFile(image.mobileFilename);
+    }
 
-    // Update organization storage
+    // Update organization storage (both original and mobile versions)
+    const totalSize = image.sizeMb + (image.mobileSizeMb || 0);
     await db.execute(
       'UPDATE organizations SET usedStorageMb = usedStorageMb - ? WHERE id = ?',
-      [image.sizeMb, image.organizationId]
+      [totalSize, image.organizationId]
     );
 
     // Delete hotspots first

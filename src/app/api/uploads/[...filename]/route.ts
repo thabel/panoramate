@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { readFile } from 'fs/promises';
+import { readFile, access } from 'fs/promises';
 import { join } from 'path';
 import { getAuthUser } from '@/lib/auth';
 
@@ -11,9 +11,9 @@ export async function GET(
 ) {
   try {
     // Join path segments
-    const fullPath = Array.isArray(params.filename) 
+    let fullPath = Array.isArray(params.filename)
       ? params.filename.join('/')
-      : params.filename; 
+      : params.filename;
 
     // Security: prevent directory traversal
     if (fullPath.includes('..') || fullPath.startsWith('/')) {
@@ -23,12 +23,41 @@ export async function GET(
       );
     }
 
-    const filepath = join(UPLOAD_DIR, fullPath);
+    // Check if mobile version is requested
+    const searchParams = request.nextUrl.searchParams;
+    const requestMobile = searchParams.get('mobile') === 'true';
+
+    // Detect mobile device from User-Agent if mobile param not explicitly set
+    let isMobileDevice = requestMobile;
+    if (!requestMobile && !searchParams.has('mobile')) {
+      const userAgent = request.headers.get('user-agent') || '';
+      isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
+    }
+
+    let filepath = join(UPLOAD_DIR, fullPath);
+
+    // Try mobile version first if on mobile device
+    let actualPath = filepath;
+    if (isMobileDevice && fullPath.includes('.')) {
+      const parts = fullPath.split('.');
+      const ext = parts.pop();
+      const basePath = parts.join('.');
+      const mobileFilepath = join(UPLOAD_DIR, `${basePath}-mobile.${ext}`);
+
+      try {
+        // Check if mobile version exists
+        await access(mobileFilepath);
+        actualPath = mobileFilepath;
+      } catch {
+        // Mobile version doesn't exist, fall back to original
+        actualPath = filepath;
+      }
+    }
 
     try {
-      const buffer = await readFile(filepath);
+      const buffer = await readFile(actualPath);
 
-      // Determine content type
+      // Determine content type based on original path
       let contentType = 'image/jpeg';
       if (fullPath.endsWith('.png')) {
         contentType = 'image/png';
@@ -47,7 +76,7 @@ export async function GET(
         },
       });
     } catch (err) {
-      console.error('File not found:', filepath, "err", err);
+      console.error('File not found:', actualPath, "err", err);
       return NextResponse.json(
         { error: 'File not found' },
         { status: 404 }
