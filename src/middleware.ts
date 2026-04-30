@@ -19,6 +19,7 @@ export async function middleware(request: NextRequest) {
     "/login",
     "/register",
     "/request-inscription",
+    // "/api/admin/create-user"
   ];
 
   // Check if this is a public route
