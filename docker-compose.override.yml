@@ -1,0 +1,15 @@
+# Local development overrides — merged automatically when running `docker compose up`
+# On the production server, run with: docker compose -f docker-compose.yml --env-file .env.local up
+
+services:
+  app:
+    ports:
+      - "${APP_PORT:-3000}:3000"
+
+  nginx:
+    profiles:
+      - donotstart
+
+  certbot:
+    profiles:
+      - donotstart

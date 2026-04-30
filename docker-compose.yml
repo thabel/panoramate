@@ -37,9 +37,7 @@ services:
 
     restart: unless-stopped
 
-    ports:
-      - "${APP_PORT:-3000}:3000"
-
+    # No ports exposed directly — nginx is the only public-facing service
     environment:
       DATABASE_HOST: db
       DATABASE_PORT: 3306
@@ -47,7 +45,7 @@ services:
       DATABASE_USER: ${DATABASE_USER}
       DATABASE_PASSWORD: ${DATABASE_PASSWORD}
       JWT_SECRET: ${JWT_SECRET}
-      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
+      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-https://bativy.com}
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
       STRIPE_PUBLISHABLE_KEY: ${STRIPE_PUBLISHABLE_KEY}
       STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
@@ -64,6 +62,44 @@ services:
 
     networks:
       - app-network
+
+
+  # ─────────────────────────────────────────
+  # NGINX — reverse proxy + SSL termination
+  # ─────────────────────────────────────────
+  nginx:
+    image: nginx:alpine
+    restart: unless-stopped
+
+    ports:
+      - "80:80"
+      - "443:443"
+
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - certbot_conf:/etc/letsencrypt:ro
+      - certbot_www:/var/www/certbot:ro
+
+    depends_on:
+      - app
+
+    networks:
+      - app-network
+
+
+  # ─────────────────────────────────────────
+  # CERTBOT — SSL certificate management
+  # Renews certificates every 12 hours
+  # ─────────────────────────────────────────
+  certbot:
+    image: certbot/certbot
+    restart: unless-stopped
+
+    volumes:
+      - certbot_conf:/etc/letsencrypt
+      - certbot_www:/var/www/certbot
+
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
 
 
   # ─────────────────────────────────────────
@@ -85,6 +121,8 @@ services:
 volumes:
   db_data:
   uploads:
+  certbot_conf:
+  certbot_www:
 
 
 networks:
