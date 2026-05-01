@@ -683,7 +683,7 @@ export default function TourEditorPage({
                   <div className="mb-4">
                     <p className="mb-2 text-[10px] font-bold text-dark-500 uppercase tracking-wider">Main Actions</p>
                     <div className="grid grid-cols-4 gap-2">
-                      {['MapPin', 'info' , 'Marker'].map((iconName) => (
+                      {['MapPin', 'info' , 'arrow-up'].map((iconName) => (
                         <button
                           key={iconName}
                           disabled={isEditingHotspot}
@@ -712,7 +712,7 @@ export default function TourEditorPage({
                     <p className="mb-2 text-[10px] font-bold text-dark-500 uppercase tracking-wider">Other Icons</p>
                     <div className="grid grid-cols-4 gap-2">
                       {Object.keys(HOTSPOT_ICONS_SVG)
-                        .filter((name) => !['info', 'MapPin', 'Marker'].includes(name))
+                        .filter((name) => !['info', 'MapPin', 'arrow-up'].includes(name))
                         .map((iconName) => (
                           <button
                             key={iconName}
