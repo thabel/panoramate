@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/Button';
 import { UploadZone } from '@/components/dashboard/UploadZone';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { Badge } from '@/components/ui/Badge';
-import { Save, ChevronLeft, ChevronRight, Image as ImageIcon, Plus, Trash2, X, Share2, Edit2, Search, Settings, Music, Volume2, Link as LinkIcon, Info, ExternalLink, Video, FileText, ArrowRight, Zap } from 'lucide-react';
+import { Save, ChevronLeft, ChevronRight, Image as ImageIcon, Plus, Trash2, X, Share2, Edit2, Search, Settings, Music, Volume2, Link as LinkIcon, Info, ExternalLink, Video, FileText, ArrowRight, Zap, Flag } from 'lucide-react';
 import * as LucideIcons from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import { ShareModal } from '@/components/dashboard/ShareModal';
@@ -201,6 +201,14 @@ export default function TourEditorPage({
       console.error('Error updating initial view:', error);
       toast.error('Failed to update initial view');
     }
+  };
+
+  const handleSetAsInitialView = async () => {
+    if (!tour || currentSceneIndex < 0) return;
+    const currentImage = tour.images[currentSceneIndex];
+    if (!currentImage) return;
+
+    await handleInitialImageIdChange(currentImage.id);
   };
 
   const fetchTour = async () => {
@@ -1006,6 +1014,15 @@ export default function TourEditorPage({
           <Button variant="secondary" onClick={() => setIsShareModalOpen(true)} className="flex items-center gap-2">
             <Share2 size={18} />
             Share
+          </Button>
+          <Button
+            variant="secondary"
+            onClick={handleSetAsInitialView}
+            title="Set current scene as the initial view"
+            className={`flex items-center gap-2 ${tour?.initialImageId === tour?.images[currentSceneIndex]?.id ? 'ring-2 ring-primary-400 text-primary-400' : ''}`}
+          >
+            <Flag size={18} />
+            Set Initial
           </Button>
           <Button variant="secondary" onClick={() => window.history.back()} className="flex items-center gap-2">
             <ChevronLeft size={18} />
