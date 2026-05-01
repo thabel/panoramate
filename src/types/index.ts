@@ -185,3 +185,14 @@ export interface AcceptInviteInput {
   lastName: string;
   password: string;
 }
+
+export interface FileUploadState {
+  id: string; // unique identifier for this upload attempt
+  filename: string;
+  originalName: string;
+  file: File;
+  progress: number; // 0-100
+  status: 'pending' | 'uploading' | 'processing' | 'complete' | 'error';
+  error?: string;
+  result?: TourImage; // populated after successful upload
+}

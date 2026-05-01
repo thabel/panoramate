@@ -59,17 +59,25 @@ export async function POST(
 
     // Parse multipart form data
     const formData = await request.formData();
-    const files = formData.getAll('files') as File[];
+    const file = formData.get('file') as File;
 
-    if (!files || files.length === 0) {
+    if (!file) {
       return NextResponse.json(
-        { error: 'No files provided' },
+        { error: 'No file provided' },
+        { status: 400 }
+      );
+    }
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      return NextResponse.json(
+        { error: 'File must be an image (JPEG, PNG, WebP)' },
         { status: 400 }
       );
     }
 
     // Check image count limit before processing
-    const canAddImages = await canAddImagesToTour(authPayload, params.id, files.length);
+    const canAddImages = await canAddImagesToTour(authPayload, params.id, 1);
     if (!canAddImages.allowed) {
       return NextResponse.json(
         { error: canAddImages.reason || 'Cannot add images' },
@@ -77,97 +85,81 @@ export async function POST(
       );
     }
 
-    const createdImages: any[] = [];
-    let totalStorageAdded = 0;
-
-    for (const file of files) {
-      // Validate file type
-      if (!file.type.startsWith('image/')) {
-        continue;
-      }
-
+    try {
       const buffer = await file.arrayBuffer();
       const uint8Array = new Uint8Array(buffer);
 
-      try {
-        const { filename, mobileFilename, width, height, sizeMb, mobileSizeMb } = await saveUploadedFile(
-          Buffer.from(uint8Array),
-          org.id,
-          tour.id,
-          file.name
+      const { filename, mobileFilename, width, height, sizeMb, mobileSizeMb } = await saveUploadedFile(
+        Buffer.from(uint8Array),
+        org.id,
+        tour.id,
+        file.name
+      );
+
+      // Check storage limit (count both original and mobile versions)
+      const totalImageSize = sizeMb + mobileSizeMb;
+      const canAddStorageResult = await canAddStorage(authPayload, org.usedStorageMb + totalImageSize);
+      if (!canAddStorageResult.allowed) {
+        return NextResponse.json(
+          { error: canAddStorageResult.reason || 'Storage limit exceeded' },
+          { status: 403 }
         );
-
-        // Check storage limit (count both original and mobile versions)
-        const totalImageSize = sizeMb + mobileSizeMb;
-        const canAddStorageResult = await canAddStorage(authPayload, org.usedStorageMb + totalStorageAdded + totalImageSize);
-        if (!canAddStorageResult.allowed) {
-          return NextResponse.json(
-            { error: canAddStorageResult.reason || 'Storage limit exceeded' },
-            { status: 403 }
-          );
-        }
-
-        totalStorageAdded += totalImageSize;
-        const order = tourImagesCount + createdImages.length;
-
-        // Create image
-        const imageId = require('crypto').randomUUID();
-        await db.execute(
-          `INSERT INTO tour_images (
-            id, tourId, filename, mobileFilename, originalName, mimeType, sizeMb, mobileSizeMb,
-            width, height, \`order\`, title, initialYaw, initialPitch, initialFov, createdAt
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
-          [
-            imageId,
-            tour.id,
-            filename,
-            mobileFilename,
-            file.name,
-            file.type,
-            sizeMb,
-            mobileSizeMb,
-            width,
-            height,
-            order,
-            file.name.split('.')[0],
-            0, // initialYaw
-            0, // initialPitch
-            90, // initialFov
-          ]
-        );
-
-        // Update organization storage
-        await db.execute(
-          'UPDATE organizations SET usedStorageMb = usedStorageMb + ? WHERE id = ?',
-          [sizeMb, org.id]
-        );
-
-        // Fetch created image
-        const image = await db.queryOne(
-          'SELECT * FROM tour_images WHERE id = ?',
-          [imageId]
-        );
-
-        createdImages.push(image);
-      } catch (error) {
-        console.error('Error saving file:', error);
       }
-    }
 
-    if (createdImages.length === 0) {
+      const order = tourImagesCount;
+
+      // Create image
+      const imageId = require('crypto').randomUUID();
+      await db.execute(
+        `INSERT INTO tour_images (
+          id, tourId, filename, mobileFilename, originalName, mimeType, sizeMb, mobileSizeMb,
+          width, height, \`order\`, title, initialYaw, initialPitch, initialFov, createdAt
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
+        [
+          imageId,
+          tour.id,
+          filename,
+          mobileFilename,
+          file.name,
+          file.type,
+          sizeMb,
+          mobileSizeMb,
+          width,
+          height,
+          order,
+          file.name.split('.')[0],
+          0, // initialYaw
+          0, // initialPitch
+          90, // initialFov
+        ]
+      );
+
+      // Update organization storage
+      await db.execute(
+        'UPDATE organizations SET usedStorageMb = usedStorageMb + ? WHERE id = ?',
+        [totalImageSize, org.id]
+      );
+
+      // Fetch created image
+      const image = await db.queryOne(
+        'SELECT * FROM tour_images WHERE id = ?',
+        [imageId]
+      );
+
       return NextResponse.json(
-        { error: 'No images were successfully uploaded' },
-        { status: 400 }
+        {
+          success: true,
+          data: image,
+        },
+        { status: 201 }
+      );
+    } catch (error) {
+      console.error('Error saving file:', error);
+      return NextResponse.json(
+        { error: 'Failed to process image' },
+        { status: 500 }
       );
     }
-
-    return NextResponse.json(
-      {
-        success: true,
-        data: createdImages,
-      },
-      { status: 201 }
-    );
   } catch (error) {
     console.error('Upload images error:', error);
     return NextResponse.json(
