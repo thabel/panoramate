@@ -75,6 +75,7 @@ export async function GET(
       backgroundAudioVolume: tourRow.backgroundAudioVolume,
       showSceneMenu: tourRow.showSceneMenu,
       showHotspotTitles: tourRow.showHotspotTitles,
+      initialImageId: tourRow.initialImageId,
       organization: {
         id: tourRow.org_id,
         name: tourRow.org_name,
