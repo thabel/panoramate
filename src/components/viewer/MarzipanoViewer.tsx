@@ -47,6 +47,7 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
   const [hoveredHotspot, setHoveredHotspot] = useState<HotspotType | null>(null);
   const [popoverPosition, setPopoverPosition] = useState<{ x: number; y: number } | null>(null);
   const [openedInfoHotspot, setOpenedInfoHotspot] = useState<{ hotspot: HotspotType; position: { x: number; y: number } } | null>(null);
+  const [isTransitioning, setIsTransitioning] = useState(false);
 
   // Store hotspots in a ref to access latest values in handlers without re-binding
   const hotspotsRef = useRef(hotspots);
@@ -405,7 +406,7 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
     };
   }, [addHotspotMode, onPanoramaClick]);
 
-  // Handle scene switching
+  // Handle scene switching with transition animation
   useEffect(() => {
     if (viewerRef.current && initialSceneId && initialSceneId !== currentSceneId) {
       logger.debug(
@@ -419,12 +420,24 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
 
       const scene = scenesRef.current[initialSceneId];
       if (scene) {
-        logger.info(
-          { initialSceneId },
-          '[Marzipano] ✅ Switching to scene'
-        );
-        scene.switchTo();
-        setCurrentSceneId(initialSceneId);
+        // Start transition animation
+        setIsTransitioning(true);
+
+        // After fade out, switch scene and fade back in
+        const transitionDuration = 300; // 300ms fade out
+        setTimeout(() => {
+          logger.info(
+            { initialSceneId },
+            '[Marzipano] ✅ Switching to scene'
+          );
+          scene.switchTo();
+          setCurrentSceneId(initialSceneId);
+
+          // Start fade in
+          setTimeout(() => {
+            setIsTransitioning(false);
+          }, 50); // Small delay to ensure DOM is updated
+        }, transitionDuration);
       } else {
         logger.error(
           {
@@ -733,6 +746,17 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
         className="w-full h-full overflow-hidden"
         style={{ display: 'flex' }}
       />
+
+      {/* Scene Transition Overlay */}
+      {isTransitioning && (
+        <div
+          className="absolute inset-0 bg-black pointer-events-none z-40 transition-opacity duration-300 ease-in-out"
+          style={{
+            opacity: 1,
+            animation: `sceneTransition 0.6s ease-in-out`
+          }}
+        />
+      )}
       {/* {hoveredHotspot && (
         <HotspotPopover
           hotspot={hoveredHotspot}
@@ -751,6 +775,18 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
       <style jsx global>{`
         .marzipano-hotspot {
           z-index: 10;
+        }
+
+        @keyframes sceneTransition {
+          0% {
+            opacity: 0;
+          }
+          50% {
+            opacity: 1;
+          }
+          100% {
+            opacity: 0;
+          }
         }
 
         @keyframes pulse {
