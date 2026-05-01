@@ -25,7 +25,8 @@ export default async function DashboardPage() {
     redirect('/login');
   }
 
-  const { organizationId, userId } = payload;
+  const { organizationId, userId, role } = payload;
+  const isSuperAdmin = role === 'SUPER_ADMIN';
 
   // Fetch organization
   const organization: any = await db.queryOne(
@@ -176,13 +177,23 @@ export default async function DashboardPage() {
         <h2 className="mb-4 text-xl font-semibold text-white">Storage Usage</h2>
         <UsageBar
           label="Total Storage"
+        <UsageBar
+          label="Total Storage"
           used={organization.usedStorageMb}
           max={organization.totalStorageMb}
           unit=" MB"
+          isUnlimited={isSuperAdmin}
         />
-        <p className="mt-2 text-sm text-dark-400">
-          {organization.usedStorageMb} MB of {organization.totalStorageMb} MB used
-        </p>
+        {!isSuperAdmin && (
+          <p className="mt-2 text-sm text-dark-400">
+            {organization.usedStorageMb} MB of {organization.totalStorageMb} MB used
+          </p>
+        )}
+        {isSuperAdmin && (
+          <p className="mt-2 text-sm text-primary-400">
+            {organization.usedStorageMb} MB used (Unlimited)
+          </p>
+        )}
       </div>
 
       {/* Recent Tours */}

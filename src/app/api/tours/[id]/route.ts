@@ -271,9 +271,19 @@ export async function DELETE(
       [params.id]
     );
 
+    // Calculate total storage to free up (original + mobile versions)
+    let totalSizeMb = 0;
+    for (const image of images) {
+      totalSizeMb += image.sizeMb + (image.mobileSizeMb || 0);
+    }
+
     // Delete all images and files
     for (const image of images) {
       await deleteFile(image.filename);
+      // Also delete mobile version if it exists
+      if (image.mobileFilename) {
+        await deleteFile(image.mobileFilename);
+      }
     }
 
     // Delete hotspots first (foreign key constraint)
@@ -286,6 +296,12 @@ export async function DELETE(
     await db.execute(
       'DELETE FROM tour_images WHERE tourId = ?',
       [params.id]
+    );
+
+    // Update organization storage (subtract freed space)
+    await db.execute(
+      'UPDATE organizations SET usedStorageMb = GREATEST(usedStorageMb - ?, 0) WHERE id = ?',
+      [totalSizeMb, tour.organizationId]
     );
 
     // Delete tour
