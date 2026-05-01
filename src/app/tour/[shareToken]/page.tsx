@@ -104,7 +104,7 @@ export default function PublicTourPage({
         setTour(data.data);
         setShowHotspotTitles(data.data.showHotspotTitles ?? true);
         if (data.data.images && data.data.images.length > 0) {
-          setCurrentSceneId(data.data.images[0].id);
+          setCurrentSceneId(data.data.initialImageId || data.data.images[0].id);
 
           // Run health check on first image
           try {

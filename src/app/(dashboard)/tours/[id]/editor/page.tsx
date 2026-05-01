@@ -187,6 +187,22 @@ export default function TourEditorPage({
     }
   };
 
+  const handleInitialImageIdChange = async (imageId: string | null) => {
+    if (!tour) return;
+    setTour({ ...tour, initialImageId: imageId || undefined });
+    try {
+      await fetch(`/api/tours/${tour.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ initialImageId: imageId }),
+      });
+      toast.success('Initial view updated');
+    } catch (error) {
+      console.error('Error updating initial view:', error);
+      toast.error('Failed to update initial view');
+    }
+  };
+
   const fetchTour = async () => {
     try {
       const response = await fetch(`/api/tours/${params.id}`);
@@ -196,6 +212,9 @@ export default function TourEditorPage({
         const sceneParam = searchParams.get('scene');
         if (sceneParam) {
           const index = data.data.images.findIndex((img: any) => img.id === sceneParam);
+          if (index !== -1) setCurrentSceneIndex(index);
+        } else if (data.data.initialImageId) {
+          const index = data.data.images.findIndex((img: any) => img.id === data.data.initialImageId);
           if (index !== -1) setCurrentSceneIndex(index);
         }
       }
@@ -1237,6 +1256,9 @@ export default function TourEditorPage({
           onShowSceneMenuChange={setShowSceneMenu}
           showHotspotTitles={showHotspotTitles}
           onShowHotspotTitlesChange={setShowHotspotTitles}
+          initialImageId={tour?.initialImageId}
+          onInitialImageIdChange={handleInitialImageIdChange}
+          images={tour?.images}
         />
       </Modal>
     </div>

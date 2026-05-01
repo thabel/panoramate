@@ -124,7 +124,7 @@ export async function PATCH(
     }
 
     const body = await request.json();
-    const { title, description, status, settings, customLogoUrl, backgroundAudioUrl, backgroundAudioVolume, showSceneMenu, showHotspotTitles } = body;
+    const { title, description, status, settings, customLogoUrl, backgroundAudioUrl, backgroundAudioVolume, showSceneMenu, showHotspotTitles, initialImageId } = body;
 
     // Build UPDATE query dynamically
     const updates: string[] = [];
@@ -165,6 +165,10 @@ export async function PATCH(
     if (showHotspotTitles !== undefined) {
       updates.push('showHotspotTitles = ?');
       values.push(showHotspotTitles);
+    }
+    if (initialImageId !== undefined) {
+      updates.push('initialImageId = ?');
+      values.push(initialImageId || null);
     }
 
     updates.push('updatedAt = NOW()');

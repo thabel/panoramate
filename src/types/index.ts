@@ -71,6 +71,7 @@ export interface TourWithImages {
   organizationId: string;
   organization?: Organization;
   createdById: string;
+  initialImageId?: string;
   images: TourImage[];
   createdAt: Date;
   updatedAt: Date;

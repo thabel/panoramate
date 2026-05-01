@@ -17,6 +17,9 @@ type TourSettingsModalProps = {
   onShowSceneMenuChange: (value: boolean) => void;
   showHotspotTitles: boolean;
   onShowHotspotTitlesChange: (value: boolean) => void;
+  initialImageId?: string;
+  onInitialImageIdChange?: (imageId: string | null) => void;
+  images?: any[];
 };
 
 export default function TourSettingsModal({
@@ -31,6 +34,9 @@ export default function TourSettingsModal({
   onShowSceneMenuChange,
   showHotspotTitles,
   onShowHotspotTitlesChange,
+  initialImageId,
+  onInitialImageIdChange,
+  images,
 }: TourSettingsModalProps) {
   return (
     /**
@@ -159,6 +165,33 @@ export default function TourSettingsModal({
             description="Display labels when hovering over hotspots"
           />
         </section>
+
+        {/* Initial View */}
+        {images && images.length > 0 && (
+          <section className="p-5 space-y-3">
+            <SectionHeader icon={<ImageIcon size={14} />} title="Initial View" />
+            <div className="space-y-2">
+              <label className="block text-xs font-medium text-dark-300">
+                Starting Scene
+              </label>
+              <select
+                value={initialImageId || ''}
+                onChange={(e) => onInitialImageIdChange?.(e.target.value || null)}
+                className="w-full px-3 py-2 text-sm bg-dark-700 border border-dark-600 rounded-lg text-white placeholder-dark-500 transition-colors hover:border-primary-400 focus:outline-none focus:border-primary-500"
+              >
+                <option value="">First Scene (Default)</option>
+                {images.map((img, index) => (
+                  <option key={img.id} value={img.id}>
+                    Scene {index + 1}: {img.title || img.originalName || 'Untitled'}
+                  </option>
+                ))}
+              </select>
+              <p className="text-xs text-dark-400">
+                Choose which scene viewers see first when opening the tour.
+              </p>
+            </div>
+          </section>
+        )}
       </div>
 
       {/* ── Sticky footer — always visible at the bottom ─────────── */}
