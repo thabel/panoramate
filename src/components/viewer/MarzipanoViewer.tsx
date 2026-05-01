@@ -55,7 +55,6 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
   }, [hotspots]);
 
   const prevScenesIdsRef = useRef<string>('');
-
   // Main Viewer Initialization
   useEffect(() => {
     if (!containerRef.current || scenes.length === 0) {
