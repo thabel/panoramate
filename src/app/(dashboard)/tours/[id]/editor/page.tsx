@@ -48,7 +48,7 @@ export default function TourEditorPage({
   const [selectionMode, setSelectionMode] = useState<'name' | 'image'>('image');
   const [hotspotForm, setHotspotForm] = useState({
     type: 'LINK',
-    title: '',
+    title: 'Hotspot',
     targetImageId: '',
     content: '',
     url: '',
@@ -744,7 +744,7 @@ export default function TourEditorPage({
                   </label>
                   <input
                     type="text"
-                    value={hotspotForm.title || 'Hotspot'}
+                    value={hotspotForm.title }
                     required
                     onChange={(e) => setHotspotForm({ ...hotspotForm, title: e.target.value })}
                     placeholder="e.g. Living Room"
