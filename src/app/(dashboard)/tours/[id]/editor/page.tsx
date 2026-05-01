@@ -1022,7 +1022,7 @@ export default function TourEditorPage({
             className={`flex items-center gap-2 ${tour?.initialImageId === tour?.images[currentSceneIndex]?.id ? 'ring-2 ring-primary-400 text-primary-400' : ''}`}
           >
             <Flag size={18} />
-            Set Initial
+            Set Initial View
           </Button>
           <Button variant="secondary" onClick={() => window.history.back()} className="flex items-center gap-2">
             <ChevronLeft size={18} />
