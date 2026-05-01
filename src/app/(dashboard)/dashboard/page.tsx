@@ -177,11 +177,9 @@ export default async function DashboardPage() {
         <h2 className="mb-4 text-xl font-semibold text-white">Storage Usage</h2>
         <UsageBar
           label="Total Storage"
-        <UsageBar
-          label="Total Storage"
           used={organization.usedStorageMb}
           max={organization.totalStorageMb}
-          unit=" MB"
+          unit="MB"
           isUnlimited={isSuperAdmin}
         />
         {!isSuperAdmin && (

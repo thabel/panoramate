@@ -40,7 +40,8 @@ export const UploadZone: React.FC<UploadZoneProps> = ({ tourId, onUploadComplete
 
       // Handle completion
       xhr.addEventListener('load', () => {
-        if (xhr.status === 200) {
+        console.log('Upload response:', xhr.status, xhr.responseText);
+        if (xhr.status === 200 || xhr.status === 201) {
           try {
             const response = JSON.parse(xhr.responseText);
             if (response.success && response.data) {
@@ -251,16 +252,16 @@ export const UploadZone: React.FC<UploadZoneProps> = ({ tourId, onUploadComplete
         {uploads.length === 0 ? (
           <>
             <Upload className="mx-auto mb-3 text-primary-400" size={32} />
-            <p className="text-white font-medium mb-1">Drag and drop 360° images</p>
-            <p className="text-dark-400 text-sm mb-4">or click to select files</p>
+            <p className="mb-1 font-medium text-white">Drag and drop 360° images</p>
+            <p className="mb-4 text-sm text-dark-400">or click to select files</p>
             <button
               onClick={() => fileInputRef.current?.click()}
               disabled={isUploading}
-              className="px-6 py-2 bg-primary-600 hover:bg-primary-700 disabled:bg-dark-500 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors"
+              className="px-6 py-2 font-medium text-white transition-colors rounded-lg bg-primary-600 hover:bg-primary-700 disabled:bg-dark-500 disabled:cursor-not-allowed"
             >
               Select Images
             </button>
-            <p className="text-dark-500 text-xs mt-4">
+            <p className="mt-4 text-xs text-dark-500">
               Supported formats: JPEG, PNG, WebP (up to 100MB each)
             </p>
           </>
@@ -269,7 +270,7 @@ export const UploadZone: React.FC<UploadZoneProps> = ({ tourId, onUploadComplete
             {uploads.map((upload) => (
               <div
                 key={upload.id}
-                className="bg-dark-700 rounded-lg p-4 text-left flex items-center gap-4"
+                className="flex items-center gap-4 p-4 text-left rounded-lg bg-dark-700"
               >
                 {/* Icon */}
                 <div className="flex-shrink-0">
@@ -278,7 +279,7 @@ export const UploadZone: React.FC<UploadZoneProps> = ({ tourId, onUploadComplete
                   ) : upload.status === 'error' ? (
                     <AlertCircle className="text-red-500" size={24} />
                   ) : upload.status === 'uploading' ? (
-                    <div className="w-6 h-6 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
+                    <div className="w-6 h-6 border-2 rounded-full border-primary-500 border-t-transparent animate-spin" />
                   ) : (
                     <div className="w-6 h-6 rounded-full bg-dark-600" />
                   )}
@@ -287,16 +288,16 @@ export const UploadZone: React.FC<UploadZoneProps> = ({ tourId, onUploadComplete
                 {/* File Info & Progress */}
                 <div className="flex-grow min-w-0">
                   <div className="flex items-center justify-between mb-2">
-                    <p className="text-white text-sm font-medium truncate">
+                    <p className="text-sm font-medium text-white truncate">
                       {upload.filename}
                     </p>
-                    <span className="text-dark-400 text-xs ml-2 flex-shrink-0">
+                    <span className="flex-shrink-0 ml-2 text-xs text-dark-400">
                       {upload.progress}%
                     </span>
                   </div>
 
                   {/* Progress Bar */}
-                  <div className="w-full bg-dark-600 rounded-full h-2 overflow-hidden">
+                  <div className="w-full h-2 overflow-hidden rounded-full bg-dark-600">
                     <div
                       className={`h-full rounded-full transition-all duration-300 ${
                         upload.status === 'complete'
@@ -310,8 +311,8 @@ export const UploadZone: React.FC<UploadZoneProps> = ({ tourId, onUploadComplete
                   </div>
 
                   {/* Status Text */}
-                  <div className="mt-2 flex items-center justify-between">
-                    <p className="text-dark-400 text-xs">
+                  <div className="flex items-center justify-between mt-2">
+                    <p className="text-xs text-dark-400">
                       {upload.status === 'uploading' && 'Uploading...'}
                       {upload.status === 'complete' && 'Upload complete'}
                       {upload.status === 'error' && upload.error}
@@ -321,11 +322,11 @@ export const UploadZone: React.FC<UploadZoneProps> = ({ tourId, onUploadComplete
                 </div>
 
                 {/* Actions */}
-                <div className="flex-shrink-0 flex gap-2">
+                <div className="flex flex-shrink-0 gap-2">
                   {upload.status === 'error' && (
                     <button
                       onClick={() => handleRetry(upload.id)}
-                      className="p-2 hover:bg-dark-600 rounded transition-colors"
+                      className="p-2 transition-colors rounded hover:bg-dark-600"
                       title="Retry upload"
                     >
                       <RotateCw size={16} className="text-primary-400" />
@@ -334,7 +335,7 @@ export const UploadZone: React.FC<UploadZoneProps> = ({ tourId, onUploadComplete
                   {upload.status !== 'complete' && (
                     <button
                       onClick={() => handleCancel(upload.id)}
-                      className="p-2 hover:bg-dark-600 rounded transition-colors"
+                      className="p-2 transition-colors rounded hover:bg-dark-600"
                       title="Remove from queue"
                     >
                       <X size={16} className="text-red-500" />
@@ -346,20 +347,20 @@ export const UploadZone: React.FC<UploadZoneProps> = ({ tourId, onUploadComplete
 
             {/* Summary and Actions */}
             {(completedCount > 0 || errorCount > 0) && (
-              <div className="mt-4 pt-4 border-t border-dark-600 flex items-center justify-between">
-                <p className="text-dark-300 text-sm">
+              <div className="flex items-center justify-between pt-4 mt-4 border-t border-dark-600">
+                <p className="text-sm text-dark-300">
                   {completedCount > 0 && (
-                    <span className="text-green-500 font-medium">{completedCount} completed</span>
+                    <span className="font-medium text-green-500">{completedCount} completed</span>
                   )}
                   {completedCount > 0 && errorCount > 0 && ' • '}
                   {errorCount > 0 && (
-                    <span className="text-red-500 font-medium">{errorCount} failed</span>
+                    <span className="font-medium text-red-500">{errorCount} failed</span>
                   )}
                 </p>
                 {completedCount > 0 && (
                   <button
                     onClick={handleClearCompleted}
-                    className="text-primary-400 hover:text-primary-300 text-sm transition-colors"
+                    className="text-sm transition-colors text-primary-400 hover:text-primary-300"
                   >
                     Clear completed
                   </button>
