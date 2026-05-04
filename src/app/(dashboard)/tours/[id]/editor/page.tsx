@@ -24,7 +24,7 @@ import { cp } from 'fs';
 
 // Icon groups: when editing, only allow icons from the same group
 const ICON_GROUPS: Record<string, string[]> = {
-  'NAVIGATION': ['MapPin', 'ArrowRight', 'Marker'],
+  'NAVIGATION': ['MapPin', 'ArrowRight', 'Marker','arrow-up'],
   'EXTERNAL_LINKS': ['ExternalLink', 'Link', 'Play', 'Video'],
   'INFORMATION': ['info'],
   'CONTENT': ['MessageCircle', 'Camera'],
@@ -34,6 +34,7 @@ const ICON_GROUPS: Record<string, string[]> = {
 // Get the group for an icon
 const getIconGroup = (iconName: string): string => {
   for (const [group, icons] of Object.entries(ICON_GROUPS)) {
+    console.log(`Checking if icon ${iconName} is in group ${group} with icons:`, icons);
     if (icons.includes(iconName)) return group;
   }
   return 'OTHER';
@@ -720,7 +721,7 @@ export default function TourEditorPage({
 
                   {isEditingHotspot && (
                     <p className="mb-4 text-xs text-primary-300 bg-primary-500/10 p-2 rounded border border-primary-500/30">
-                      ℹ️ En mode édition, vous pouvez seulement changer entre les icônes du même type.
+                      ℹ️ In edit mode, you can only switch between icons of the same type.
                     </p>
                   )}
 
