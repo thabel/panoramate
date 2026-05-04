@@ -47,6 +47,8 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
   const [hoveredHotspot, setHoveredHotspot] = useState<HotspotType | null>(null);
   const [popoverPosition, setPopoverPosition] = useState<{ x: number; y: number } | null>(null);
   const [openedInfoHotspot, setOpenedInfoHotspot] = useState<{ hotspot: HotspotType; position: { x: number; y: number } } | null>(null);
+  const [loadingProgress, setLoadingProgress] = useState(0);
+  const [isLoadingImages, setIsLoadingImages] = useState(true);
 
   // Store hotspots in a ref to access latest values in handlers without re-binding
   const hotspotsRef = useRef(hotspots);
@@ -54,14 +56,57 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
     hotspotsRef.current = hotspots;
   }, [hotspots]);
 
+  // Preload all images to track loading progress
+  useEffect(() => {
+    if (scenes.length === 0) {
+      setIsLoadingImages(false);
+      return;
+    }
+
+    setIsLoadingImages(true);
+    setLoadingProgress(0);
+
+    let loadedCount = 0;
+    const totalImages = scenes.length;
+
+    scenes.forEach((scene) => {
+      const img = new Image();
+      img.onload = () => {
+        loadedCount++;
+        const progress = Math.round((loadedCount / totalImages) * 100);
+        setLoadingProgress(progress);
+
+        if (loadedCount === totalImages) {
+          // Give a small delay for smooth transition
+          setTimeout(() => {
+            setIsLoadingImages(false);
+          }, 300);
+        }
+      };
+      img.onerror = () => {
+        loadedCount++;
+        const progress = Math.round((loadedCount / totalImages) * 100);
+        setLoadingProgress(progress);
+
+        if (loadedCount === totalImages) {
+          setTimeout(() => {
+            setIsLoadingImages(false);
+          }, 300);
+        }
+      };
+      img.src = `/api/uploads/${scene.filename}`;
+    });
+  }, [scenes]);
+
   const prevScenesIdsRef = useRef<string>('');
   // Main Viewer Initialization
   useEffect(() => {
-    if (!containerRef.current || scenes.length === 0) {
+    if (!containerRef.current || scenes.length === 0 || isLoadingImages) {
       logger.warn({
         containerExists: !!containerRef.current,
-        scenesCount: scenes.length
-      }, '[Marzipano] Early return - missing container or scenes');
+        scenesCount: scenes.length,
+        isLoadingImages
+      }, '[Marzipano] Early return - missing container or scenes or still loading');
       return;
     }
 
@@ -359,7 +404,7 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
         viewerRef.current = null;
       }
     };
-  }, [scenes]); // Removed addHotspotMode from dependencies
+  }, [scenes, isLoadingImages]);
 
   // Separate Hotspot Click/Create Handler - FIXED coordinate calculation
   useEffect(() => {
@@ -727,6 +772,48 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
 
   return (
     <div className={`w-full h-full bg-black relative ${addHotspotMode ? 'hotspot-cursor' : ''}`}>
+      {/* Loading Overlay with Progress Circle */}
+      {isLoadingImages && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
+          <div className="flex flex-col items-center gap-6">
+            {/* Circular Progress */}
+            <div className="relative w-32 h-32">
+              <svg className="w-full h-full transform -rotate-90" viewBox="0 0 120 120">
+                {/* Background circle */}
+                <circle
+                  cx="60"
+                  cy="60"
+                  r="54"
+                  fill="none"
+                  stroke="#374151"
+                  strokeWidth="8"
+                />
+                {/* Progress circle */}
+                <circle
+                  cx="60"
+                  cy="60"
+                  r="54"
+                  fill="none"
+                  stroke="#6366f1"
+                  strokeWidth="8"
+                  strokeDasharray={`${2 * Math.PI * 54}`}
+                  strokeDashoffset={`${2 * Math.PI * 54 * (1 - loadingProgress / 100)}`}
+                  strokeLinecap="round"
+                  className="transition-all duration-300 ease-out"
+                />
+              </svg>
+              {/* Percentage text in center */}
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="text-center">
+                  <div className="text-4xl font-bold text-white">{loadingProgress}%</div>
+                  <div className="text-xs text-dark-400 mt-1">Loading images...</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div
         ref={containerRef}
         className="w-full h-full overflow-hidden"
