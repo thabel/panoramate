@@ -54,12 +54,22 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
   
   console.log('MarzipanoViewer - hotspots from props:', hotspots);
 
+  const prevScenesIdsRef = useRef<string>('');
+
   // Preload all images to track loading progress
   useEffect(() => {
     if (scenes.length === 0) {
       setIsLoadingImages(false);
       return;
     }
+
+    // Only reload images if scene IDs actually changed
+    const currentSceneIds = scenes.map(s => s.id).join(',');
+    if (currentSceneIds === prevScenesIdsRef.current) {
+      // Same scenes, don't reload images
+      return;
+    }
+    prevScenesIdsRef.current = currentSceneIds;
 
     setIsLoadingImages(true);
     setLoadingProgress(0);
@@ -108,7 +118,6 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
     }
   }, [initialSceneId, currentSceneId]);
 
-  const prevScenesIdsRef = useRef<string>('');
   // Main Viewer Initialization
   useEffect(() => {
     if (!containerRef.current || scenes.length === 0 || isLoadingImages) {

@@ -174,7 +174,7 @@ export default function PublicTourPage({
     <div ref={containerRef} className="flex flex-col h-screen min-h-screen overflow-hidden bg-black" style={{ height: '100dvh', minHeight: '100dvh' }}>
       {/* Compact Header - Top Left Corner */}
       {!isEmbed && !isFullScreen && (
-        <div className="absolute z-30 top-2 left-2 sm:top-4 sm:left-4 bg-black/60 p-2 rounded-lg">
+        <div className="absolute z-30 top-2 left-2 sm:top-4 sm:left-4 bg-black/60 p-2 rounded-lg max-h-[60px] [@media(max-height:500px)]:hidden">
           <h1 className="text-xs sm:text-sm font-semibold text-white truncate max-w-[150px] sm:max-w-xs">{tour.title}</h1>
           <p className="text-xs text-dark-400 hidden sm:block">
              views {tour.organization && `• ${tour.organization.name}`}
@@ -198,7 +198,7 @@ export default function PublicTourPage({
 
             {/* Custom Logo overlay */}
             {tour.customLogoUrl && (
-              <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 max-w-[120px] max-h-[120px] pointer-events-none drop-shadow-2xl opacity-80">
+              <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 max-w-[120px] max-h-[120px] pointer-events-none drop-shadow-2xl opacity-80 [@media(max-height:500px)]:max-w-[60px] [@media(max-height:500px)]:max-h-[60px] [@media(max-height:500px)]:top-1">
                 <img
                   src={`/api/uploads/${tour.customLogoUrl}`}
                   alt="Logo"
@@ -211,22 +211,22 @@ export default function PublicTourPage({
 
             {/* Bottom Navigation Controls */}
             {tour.images.length > 1 && (
-              <div className="absolute z-30 flex items-center gap-1 sm:gap-3 -translate-x-1/2 bottom-3 sm:bottom-6 left-1/2">
+              <div className="absolute z-30 flex items-center gap-1 sm:gap-3 -translate-x-1/2 bottom-3 sm:bottom-6 left-1/2 [@media(max-height:500px)]:bottom-1 [@media(max-height:500px)]:gap-0.5">
                 {/* Previous Scene Button */}
                 <button
                   onClick={() => {
                     const id = getPrevSceneId();
                     if (id) setCurrentSceneId(id);
                   }}
-                  className="p-2 sm:p-3 text-white transition-all border rounded-full bg-dark-900/50 hover:bg-dark-800 backdrop-blur-md border-dark-700/50 active:scale-90"
+                  className="p-2 sm:p-3 text-white transition-all border rounded-full bg-dark-900/50 hover:bg-dark-800 backdrop-blur-md border-dark-700/50 active:scale-90 [@media(max-height:500px)]:p-1.5"
                   title="Previous Scene"
                 >
-                  <ChevronLeft size={20} className="sm:hidden" />
+                  <ChevronLeft size={20} className="sm:hidden [@media(max-height:500px)]:size-4" />
                   <ChevronLeft size={24} className="hidden sm:block" />
                 </button>
 
                 {/* Scene Info - Counter & Title */}
-                <div className="hidden sm:block max-w-xs px-4 py-2 border rounded-full bg-dark-900/50 backdrop-blur-md border-dark-700/50">
+                <div className="hidden sm:block max-w-xs px-4 py-2 border rounded-full bg-dark-900/50 backdrop-blur-md border-dark-700/50 [@media(max-height:500px)]:hidden">
                   <div className="text-sm font-medium text-white">
                     {tour.images.find((img: any) => img.id === currentSceneId)?.title ||
                      tour.images.find((img: any) => img.id === currentSceneId)?.originalName ||
@@ -238,7 +238,7 @@ export default function PublicTourPage({
                 </div>
 
                 {/* Scene Counter - Mobile Only */}
-                <div className="sm:hidden text-xs text-white px-2 py-1 border rounded bg-dark-900/50 border-dark-700/50">
+                <div className="sm:hidden text-xs text-white px-2 py-1 border rounded bg-dark-900/50 border-dark-700/50 [@media(max-height:500px)]:text-xs [@media(max-height:500px)]:px-1.5 [@media(max-height:500px)]:py-0.5">
                   {tour.images.findIndex((img: any) => img.id === currentSceneId) + 1}/{tour.images.length}
                 </div>
 
@@ -248,10 +248,10 @@ export default function PublicTourPage({
                     const id = getNextSceneId();
                     if (id) setCurrentSceneId(id);
                   }}
-                  className="p-2 sm:p-3 text-white transition-all border rounded-full bg-dark-900/50 hover:bg-dark-800 backdrop-blur-md border-dark-700/50 active:scale-90"
+                  className="p-2 sm:p-3 text-white transition-all border rounded-full bg-dark-900/50 hover:bg-dark-800 backdrop-blur-md border-dark-700/50 active:scale-90 [@media(max-height:500px)]:p-1.5"
                   title="Next Scene"
                 >
-                  <ChevronRight size={20} className="sm:hidden" />
+                  <ChevronRight size={20} className="sm:hidden [@media(max-height:500px)]:size-4" />
                   <ChevronRight size={24} className="hidden sm:block" />
                 </button>
 
@@ -259,7 +259,7 @@ export default function PublicTourPage({
                 {tour.showSceneMenu !== false && tour.images.length > 1 && (
                   <button
                     onClick={() => setShowSceneNavigation(!showSceneNavigation)}
-                    className="hidden sm:flex p-3 text-white transition-all border rounded-full bg-dark-900/50 hover:bg-dark-800 backdrop-blur-md border-dark-700/50 active:scale-90"
+                    className="hidden sm:flex p-3 text-white transition-all border rounded-full bg-dark-900/50 hover:bg-dark-800 backdrop-blur-md border-dark-700/50 active:scale-90 [@media(max-height:500px)]:hidden"
                     title={showSceneNavigation ? 'Hide scenes grid' : 'Show scenes grid'}
                   >
                     <Grid3x3 size={20} />
@@ -269,7 +269,7 @@ export default function PublicTourPage({
             )}
 
             {/* Top Right Controls Group */}
-            <div className="absolute z-30 flex items-center gap-1 sm:gap-2 top-2 sm:top-4 right-2 sm:right-4">
+            <div className="absolute z-30 flex items-center gap-1 sm:gap-2 top-2 sm:top-4 right-2 sm:right-4 [@media(max-height:500px)]:gap-0.5 [@media(max-height:500px)]:top-1 [@media(max-height:500px)]:right-1">
               {/* Scene Menu - Hidden on mobile */}
               {tour.showSceneMenu !== false && tour.images.length > 1 && (
                 <div className="hidden sm:block">
@@ -283,7 +283,7 @@ export default function PublicTourPage({
 
               {/* Audio Controls - Simplified on mobile */}
               {tour.backgroundAudioUrl && (
-                <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-dark-900/60 hover:bg-dark-800 backdrop-blur-sm border border-dark-700/50 rounded-lg transition-all group/audio">
+                <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-dark-900/60 hover:bg-dark-800 backdrop-blur-sm border border-dark-700/50 rounded-lg transition-all group/audio [@media(max-height:500px)]:hidden">
                   <button
                     onClick={togglePlay}
                     className="text-white transition-colors hover:text-primary-400"
@@ -332,10 +332,10 @@ export default function PublicTourPage({
                 <div className="sm:hidden">
                   <button
                     onClick={togglePlay}
-                    className="flex items-center justify-center p-2 text-white transition-all border rounded-lg bg-dark-900/60 hover:bg-dark-800 backdrop-blur-sm border-dark-700/50"
+                    className="flex items-center justify-center p-2 text-white transition-all border rounded-lg bg-dark-900/60 hover:bg-dark-800 backdrop-blur-sm border-dark-700/50 [@media(max-height:500px)]:p-1 [@media(max-height:500px)]:rounded"
                     title={isPlaying ? 'Pause' : 'Play'}
                   >
-                    {isPlaying ? <Pause size={16} /> : <Play size={16} />}
+                    {isPlaying ? <Pause size={16} className="[@media(max-height:500px)]:size-3" /> : <Play size={16} className="[@media(max-height:500px)]:size-3" />}
                   </button>
                 </div>
               )}
@@ -343,34 +343,34 @@ export default function PublicTourPage({
               {/* Autorotate button toggle */}
               <button
                 onClick={() => setIsAutoRotating(!isAutoRotating)}
-                className={`flex items-center justify-center p-2 transition-all border rounded-lg backdrop-blur-sm border-dark-700/50 ${
+                className={`flex items-center justify-center p-2 transition-all border rounded-lg backdrop-blur-sm border-dark-700/50 [@media(max-height:500px)]:p-1 [@media(max-height:500px)]:rounded ${
                   isAutoRotating
                     ? 'bg-primary-600/80 text-white hover:bg-primary-700'
                     : 'bg-dark-900/60 text-white hover:bg-dark-800'
                 }`}
                 title={isAutoRotating ? 'Stop rotation' : 'Start rotation'}
               >
-                <RotateCw size={16} className={`sm:hidden ${isAutoRotating ? 'animate-spin' : ''}`} />
+                <RotateCw size={16} className={`sm:hidden [@media(max-height:500px)]:size-3 ${isAutoRotating ? 'animate-spin' : ''}`} />
                 <RotateCw size={20} className={`hidden sm:block ${isAutoRotating ? 'animate-spin' : ''}`} />
               </button>
 
               {/* Full screen button toggle */}
               <button
                 onClick={toggleFullScreen}
-                className="flex items-center justify-center p-2 text-white transition-all border rounded-lg bg-dark-900/60 hover:bg-dark-800 backdrop-blur-sm border-dark-700/50"
+                className="flex items-center justify-center p-2 text-white transition-all border rounded-lg bg-dark-900/60 hover:bg-dark-800 backdrop-blur-sm border-dark-700/50 [@media(max-height:500px)]:p-1 [@media(max-height:500px)]:rounded"
                 title={isFullScreen ? 'Exit Full Screen' : 'Full Screen'}
               >
-                {isFullScreen ? <Minimize size={16} className="sm:hidden" /> : <Maximize size={16} className="sm:hidden" />}
+                {isFullScreen ? <Minimize size={16} className={`sm:hidden [@media(max-height:500px)]:size-3`} /> : <Maximize size={16} className={`sm:hidden [@media(max-height:500px)]:size-3`} />}
                 {isFullScreen ? <Minimize size={20} className="hidden sm:block" /> : <Maximize size={20} className="hidden sm:block" />}
               </button>
 
               {/* Settings Panel Button */}
               <button
                 onClick={() => setIsSettingsOpen(!isSettingsOpen)}
-                className="flex items-center justify-center p-2 text-white transition-all border rounded-lg bg-dark-900/60 hover:bg-dark-800 backdrop-blur-sm border-dark-700/50"
+                className="flex items-center justify-center p-2 text-white transition-all border rounded-lg bg-dark-900/60 hover:bg-dark-800 backdrop-blur-sm border-dark-700/50 [@media(max-height:500px)]:p-1 [@media(max-height:500px)]:rounded"
                 title="Viewer Settings"
               >
-                <Settings size={16} className="sm:hidden" />
+                <Settings size={16} className={`sm:hidden [@media(max-height:500px)]:size-3`} />
                 <Settings size={20} className="hidden sm:block" />
               </button>
             </div>
@@ -386,18 +386,18 @@ export default function PublicTourPage({
             )}
 
             {isSettingsOpen && (
-              <div className="absolute z-30 w-56 sm:w-64 p-3 sm:p-4 space-y-4 border shadow-2xl top-14 sm:top-20 right-2 sm:right-4 rounded-xl bg-dark-900/95 backdrop-blur-md border-dark-700/50 animate-fade-in">
+              <div className="absolute z-30 w-48 sm:w-64 p-2 sm:p-4 space-y-2 sm:space-y-4 border shadow-2xl top-10 sm:top-20 right-1 sm:right-4 rounded-xl bg-dark-900/95 backdrop-blur-md border-dark-700/50 animate-fade-in [@media(max-height:500px)]:w-44 [@media(max-height:500px)]:p-2 [@media(max-height:500px)]:top-8 [@media(max-height:500px)]:right-0.5">
                 <div>
-                  <h3 className="mb-3 text-sm font-semibold text-white">Display Settings</h3>
-                  <div className="space-y-2">
-                    <label className="flex items-center gap-2 p-2 transition-all rounded cursor-pointer hover:bg-dark-800">
+                  <h3 className="mb-2 sm:mb-3 text-xs sm:text-sm font-semibold text-white">Display Settings</h3>
+                  <div className="space-y-1">
+                    <label className="flex items-center gap-2 p-1 sm:p-2 transition-all rounded cursor-pointer hover:bg-dark-800">
                       <input
                         type="checkbox"
                         checked={showHotspotTitles}
                         onChange={(e) => setShowHotspotTitles(e.target.checked)}
-                        className="w-4 h-4 rounded accent-primary-500"
+                        className="w-3 h-3 sm:w-4 sm:h-4 rounded accent-primary-500"
                       />
-                      <span className="text-sm text-dark-300">Show hotspot titles</span>
+                      <span className="text-xs sm:text-sm text-dark-300">Show hotspot titles</span>
                     </label>
                   </div>
                 </div>
@@ -413,7 +413,7 @@ export default function PublicTourPage({
 
       {/* Compact Footer - Bottom Right Corner */}
       {!isEmbed && !isFullScreen && (
-        <div className="absolute z-20 bottom-2 sm:bottom-4 right-2 sm:right-4">
+        <div className="absolute z-20 bottom-2 sm:bottom-4 right-2 sm:right-4 [@media(max-height:500px)]:hidden">
           <a
             href="https://www.bativy.com"
             target="_blank"
