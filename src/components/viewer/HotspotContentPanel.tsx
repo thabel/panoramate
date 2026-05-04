@@ -131,13 +131,12 @@ export const HotspotContentPanel: React.FC<HotspotContentPanelProps> = ({ hotspo
       <div className="h-full flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-dark-700">
-          <div className="text-lg font-bold text-white">Hotspot Details</div>
           <button
             onClick={() => {
               setIsOpen(false);
               setTimeout(onClose, 500);
             }}
-            className="p-2 hover:bg-dark-800 rounded-full text-dark-400 hover:text-white transition-colors"
+            className="p-2 hover:bg-dark-800 rounded-full text-dark-400 hover:text-white transition-colors ml-auto"
           >
             <X size={24} />
           </button>

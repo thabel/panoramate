@@ -207,6 +207,21 @@ export default function PublicTourPage({
               </div>
             )}
 
+            {/* Powered by BATIVY - Top Left Corner */}
+            {!isEmbed && !isFullScreen && (
+              <div className="absolute z-20 top-2 sm:top-4 left-2 sm:left-4">
+                <a
+                  href="https://www.bativy.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg bg-black/60 backdrop-blur-sm hover:bg-black/75 transition-colors cursor-pointer text-xs sm:text-sm"
+                >
+                  <span className="text-dark-300 hidden sm:inline">Powered by</span>
+                  <span className="font-semibold text-primary-400 hover:text-primary-300 transition-colors">BATIVY</span>
+                </a>
+              </div>
+            )}
+
             {/* Bottom Navigation Controls */}
             {tour.images.length > 1 && (
               <div className="absolute z-30 flex items-center gap-1 sm:gap-3 -translate-x-1/2 bottom-3 sm:bottom-6 left-1/2">
@@ -411,9 +426,16 @@ export default function PublicTourPage({
 
       {/* Compact Footer - Bottom Right Corner */}
       {!isEmbed && !isFullScreen && (
-        <div className="absolute z-20 text-xs bottom-2 sm:bottom-4 right-2 sm:right-4 text-dark-400 text-center sm:text-left">
-          <span className="hidden sm:inline">Powered by </span>
-          <span className="font-semibold text-primary-400">BATIVY</span>
+        <div className="absolute z-20 bottom-2 sm:bottom-4 right-2 sm:right-4">
+          <a
+            href="https://www.bativy.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg bg-black/60 backdrop-blur-sm hover:bg-black/75 transition-colors cursor-pointer text-xs sm:text-sm"
+          >
+            <span className="text-dark-300 hidden sm:inline">Powered by</span>
+            <span className="font-semibold text-primary-400 hover:text-primary-300 transition-colors">BATIVY</span>
+          </a>
         </div>
       )}
 
