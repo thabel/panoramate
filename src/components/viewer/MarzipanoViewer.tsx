@@ -98,6 +98,18 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
     });
   }, [scenes]);
 
+  // Update currentSceneId when initialSceneId prop changes (for scene switching)
+  useEffect(() => {
+    if (initialSceneId && viewerRef.current) {
+      const scene = scenesRef.current[initialSceneId];
+      if (scene) {
+        scene.switchTo();
+        setCurrentSceneId(initialSceneId);
+        logger.debug({ sceneId: initialSceneId }, '[Marzipano] Scene switched via prop change');
+      }
+    }
+  }, [initialSceneId]);
+
   const prevScenesIdsRef = useRef<string>('');
   // Main Viewer Initialization
   useEffect(() => {
