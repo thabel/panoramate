@@ -22,6 +22,44 @@ import { MapPin as MapPinIcon } from 'lucide-react';
 import TourSettingsModal from '@/components/dashboard/TourSettingsModal';
 import { cp } from 'fs';
 
+// Icon groups: when editing, only allow icons from the same group
+const ICON_GROUPS: Record<string, string[]> = {
+  'NAVIGATION': ['MapPin', 'ArrowRight', 'Marker'],
+  'EXTERNAL_LINKS': ['ExternalLink', 'Link', 'Play', 'Video'],
+  'INFORMATION': ['info'],
+  'CONTENT': ['MessageCircle', 'Camera'],
+  'OTHER': ['bed', 'card'],
+};
+
+// Get the group for an icon
+const getIconGroup = (iconName: string): string => {
+  for (const [group, icons] of Object.entries(ICON_GROUPS)) {
+    if (icons.includes(iconName)) return group;
+  }
+  return 'OTHER';
+};
+
+// Get available icons based on mode (edit or create)
+const getAvailableIcons = (isEditing: boolean, currentIconName?: string): Record<string, string[]> => {
+  if (!isEditing || !currentIconName) {
+    // In create mode, show all icons grouped
+    return {
+      'Navigation': ICON_GROUPS['NAVIGATION'],
+      'External Links': ICON_GROUPS['EXTERNAL_LINKS'],
+      'Information': ICON_GROUPS['INFORMATION'],
+      'Content': ICON_GROUPS['CONTENT'],
+    };
+  }
+
+  // In edit mode, only show icons from the same group
+  const currentGroup = getIconGroup(currentIconName);
+  const groupIcons = ICON_GROUPS[currentGroup] || [];
+
+  return {
+    [currentGroup]: groupIcons,
+  };
+};
+
 export default function TourEditorPage({
   params,
 }: {
@@ -680,37 +718,18 @@ export default function TourEditorPage({
                 <div>
                   <label className="block mb-3 text-sm font-medium text-dark-300">Hotspot Icon</label>
 
-                  {/* Primary Icons */}
-                  <div className="mb-4">
-                    <p className="mb-2 text-[10px] font-bold text-dark-500 uppercase tracking-wider">Main Actions</p>
-                    <div className="grid grid-cols-4 gap-2">
-                      {['MapPin', 'info' , 'arrow-up'].map((iconName) => (
-                        <button
-                          key={iconName}
-                          onClick={() => {
-                            setHotspotForm({ ...hotspotForm, iconName, type: getHotspotIconType(iconName) });
-                            if (newHotspotCoords) setNewHotspotCoords({ ...newHotspotCoords, iconName });
-                          }}
-                          className={`flex items-center justify-center p-2 rounded-lg transition-all ${
-                            hotspotForm.iconName === iconName
-                              ? 'bg-primary-500/30 border border-primary-500'
-                              : 'bg-dark-700 border border-dark-600 hover:border-dark-500'
-                          }`}
-                          title={`${iconName} Icon`}
-                        >
-                          {renderIconBoxer(20, iconName)}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
+                  {isEditingHotspot && (
+                    <p className="mb-4 text-xs text-primary-300 bg-primary-500/10 p-2 rounded border border-primary-500/30">
+                      ℹ️ En mode édition, vous pouvez seulement changer entre les icônes du même type.
+                    </p>
+                  )}
 
-                  {/* Other Icons */}
-                  <div>
-                    <p className="mb-2 text-[10px] font-bold text-dark-500 uppercase tracking-wider">Other Icons</p>
-                    <div className="grid grid-cols-4 gap-2">
-                      {Object.keys(HOTSPOT_ICONS_SVG)
-                        .filter((name) => !['info', 'MapPin', 'arrow-up'].includes(name))
-                        .map((iconName) => (
+                  {/* Render icon groups dynamically */}
+                  {Object.entries(getAvailableIcons(isEditingHotspot, hotspotForm.iconName)).map(([groupLabel, icons]) => (
+                    <div key={groupLabel} className="mb-4">
+                      <p className="mb-2 text-[10px] font-bold text-dark-500 uppercase tracking-wider">{groupLabel}</p>
+                      <div className="grid grid-cols-4 gap-2">
+                        {icons.map((iconName) => (
                           <button
                             key={iconName}
                             onClick={() => {
@@ -727,8 +746,9 @@ export default function TourEditorPage({
                             {renderIconBoxer(20, iconName)}
                           </button>
                         ))}
+                      </div>
                     </div>
-                  </div>
+                  ))}
                 </div>
 
                 <div>
