@@ -98,6 +98,7 @@ export default function TourEditorPage({
     scale: 1.0,
     iconUrl: '',
     iconName: 'info',
+    color: '',
   });
   const [showSceneMenu, setShowSceneMenu] = useState(true);
   const [showHotspotTitles, setShowHotspotTitles] = useState(true);
@@ -106,6 +107,25 @@ export default function TourEditorPage({
     if (!tour) return [];
     return tour.images.flatMap((img: any) => (img.hotspots || []).map((h: any) => ({ ...h, imageId: img.id })));
   }, [tour]);
+
+  // Hotspots with form changes applied in real-time during editing
+  const displayedHotspots = useMemo(() => {
+    if (!isEditingHotspot || !selectedHotspot) return allHotspots;
+
+    return allHotspots.map((h: any) =>
+      h.id === selectedHotspot.id
+        ? {
+            ...h,
+            iconName: hotspotForm.iconName,
+            iconUrl: hotspotForm.iconUrl,
+            color: hotspotForm.color,
+            scale: hotspotForm.scale,
+            animationType: hotspotForm.animationType,
+            title: hotspotForm.title,
+          }
+        : h
+    );
+  }, [allHotspots, isEditingHotspot, selectedHotspot, hotspotForm]);
 
   // ── Keyboard shortcut: Escape closes the hotspot panel ──────────────────
   useEffect(() => {
@@ -143,6 +163,7 @@ export default function TourEditorPage({
       scale: 1.0,
       iconUrl: '',
       iconName: 'info',
+      color: '',
     });
   };
 
@@ -162,6 +183,7 @@ export default function TourEditorPage({
       scale: selectedHotspot.scale || 1.0,
       iconUrl: selectedHotspot.iconUrl || '',
       iconName: selectedHotspot.iconName || 'info',
+      color: selectedHotspot.color || '',
     });
 
     setIsEditingHotspot(true);
@@ -418,6 +440,7 @@ export default function TourEditorPage({
           scale: 1.0,
           iconUrl: '',
           iconName: 'info',
+          color: '',
         });
         toast.success(isEditingHotspot ? 'Hotspot updated' : 'Hotspot created');
       } else {
@@ -1133,7 +1156,7 @@ export default function TourEditorPage({
               tempHotspot={newHotspotCoords}
               onPanoramaClick={handlePanoramaClick}
               onHotspotClick={handleHotspotClick}
-              hotspots={allHotspots}
+              hotspots={displayedHotspots}
             />
           </div>
 
