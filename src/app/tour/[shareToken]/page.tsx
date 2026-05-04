@@ -174,7 +174,7 @@ export default function PublicTourPage({
     <div ref={containerRef} className="flex flex-col h-screen min-h-screen overflow-hidden bg-black" style={{ height: '100dvh', minHeight: '100dvh' }}>
       {/* Compact Header - Top Left Corner */}
       {!isEmbed && !isFullScreen && (
-        <div className="absolute z-30 top-2 left-2 sm:top-4 sm:left-4">
+        <div className="absolute z-30 top-2 left-2 sm:top-4 sm:left-4 bg-black/60 p-2 rounded-lg">
           <h1 className="text-xs sm:text-sm font-semibold text-white truncate max-w-[150px] sm:max-w-xs">{tour.title}</h1>
           <p className="text-xs text-dark-400 hidden sm:block">
              views {tour.organization && `• ${tour.organization.name}`}
@@ -207,20 +207,7 @@ export default function PublicTourPage({
               </div>
             )}
 
-            {/* Powered by BATIVY - Top Left Corner */}
-            {!isEmbed && !isFullScreen && (
-              <div className="absolute z-20 top-2 sm:top-4 left-2 sm:left-4">
-                <a
-                  href="https://www.bativy.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg bg-black/60 backdrop-blur-sm hover:bg-black/75 transition-colors cursor-pointer text-xs sm:text-sm"
-                >
-                  <span className="text-dark-300 hidden sm:inline">Powered by</span>
-                  <span className="font-semibold text-primary-400 hover:text-primary-300 transition-colors">BATIVY</span>
-                </a>
-              </div>
-            )}
+           
 
             {/* Bottom Navigation Controls */}
             {tour.images.length > 1 && (
