@@ -24,7 +24,7 @@ import { cp } from 'fs';
 
 // Icon groups: when editing, only allow icons from the same group
 const ICON_GROUPS: Record<string, string[]> = {
-  'NAVIGATION': ['MapPin', 'ArrowRight', 'Marker','arrow-up'],
+  'NAVIGATION': ['MapPin', 'ArrowRight', 'Marker', 'arrow-up'],
   'EXTERNAL_LINKS': ['ExternalLink', 'Link', 'Play', 'Video'],
   'INFORMATION': ['info'],
   'CONTENT': ['MessageCircle', 'Camera'],
@@ -115,14 +115,14 @@ export default function TourEditorPage({
     return allHotspots.map((h: any) =>
       h.id === selectedHotspot.id
         ? {
-            ...h,
-            iconName: hotspotForm.iconName,
-            iconUrl: hotspotForm.iconUrl,
-            color: hotspotForm.color,
-            scale: hotspotForm.scale,
-            animationType: hotspotForm.animationType,
-            title: hotspotForm.title,
-          }
+          ...h,
+          iconName: hotspotForm.iconName,
+          iconUrl: hotspotForm.iconUrl,
+          color: hotspotForm.color,
+          scale: hotspotForm.scale,
+          animationType: hotspotForm.animationType,
+          title: hotspotForm.title,
+        }
         : h
     );
   }, [allHotspots, isEditingHotspot, selectedHotspot, hotspotForm]);
@@ -238,7 +238,7 @@ export default function TourEditorPage({
     setTour({ ...tour, backgroundAudioVolume: volume });
     try {
       await fetch(
-`/api/tours/${tour.id}`, {
+        `/api/tours/${tour.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ backgroundAudioVolume: volume }),
@@ -312,7 +312,7 @@ export default function TourEditorPage({
     if (!confirm('Are you sure you want to delete this scene?')) return;
     try {
       const response = await fetch(
-`/api/tours/${params.id}/images`, {
+        `/api/tours/${params.id}/images`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ imageId }),
@@ -354,7 +354,7 @@ export default function TourEditorPage({
     formData.append('icon', file);
     try {
       const response = await fetch(
-`/api/tours/${tour.id}/icons`, {
+        `/api/tours/${tour.id}/icons`, {
         method: 'POST',
         body: formData,
       });
@@ -400,11 +400,11 @@ export default function TourEditorPage({
             images: tour.images.map((img: TourImage) =>
               img.id === currentImageId
                 ? {
-                    ...img,
-                    hotspots: ((img as any).hotspots || []).map((h: any) =>
-                      h.id === savedHotspot.id ? savedHotspot : h
-                    ),
-                  }
+                  ...img,
+                  hotspots: ((img as any).hotspots || []).map((h: any) =>
+                    h.id === savedHotspot.id ? savedHotspot : h
+                  ),
+                }
                 : img
             ),
           });
@@ -540,7 +540,7 @@ export default function TourEditorPage({
     formData.append('file', file);
     try {
       const response = await fetch(
-`/api/tours/${tour.id}/logo`, {
+        `/api/tours/${tour.id}/logo`, {
         method: 'POST',
         body: formData,
       });
@@ -560,7 +560,7 @@ export default function TourEditorPage({
     if (!tour || !confirm('Are you sure you want to remove the logo?')) return;
     try {
       const response = await fetch(
-`/api/tours/${tour.id}/logo`, {
+        `/api/tours/${tour.id}/logo`, {
         method: 'DELETE',
       });
       if (response.ok) {
@@ -579,7 +579,7 @@ export default function TourEditorPage({
     setIsSaving(true);
     try {
       const response = await fetch(
-`/api/tours/${tour.id}`, {
+        `/api/tours/${tour.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: 'PUBLISHED', showSceneMenu, showHotspotTitles }),
@@ -658,7 +658,7 @@ export default function TourEditorPage({
     Array.from(files).forEach(file => formData.append('files', file));
     try {
       const response = await fetch(
-`/api/tours/${tour.id}/hotspot-uploads`, {
+        `/api/tours/${tour.id}/hotspot-uploads`, {
         method: 'POST',
         body: formData,
       });
@@ -760,11 +760,10 @@ export default function TourEditorPage({
                               setHotspotForm({ ...hotspotForm, iconName, type: getHotspotIconType(iconName) });
                               if (newHotspotCoords) setNewHotspotCoords({ ...newHotspotCoords, iconName });
                             }}
-                            className={`flex items-center justify-center p-2 rounded-lg transition-all ${
-                              hotspotForm.iconName === iconName
+                            className={`flex items-center justify-center p-2 rounded-lg transition-all ${hotspotForm.iconName === iconName
                                 ? 'bg-primary-500/30 border border-primary-500'
                                 : 'bg-dark-700 border border-dark-600 hover:border-dark-500'
-                            }`}
+                              }`}
                             title={`${iconName} Icon`}
                           >
                             {renderIconBoxer(20, iconName)}
@@ -783,7 +782,7 @@ export default function TourEditorPage({
                   </label>
                   <input
                     type="text"
-                    value={hotspotForm.title }
+                    value={hotspotForm.title}
                     required
                     onChange={(e) => setHotspotForm({ ...hotspotForm, title: e.target.value })}
                     placeholder="e.g. Living Room"
@@ -800,17 +799,15 @@ export default function TourEditorPage({
                     <div className="flex w-full p-1 border rounded-lg bg-dark-900 border-dark-700">
                       <button
                         onClick={() => setSelectionMode('image')}
-                        className={`flex-1 py-1.5 px-2 text-xs font-medium rounded-md transition-all flex items-center justify-center gap-1 ${
-                          selectionMode === 'image' ? 'bg-primary-600 text-white' : 'text-dark-400'
-                        }`}
+                        className={`flex-1 py-1.5 px-2 text-xs font-medium rounded-md transition-all flex items-center justify-center gap-1 ${selectionMode === 'image' ? 'bg-primary-600 text-white' : 'text-dark-400'
+                          }`}
                       >
                         By image
                       </button>
                       <button
                         onClick={() => setSelectionMode('name')}
-                        className={`flex-1 py-1.5 px-2 text-xs font-medium rounded-md transition-all flex items-center justify-center gap-1 ${
-                          selectionMode === 'name' ? 'bg-primary-600 text-white' : 'text-dark-400'
-                        }`}
+                        className={`flex-1 py-1.5 px-2 text-xs font-medium rounded-md transition-all flex items-center justify-center gap-1 ${selectionMode === 'name' ? 'bg-primary-600 text-white' : 'text-dark-400'
+                          }`}
                       >
                         By name
                       </button>
@@ -839,11 +836,10 @@ export default function TourEditorPage({
                             <button
                               key={img.id}
                               onClick={() => setHotspotForm({ ...hotspotForm, targetImageId: img.id })}
-                              className={`w-full text-left px-3 py-2.5 rounded-lg text-xs transition-all border ${
-                                hotspotForm.targetImageId === img.id
+                              className={`w-full text-left px-3 py-2.5 rounded-lg text-xs transition-all border ${hotspotForm.targetImageId === img.id
                                   ? 'bg-primary-600/20 border-primary-500 text-white'
                                   : 'bg-dark-900/40 border-transparent text-dark-300'
-                              }`}
+                                }`}
                             >
                               {img.title || `Scene ${img.order + 1}`}
                             </button>
@@ -858,9 +854,8 @@ export default function TourEditorPage({
                           <button
                             key={img.id}
                             onClick={() => setHotspotForm({ ...hotspotForm, targetImageId: img.id })}
-                            className={`relative group rounded-lg overflow-hidden border-2 transition-all ${
-                              hotspotForm.targetImageId === img.id ? 'border-primary-500' : 'border-transparent'
-                            }`}
+                            className={`relative group rounded-lg overflow-hidden border-2 transition-all ${hotspotForm.targetImageId === img.id ? 'border-primary-500' : 'border-transparent'
+                              }`}
                           >
                             <img src={`/api/uploads/${img.filename}`} alt={img.title || 'Scene'} className="object-cover w-full h-16" />
                           </button>
@@ -1087,9 +1082,8 @@ export default function TourEditorPage({
                 setNewHotspotCoords(null);
               }
             }}
-            className={`flex flex-col items-center gap-1 p-2 w-16 rounded-xl transition-all duration-200 ${
-              addHotspotMode ? 'bg-primary-600 text-white' : 'text-dark-400 hover:text-white hover:bg-dark-700'
-            }`}
+            className={`flex flex-col items-center gap-1 p-2 w-16 rounded-xl transition-all duration-200 ${addHotspotMode ? 'bg-primary-600 text-white' : 'text-dark-400 hover:text-white hover:bg-dark-700'
+              }`}
           >
             <MapPinIcon size={22} />
             <span className="text-[10px] font-medium">Hotspot</span>
@@ -1148,7 +1142,8 @@ export default function TourEditorPage({
           )}
 
           <div className="absolute inset-0 pb-24">
-            <MarzipanoViewer
+
+            <MarzipanoViewer // 
               scenes={tour.images}
               initialSceneId={currentScene.id}
               editorMode={true}
@@ -1175,11 +1170,10 @@ export default function TourEditorPage({
                 <div key={image.id} className="relative flex-shrink-0 group">
                   <button
                     onClick={() => setCurrentSceneIndex(index)}
-                    className={`relative w-28 h-16 rounded-xl overflow-hidden border-2 transition-all duration-300 ${
-                      index === currentSceneIndex
+                    className={`relative w-28 h-16 rounded-xl overflow-hidden border-2 transition-all duration-300 ${index === currentSceneIndex
                         ? 'border-primary-500 scale-105 shadow-[0_0_15px_rgba(99,102,241,0.4)]'
                         : 'border-transparent hover:border-dark-500 opacity-60 hover:opacity-100'
-                    }`}
+                      }`}
                   >
                     <img
                       src={`/api/uploads/${image.filename}`}

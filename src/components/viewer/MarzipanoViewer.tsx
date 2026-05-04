@@ -51,10 +51,8 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
   const [isLoadingImages, setIsLoadingImages] = useState(true);
 
   // Store hotspots in a ref to access latest values in handlers without re-binding
-  const hotspotsRef = useRef(hotspots);
-  useEffect(() => {
-    hotspotsRef.current = hotspots;
-  }, [hotspots]);
+  
+  console.log('MarzipanoViewer - hotspots from props:', hotspots);
 
   // Preload all images to track loading progress
   useEffect(() => {
@@ -739,7 +737,7 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
       const parentClass = containerRef.current.parentElement?.className;
       logger.debug({ parentClass }, 'Container cursor class update');
     }
-  }, [addHotspotMode]);
+  }, [hotspots]);
 
   // Autorotate effect
   useEffect(() => {
