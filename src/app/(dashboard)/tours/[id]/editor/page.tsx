@@ -423,6 +423,7 @@ export default function TourEditorPage({
         });
         setIsHotspotActionModalOpen(false);
         setSelectedHotspot(null);
+        closeHotspotPanel();
         toast.success('Hotspot deleted');
       } else {
         toast.error('Failed to delete hotspot');
@@ -686,11 +687,7 @@ export default function TourEditorPage({
                       {['MapPin', 'info' , 'arrow-up'].map((iconName) => (
                         <button
                           key={iconName}
-                          disabled={isEditingHotspot}
                           onClick={() => {
-                            
-                            // if isEditingHotspot ? changing icon is impossible and should be disabled.
-                            if(isEditingHotspot) return;
                             setHotspotForm({ ...hotspotForm, iconName, type: getHotspotIconType(iconName) });
                             if (newHotspotCoords) setNewHotspotCoords({ ...newHotspotCoords, iconName });
                           }}
@@ -716,9 +713,7 @@ export default function TourEditorPage({
                         .map((iconName) => (
                           <button
                             key={iconName}
-                            disabled={isEditingHotspot}
                             onClick={() => {
-                               if(isEditingHotspot) return;
                               setHotspotForm({ ...hotspotForm, iconName, type: getHotspotIconType(iconName) });
                               if (newHotspotCoords) setNewHotspotCoords({ ...newHotspotCoords, iconName });
                             }}
