@@ -220,7 +220,7 @@ export default function AdminInscriptions() {
                 </tr>
               </thead>
               <tbody>
-                {requests.map((request) => (
+                {(requests || []).map((request) => (
                   <tr key={request.id} className="border-b border-dark-700 hover:bg-dark-800/50 transition">
                     <td className="px-6 py-4">
                       <input

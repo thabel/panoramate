@@ -176,7 +176,7 @@ export default function AdminUsersList() {
                 </tr>
               </thead>
               <tbody>
-                {users.map((user) => (
+                {(users || []).map((user) => (
                   <tr key={user.id} className="border-b border-dark-700 hover:bg-dark-800/50 transition">
                     <td className="px-6 py-4">
                       <div>
