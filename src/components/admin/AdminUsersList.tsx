@@ -157,7 +157,7 @@ export default function AdminUsersList() {
           <div className="flex items-center justify-center py-12">
             <LoadingSpinner size="lg" />
           </div>
-        ) : users.length === 0 ? (
+        ) : users?.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-dark-400">No users found</p>
           </div>
@@ -226,7 +226,7 @@ export default function AdminUsersList() {
       {!isLoading && totalPages > 1 && (
         <div className="flex items-center justify-between">
           <p className="text-sm text-dark-400">
-            Showing {users.length > 0 ? (currentPage - 1) * limit + 1 : 0} to{' '}
+            Showing {users?.length > 0 ? (currentPage - 1) * limit + 1 : 0} to{' '}
             {Math.min(currentPage * limit, total)} of {total} users
           </p>
           <div className="flex gap-2">

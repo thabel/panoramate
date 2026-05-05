@@ -194,7 +194,7 @@ export default function AdminInscriptions() {
           <div className="flex items-center justify-center py-12">
             <LoadingSpinner size="lg" />
           </div>
-        ) : requests.length === 0 ? (
+        ) : requests?.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-dark-400">No pending inscription requests</p>
           </div>
@@ -206,7 +206,7 @@ export default function AdminInscriptions() {
                   <th className="px-6 py-4 text-left">
                     <input
                       type="checkbox"
-                      checked={selectedIds.size === requests.length && requests.length > 0}
+                      checked={selectedIds.size === (requests?.length || 0) && (requests?.length || 0) > 0}
                       onChange={(e) => handleSelectAll(e.target.checked)}
                       className="w-4 h-4 rounded border-dark-600 bg-dark-700 cursor-pointer"
                     />
@@ -319,7 +319,7 @@ export default function AdminInscriptions() {
       {!isLoading && totalPages > 1 && (
         <div className="flex items-center justify-between">
           <p className="text-sm text-dark-400">
-            Showing {requests.length > 0 ? (currentPage - 1) * limit + 1 : 0} to{' '}
+            Showing {requests?.length > 0 ? (currentPage - 1) * limit + 1 : 0} to{' '}
             {Math.min(currentPage * limit, total)} of {total} requests
           </p>
           <div className="flex gap-2">
