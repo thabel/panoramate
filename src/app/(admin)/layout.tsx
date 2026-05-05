@@ -58,7 +58,7 @@ export default function AdminLayout({
     },
     {
       label: 'Inscriptions',
-      href: '/admin/inscriptions',
+      href: '/admin/inscriptions-requests',
       icon: FileStack,
     },
   ];
@@ -82,7 +82,7 @@ export default function AdminLayout({
         {/* Admin Header */}
         <div className="p-6 border-b border-slate-800">
           <Link href="/admin" className="flex items-center gap-3">
-            <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-red-600">
+            <div className="flex items-center justify-center w-10 h-10 bg-red-600 rounded-lg">
               <Shield size={24} className="text-white" />
             </div>
             <div>
@@ -104,20 +104,20 @@ export default function AdminLayout({
                 className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800/50 transition-all group"
               >
                 <Icon size={20} className="flex-shrink-0" />
-                <span className="font-medium text-sm">{item.label}</span>
+                <span className="text-sm font-medium">{item.label}</span>
               </Link>
             );
           })}
         </nav>
 
         {/* Admin Footer */}
-        <div className="p-4 border-t border-slate-800 space-y-3">
+        <div className="p-4 space-y-3 border-t border-slate-800">
           <div className="px-3 py-2 rounded-lg bg-slate-800/50">
-            <p className="text-xs text-slate-400 mb-1">Logged in as</p>
+            <p className="mb-1 text-xs text-slate-400">Logged in as</p>
             <p className="text-sm font-medium text-white truncate">
               {user.firstName} {user.lastName}
             </p>
-            <p className="text-xs text-slate-400 truncate">{user.email}</p>
+            <p className="text-xs truncate text-slate-400">{user.email}</p>
           </div>
 
           <button
@@ -141,18 +141,18 @@ export default function AdminLayout({
             >
               {sidebarOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
-            <h1 className="text-xl font-bold text-white hidden sm:block">Super Admin</h1>
+            <h1 className="hidden text-xl font-bold text-white sm:block">Super Admin</h1>
           </div>
 
           <div className="flex items-center gap-4">
-            <div className="hidden sm:flex items-center px-4 py-2 rounded-lg bg-slate-800/50 border border-slate-700">
-              <Shield size={16} className="text-red-500 mr-2" />
+            <div className="items-center hidden px-4 py-2 border rounded-lg sm:flex bg-slate-800/50 border-slate-700">
+              <Shield size={16} className="mr-2 text-red-500" />
               <span className="text-sm text-slate-300">Administrator</span>
             </div>
 
             <Link
               href="/dashboard"
-              className="px-3 py-2 text-sm text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
+              className="px-3 py-2 text-sm transition-colors rounded-lg text-slate-300 hover:text-white hover:bg-slate-800"
             >
               Back to Dashboard
             </Link>
@@ -161,7 +161,7 @@ export default function AdminLayout({
 
         {/* Content Area */}
         <main className="flex-1 overflow-auto">
-          <div className="p-4 md:p-8 h-full">
+          <div className="h-full p-4 md:p-8">
             {children}
           </div>
         </main>
