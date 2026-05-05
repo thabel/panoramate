@@ -2,11 +2,22 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { signJWT, hashPassword, generateSlug } from '@/lib/auth';
 import { v4 as uuidv4 } from 'uuid';
+import { validateHoneypot, HONEYPOT_FIELD_NAME } from '@/lib/honeypot';
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { email, password, firstName, lastName, organizationName } = body;
+    const honeypotValue = body[HONEYPOT_FIELD_NAME];
+
+    // Validate honeypot
+    const honeyplotValidation = validateHoneypot(honeypotValue);
+    if (!honeyplotValidation.isValid) {
+      return NextResponse.json(
+        { error: honeyplotValidation.error || 'Invalid request' },
+        { status: 400 }
+      );
+    }
 
     // Validate inputs
     if (!email || !password || !firstName || !lastName || !organizationName) {

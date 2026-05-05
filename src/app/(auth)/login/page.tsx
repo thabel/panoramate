@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/Input';
 import toast from 'react-hot-toast';
 import { useUI } from '@/context/UIContext';
 import { dictionaries } from '@/lib/i18n';
+import { HONEYPOT_FIELD_NAME } from '@/lib/honeypot';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -17,6 +18,7 @@ export default function LoginPage() {
     email: '',
     password: '',
     rememberMe: false,
+    [HONEYPOT_FIELD_NAME]: '',
   });
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -41,6 +43,7 @@ export default function LoginPage() {
         body: JSON.stringify({
           email: formData.email,
           password: formData.password,
+          [HONEYPOT_FIELD_NAME]: formData[HONEYPOT_FIELD_NAME as keyof typeof formData],
         }),
       });
 
@@ -102,6 +105,23 @@ export default function LoginPage() {
         />
         <label className="ml-2 text-sm text-dark-300">{t.rememberMe}</label>
       </div>
+
+      {/* Honeypot field - hidden from users but filled by bots */}
+      <input
+        type="text"
+        name={HONEYPOT_FIELD_NAME}
+        value={formData[HONEYPOT_FIELD_NAME as keyof typeof formData]}
+        onChange={handleChange}
+        style={{
+          position: 'absolute',
+          left: '-9999px',
+          opacity: 0,
+          pointerEvents: 'none',
+        }}
+        tabIndex={-1}
+        autoComplete="off"
+        aria-hidden="true"
+      />
 
       <Button
         type="submit"

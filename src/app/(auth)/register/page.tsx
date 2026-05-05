@@ -9,6 +9,7 @@ import toast from 'react-hot-toast';
 import { useUI } from '@/context/UIContext';
 import { dictionaries } from '@/lib/i18n';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { HONEYPOT_FIELD_NAME } from '@/lib/honeypot';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -30,6 +31,7 @@ export default function RegisterPage() {
     email: '',
     password: '',
     organizationName: '',
+    [HONEYPOT_FIELD_NAME]: '',
   });
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -77,7 +79,14 @@ export default function RegisterPage() {
       const response = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          email: formData.email,
+          password: formData.password,
+          organizationName: formData.organizationName,
+          [HONEYPOT_FIELD_NAME]: formData[HONEYPOT_FIELD_NAME as keyof typeof formData],
+        }),
       });
 
       if (!response.ok) {
@@ -171,6 +180,23 @@ export default function RegisterPage() {
         onChange={handleChange}
         placeholder="Your Company"
         error={errors.organizationName}
+      />
+
+      {/* Honeypot field - hidden from users but filled by bots */}
+      <input
+        type="text"
+        name={HONEYPOT_FIELD_NAME}
+        value={formData[HONEYPOT_FIELD_NAME as keyof typeof formData]}
+        onChange={handleChange}
+        style={{
+          position: 'absolute',
+          left: '-9999px',
+          opacity: 0,
+          pointerEvents: 'none',
+        }}
+        tabIndex={-1}
+        autoComplete="off"
+        aria-hidden="true"
       />
 
       <Button
