@@ -110,7 +110,7 @@ export default function LoginPage() {
       <input
         type="text"
         name={HONEYPOT_FIELD_NAME}
-        value={formData[HONEYPOT_FIELD_NAME as keyof typeof formData]}
+        value={String(formData[HONEYPOT_FIELD_NAME as keyof typeof formData])}
         onChange={handleChange}
         style={{
           position: 'absolute',

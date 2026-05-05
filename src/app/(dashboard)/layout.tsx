@@ -91,8 +91,8 @@ export default function DashboardLayout({
     ...(isSuperAdmin
       ? [
           {
-            label: 'Admin - Inscriptions',
-            href: '/admin/inscriptions',
+            label: 'Admin Panel',
+            href: '/admin',
             icon: Shield,
           },
         ]
