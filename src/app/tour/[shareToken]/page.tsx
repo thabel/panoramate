@@ -3,11 +3,13 @@
 import { useEffect, useState, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { MarzipanoViewer } from '@/components/viewer/MarzipanoViewer';
+import { WebXRViewer } from '@/components/viewer/WebXRViewer';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { SceneNavigation } from '@/components/viewer/SceneNavigation';
 import { TopSceneMenu } from '@/components/viewer/TopSceneMenu';
 import { HotspotContentPanel } from '@/components/viewer/HotspotContentPanel';
-import { Maximize, Minimize, ChevronLeft, ChevronRight, Volume2, VolumeX, Play, Pause, Settings, Grid3x3, ChevronDown, RotateCw } from 'lucide-react';
+import { useWebXRSupport } from '@/hooks/useWebXRSupport';
+import { Maximize, Minimize, ChevronLeft, ChevronRight, Volume2, VolumeX, Play, Pause, Settings, Grid3x3, ChevronDown, RotateCw, Headphones } from 'lucide-react';
 
 export default function PublicTourPage({
   params,
@@ -16,6 +18,7 @@ export default function PublicTourPage({
 }) {
   const searchParams = useSearchParams();
   const isEmbed = searchParams.get('embed') === 'true';
+  const { isSupported: isWebXRSupported, isReady: isWebXRReady } = useWebXRSupport();
   const [tour, setTour] = useState<any | null>(null);
   const [currentSceneId, setCurrentSceneId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -29,6 +32,7 @@ export default function PublicTourPage({
   const [activeHotspot, setActiveHotspot] = useState<any | null>(null);
   const [showSceneNavigation, setShowSceneNavigation] = useState(false);
   const [isAutoRotating, setIsAutoRotating] = useState(true);
+  const [isVRMode, setIsVRMode] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
 
@@ -186,15 +190,25 @@ export default function PublicTourPage({
       <div className="relative flex-1 group/viewer">
         {tour.images.length > 0 ? (
           <>
-            <MarzipanoViewer
-              scenes={tour.images}
-              hotspots={tour.images.flatMap((img: any) => img.hotspots || [])}
-              initialSceneId={currentSceneId || undefined}
-              onHotspotClick={handleHotspotClick}
-              editorMode={false}
-              showHotspotTitles={showHotspotTitles}
-              autorotate={isAutoRotating}
-            />
+            {isVRMode ? (
+              <WebXRViewer
+                scenes={tour.images}
+                hotspots={tour.images.flatMap((img: any) => img.hotspots || [])}
+                currentSceneId={currentSceneId || undefined}
+                onExitVR={() => setIsVRMode(false)}
+                onHotspotClick={handleHotspotClick}
+              />
+            ) : (
+              <MarzipanoViewer
+                scenes={tour.images}
+                hotspots={tour.images.flatMap((img: any) => img.hotspots || [])}
+                initialSceneId={currentSceneId || undefined}
+                onHotspotClick={handleHotspotClick}
+                editorMode={false}
+                showHotspotTitles={showHotspotTitles}
+                autorotate={isAutoRotating}
+              />
+            )}
 
             {/* Custom Logo overlay */}
             {tour.customLogoUrl && (
@@ -270,8 +284,20 @@ export default function PublicTourPage({
 
             {/* Top Right Controls Group */}
             <div className="absolute z-30 flex items-center gap-1 sm:gap-2 top-2 sm:top-4 right-2 sm:right-4 [@media(max-height:500px)]:gap-0.5 [@media(max-height:500px)]:top-1 [@media(max-height:500px)]:right-1">
+              {/* VR Button - Only show if WebXR is supported */}
+              {isWebXRReady && isWebXRSupported && !isVRMode && (
+                <button
+                  onClick={() => setIsVRMode(true)}
+                  className="flex items-center justify-center p-2 text-white transition-all border rounded-lg bg-dark-900/60 hover:bg-dark-800 backdrop-blur-sm border-dark-700/50 [@media(max-height:500px)]:p-1 [@media(max-height:500px)]:rounded"
+                  title="Enter VR Mode"
+                >
+                  <Headphones size={16} className="sm:hidden [@media(max-height:500px)]:size-3" />
+                  <Headphones size={20} className="hidden sm:block" />
+                </button>
+              )}
+
               {/* Scene Menu - Hidden on mobile */}
-              {tour.showSceneMenu !== false && tour.images.length > 1 && (
+              {tour.showSceneMenu !== false && tour.images.length > 1 && !isVRMode && (
                 <div className="hidden sm:block">
                   <TopSceneMenu
                     scenes={tour.images}
@@ -281,8 +307,8 @@ export default function PublicTourPage({
                 </div>
               )}
 
-              {/* Audio Controls - Simplified on mobile */}
-              {tour.backgroundAudioUrl && (
+              {/* Audio Controls - Simplified on mobile - Hidden in VR */}
+              {tour.backgroundAudioUrl && !isVRMode && (
                 <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-dark-900/60 hover:bg-dark-800 backdrop-blur-sm border border-dark-700/50 rounded-lg transition-all group/audio [@media(max-height:500px)]:hidden">
                   <button
                     onClick={togglePlay}
@@ -327,8 +353,8 @@ export default function PublicTourPage({
                 </div>
               )}
 
-              {/* Audio Play Button - Mobile only */}
-              {tour.backgroundAudioUrl && (
+              {/* Audio Play Button - Mobile only - Hidden in VR */}
+              {tour.backgroundAudioUrl && !isVRMode && (
                 <div className="sm:hidden">
                   <button
                     onClick={togglePlay}
@@ -340,39 +366,45 @@ export default function PublicTourPage({
                 </div>
               )}
 
-              {/* Autorotate button toggle */}
-              <button
-                onClick={() => setIsAutoRotating(!isAutoRotating)}
-                className={`flex items-center justify-center p-2 transition-all border rounded-lg backdrop-blur-sm border-dark-700/50 [@media(max-height:500px)]:p-1 [@media(max-height:500px)]:rounded ${
-                  isAutoRotating
-                    ? 'bg-primary-600/80 text-white hover:bg-primary-700'
-                    : 'bg-dark-900/60 text-white hover:bg-dark-800'
-                }`}
-                title={isAutoRotating ? 'Stop rotation' : 'Start rotation'}
-              >
-                <RotateCw size={16} className={`sm:hidden [@media(max-height:500px)]:size-3 ${isAutoRotating ? 'animate-spin' : ''}`} />
-                <RotateCw size={20} className={`hidden sm:block ${isAutoRotating ? 'animate-spin' : ''}`} />
-              </button>
+              {/* Autorotate button toggle - Hidden in VR */}
+              {!isVRMode && (
+                <button
+                  onClick={() => setIsAutoRotating(!isAutoRotating)}
+                  className={`flex items-center justify-center p-2 transition-all border rounded-lg backdrop-blur-sm border-dark-700/50 [@media(max-height:500px)]:p-1 [@media(max-height:500px)]:rounded ${
+                    isAutoRotating
+                      ? 'bg-primary-600/80 text-white hover:bg-primary-700'
+                      : 'bg-dark-900/60 text-white hover:bg-dark-800'
+                  }`}
+                  title={isAutoRotating ? 'Stop rotation' : 'Start rotation'}
+                >
+                  <RotateCw size={16} className={`sm:hidden [@media(max-height:500px)]:size-3 ${isAutoRotating ? 'animate-spin' : ''}`} />
+                  <RotateCw size={20} className={`hidden sm:block ${isAutoRotating ? 'animate-spin' : ''}`} />
+                </button>
+              )}
 
-              {/* Full screen button toggle */}
-              <button
-                onClick={toggleFullScreen}
-                className="flex items-center justify-center p-2 text-white transition-all border rounded-lg bg-dark-900/60 hover:bg-dark-800 backdrop-blur-sm border-dark-700/50 [@media(max-height:500px)]:p-1 [@media(max-height:500px)]:rounded"
-                title={isFullScreen ? 'Exit Full Screen' : 'Full Screen'}
-              >
-                {isFullScreen ? <Minimize size={16} className={`sm:hidden [@media(max-height:500px)]:size-3`} /> : <Maximize size={16} className={`sm:hidden [@media(max-height:500px)]:size-3`} />}
-                {isFullScreen ? <Minimize size={20} className="hidden sm:block" /> : <Maximize size={20} className="hidden sm:block" />}
-              </button>
+              {/* Full screen button toggle - Hidden in VR */}
+              {!isVRMode && (
+                <button
+                  onClick={toggleFullScreen}
+                  className="flex items-center justify-center p-2 text-white transition-all border rounded-lg bg-dark-900/60 hover:bg-dark-800 backdrop-blur-sm border-dark-700/50 [@media(max-height:500px)]:p-1 [@media(max-height:500px)]:rounded"
+                  title={isFullScreen ? 'Exit Full Screen' : 'Full Screen'}
+                >
+                  {isFullScreen ? <Minimize size={16} className={`sm:hidden [@media(max-height:500px)]:size-3`} /> : <Maximize size={16} className={`sm:hidden [@media(max-height:500px)]:size-3`} />}
+                  {isFullScreen ? <Minimize size={20} className="hidden sm:block" /> : <Maximize size={20} className="hidden sm:block" />}
+                </button>
+              )}
 
-              {/* Settings Panel Button */}
-              <button
-                onClick={() => setIsSettingsOpen(!isSettingsOpen)}
-                className="flex items-center justify-center p-2 text-white transition-all border rounded-lg bg-dark-900/60 hover:bg-dark-800 backdrop-blur-sm border-dark-700/50 [@media(max-height:500px)]:p-1 [@media(max-height:500px)]:rounded"
-                title="Viewer Settings"
-              >
-                <Settings size={16} className={`sm:hidden [@media(max-height:500px)]:size-3`} />
-                <Settings size={20} className="hidden sm:block" />
-              </button>
+              {/* Settings Panel Button - Hidden in VR */}
+              {!isVRMode && (
+                <button
+                  onClick={() => setIsSettingsOpen(!isSettingsOpen)}
+                  className="flex items-center justify-center p-2 text-white transition-all border rounded-lg bg-dark-900/60 hover:bg-dark-800 backdrop-blur-sm border-dark-700/50 [@media(max-height:500px)]:p-1 [@media(max-height:500px)]:rounded"
+                  title="Viewer Settings"
+                >
+                  <Settings size={16} className={`sm:hidden [@media(max-height:500px)]:size-3`} />
+                  <Settings size={20} className="hidden sm:block" />
+                </button>
+              )}
             </div>
 
             {/* Bottom Scene Navigation Grid - Collapsible */}
