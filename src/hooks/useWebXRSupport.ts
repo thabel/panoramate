@@ -14,11 +14,13 @@ export const useWebXRSupport = () => {
           setIsSupported(supported);
           setIsReady(true);
         })
-        .catch(() => {
+        .catch((err) => {
+          console.error('Error while checking WebXR support.', err);
           setIsSupported(false);
           setIsReady(true);
         });
     } else {
+      console.warn('WebXR API is not available in this browser.');
       setIsSupported(false);
       setIsReady(true);
     }

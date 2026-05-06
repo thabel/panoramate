@@ -90,7 +90,7 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
           // Give a small delay for smooth transition
           setTimeout(() => {
             setIsLoadingImages(false);
-          }, 300);
+          }, 100);
         }
       };
       img.onerror = () => {
@@ -101,7 +101,7 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
         if (loadedCount === totalImages) {
           setTimeout(() => {
             setIsLoadingImages(false);
-          }, 300);
+          }, 100);
         }
       };
       img.src = `/api/uploads/${scene.filename}`;
@@ -827,7 +827,7 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="text-center">
                   <div className="text-4xl font-bold text-white">{loadingProgress}%</div>
-                  <div className="text-xs text-dark-400 mt-1">Loading images...</div>
+                  <div className="mt-1 text-xs text-dark-400">Loading images...</div>
                 </div>
               </div>
             </div>
