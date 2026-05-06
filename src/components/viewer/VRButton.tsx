@@ -1,33 +1,69 @@
 'use client';
 
-import { useXR } from '@/hooks/useXR';
 import { Headphones, X, AlertCircle, Loader } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 export default function VRButton() {
-  const { isVRSupported, startVRSession, endVRSession, isVRActive, isLoading, error, capabilities } = useXR();
-  const [showError, setShowError] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
+  const [hasWebXR, setHasWebXR] = useState(false);
+  const [isVRActive, setIsVRActive] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // Don't show button if VR not supported
-  if (!isVRSupported) {
+  // Only run on client
+  useEffect(() => {
+    setIsMounted(true);
+
+    // Check WebXR support
+    if (typeof window !== 'undefined' && (navigator as any).xr) {
+      setHasWebXR(true);
+      console.log('✅ WebXR is supported on this device');
+    } else {
+      setHasWebXR(false);
+      console.log('❌ WebXR is NOT supported on this device');
+    }
+  }, []);
+
+  if (!isMounted || !hasWebXR) {
     return null;
   }
 
   const handleStartVR = async () => {
-    setShowError(false);
+    setIsLoading(true);
+    setError(null);
+
     try {
-      await startVRSession();
+      if (!(navigator as any).xr) {
+        throw new Error('WebXR not supported');
+      }
+
+      const session = await (navigator as any).xr.requestSession('immersive-vr');
+      setIsVRActive(true);
+      console.log('✅ VR Session started');
+
+      // Handle session end
+      session.addEventListener('end', () => {
+        setIsVRActive(false);
+        console.log('✅ VR Session ended');
+      });
     } catch (err) {
-      setShowError(true);
-      console.error('VR Error:', err);
+      const errorMsg = err instanceof Error ? err.message : 'Failed to start VR';
+      setError(errorMsg);
+      console.error('❌ VR Error:', err);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleEndVR = async () => {
+    setIsLoading(true);
     try {
-      await endVRSession();
+      setIsVRActive(false);
+      console.log('✅ VR Session ended');
     } catch (err) {
-      console.error('Error ending VR:', err);
+      console.error('❌ Error ending VR:', err);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -42,7 +78,7 @@ export default function VRButton() {
             ? 'bg-red-600 hover:bg-red-700 text-white'
             : 'bg-blue-600 hover:bg-blue-700 text-white'
         } disabled:opacity-50 disabled:cursor-not-allowed`}
-        title={isVRSupported ? 'Enter VR mode' : 'VR not supported on this device'}
+        title="Enter VR mode"
       >
         {isLoading ? (
           <>
@@ -63,7 +99,7 @@ export default function VRButton() {
       </button>
 
       {/* Error Message */}
-      {error && showError && (
+      {error && (
         <div className="flex items-start gap-2 p-3 bg-red-900/20 border border-red-600/50 rounded-lg">
           <AlertCircle size={18} className="flex-shrink-0 text-red-500 mt-0.5" />
           <div className="flex-1">
@@ -76,8 +112,8 @@ export default function VRButton() {
         </div>
       )}
 
-      {/* Info Message - No Headset */}
-      {!isVRActive && !error && isVRSupported && capabilities?.isSupported && (
+      {/* Info Message */}
+      {!isVRActive && !error && hasWebXR && (
         <div className="text-xs text-slate-400 bg-slate-900/50 p-2 rounded text-center">
           🥽 VR mode available - connect your headset
         </div>

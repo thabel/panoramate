@@ -858,9 +858,11 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
       )}
 
       {/* VR Button - Bottom Right Corner */}
-      <div className="absolute bottom-6 right-6 z-40">
-        <VRButton />
-      </div>
+      {typeof window !== 'undefined' && (
+        <div className="absolute bottom-6 right-6 z-40 pointer-events-auto">
+          <VRButton />
+        </div>
+      )}
 
       <style jsx global>{`
         .marzipano-hotspot {
