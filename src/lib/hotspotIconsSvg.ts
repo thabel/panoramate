@@ -32,7 +32,9 @@ export const HOTSPOT_ICONS_SVG: Record<string, string> = {
     <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
   </svg>`,
 
-  Marker: `<img src="/icons/marker.gif" style="width: 100%; height: 100%; object-fit: contain;" />`,
+  Marker: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/>
+  </svg>`,
 
   Video: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
     <rect x="2" y="7" width="15" height="10" rx="2" ry="2"/><polygon points="23 7 16 12 23 17 23 7"/>

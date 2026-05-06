@@ -179,7 +179,9 @@ export const WebXRViewer: React.FC<WebXRViewerProps> = ({
         const haloMaterial = createHotspotHaloMaterial();
         const halo = new THREE.Mesh(haloGeometry, haloMaterial);
 
-        halo.position.copy(hotspotMesh.position);
+        // Position halo slightly behind the hotspot to prevent z-fighting
+        // Since we're looking from (0,0,0), moving it further away (multiply by 1.01) puts it behind
+        halo.position.copy(hotspotMesh.position).multiplyScalar(1.005);
         halo.lookAt(0, 0, 0);
         hotspotGroupRef.current?.add(halo);
 

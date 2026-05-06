@@ -32,11 +32,20 @@ export function createHotspotIconTexture(iconName: string): THREE.Texture {
     ctx.stroke();
 
     // Get SVG from the hotspot icon function
-    const svgString = getHotspotIconSvg(iconName);
+    let svgString = getHotspotIconSvg(iconName);
+
+    // Replace currentColor with white to ensure visibility on dark background
+    svgString = svgString.replace(/currentColor/g, 'white');
 
     // Create a blob from SVG string
     const svgBlob = new Blob([svgString], { type: 'image/svg+xml' });
     const svgUrl = URL.createObjectURL(svgBlob);
+
+    // Create and return texture early, it will be updated when image loads
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.magFilter = THREE.LinearFilter;
+    texture.minFilter = THREE.LinearMipmapLinearFilter;
+    texture.generateMipmaps = true;
 
     // Create image and load SVG
     const img = new Image();
@@ -47,6 +56,10 @@ export function createHotspotIconTexture(iconName: string): THREE.Texture {
       const y = (256 - iconSize) / 2;
 
       ctx.drawImage(img, x, y, iconSize, iconSize);
+      
+      // IMPORTANT: Signal Three.js that the texture needs to be updated
+      texture.needsUpdate = true;
+      
       URL.revokeObjectURL(svgUrl);
     };
 
@@ -60,9 +73,12 @@ export function createHotspotIconTexture(iconName: string): THREE.Texture {
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText('?', 128, 128);
+      texture.needsUpdate = true;
     };
 
     img.src = svgUrl;
+
+    return texture;
   } catch (err) {
     console.error('Error creating hotspot icon texture:', err);
 
@@ -72,15 +88,9 @@ export function createHotspotIconTexture(iconName: string): THREE.Texture {
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText('!', 128, 128);
+    
+    return new THREE.CanvasTexture(canvas);
   }
-
-  // Create and return texture
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.magFilter = THREE.LinearFilter;
-  texture.minFilter = THREE.LinearMipmapLinearFilter;
-  texture.generateMipmaps = true;
-
-  return texture;
 }
 
 /**
@@ -110,10 +120,28 @@ export function createHotspotGeometry(iconName: string): {
  * Create a glowing halo effect material
  */
 export function createHotspotHaloMaterial(): THREE.Material {
+  // Create a circular radial gradient for the halo
+  const canvas = document.createElement('canvas');
+  canvas.width = 128;
+  canvas.height = 128;
+  const ctx = canvas.getContext('2d');
+  
+  if (ctx) {
+    const gradient = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
+    gradient.addColorStop(0, 'rgba(59, 59, 59, 0.5)');
+    gradient.addColorStop(0.7, 'rgba(59, 59, 59, 0.2)');
+    gradient.addColorStop(1, 'rgba(59, 59, 59, 0)');
+    
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, 128, 128);
+  }
+  
+  const texture = new THREE.CanvasTexture(canvas);
+
   return new THREE.MeshBasicMaterial({
-    color: 0x3b3b3b,
+    map: texture,
     transparent: true,
-    opacity: 0.2,
     side: THREE.DoubleSide,
+    depthWrite: false, // Don't write to depth buffer to avoid occlusion issues
   });
 }
