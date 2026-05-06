@@ -5,6 +5,7 @@ import * as THREE from 'three';
 import { TourImage, Hotspot as HotspotType } from '@/types';
 import { logger } from '@/lib/logger';
 import { X } from 'lucide-react';
+import { createHotspotGeometry, createHotspotHaloMaterial } from '@/lib/webxr-hotspot-texture';
 
 interface WebXRViewerProps {
   scenes: TourImage[];
@@ -138,7 +139,11 @@ export const WebXRViewer: React.FC<WebXRViewerProps> = ({
       hotspotGroupRef.current?.remove(child);
       if (child instanceof THREE.Mesh) {
         child.geometry.dispose();
-        (child.material as THREE.Material).dispose();
+        if (Array.isArray(child.material)) {
+          child.material.forEach((m) => m.dispose());
+        } else {
+          (child.material as THREE.Material).dispose();
+        }
       }
     });
 
@@ -146,36 +151,48 @@ export const WebXRViewer: React.FC<WebXRViewerProps> = ({
     const sceneHotspots = hotspots.filter((h) => h.imageId === currentSceneId);
 
     sceneHotspots.forEach((hotspot) => {
-      // Convert spherical coordinates to 3D position
-      const phi = (Math.PI / 2) - hotspot.pitch;
-      const theta = hotspot.yaw;
+      try {
+        // Convert spherical coordinates to 3D position
+        const phi = (Math.PI / 2) - hotspot.pitch;
+        const theta = hotspot.yaw;
 
-      const x = 400 * Math.sin(phi) * Math.cos(theta);
-      const y = 400 * Math.cos(phi);
-      const z = 400 * Math.sin(phi) * Math.sin(theta);
+        const x = 400 * Math.sin(phi) * Math.cos(theta);
+        const y = 400 * Math.cos(phi);
+        const z = 400 * Math.sin(phi) * Math.sin(theta);
 
-      // Create hotspot sphere
-      const geometry = new THREE.SphereGeometry(15, 16, 16);
-      const material = new THREE.MeshBasicMaterial({
-        color: 0x3b3b3b,
-      });
-      const hotspotSphere = new THREE.Mesh(geometry, material) as HotspotMesh;
-      hotspotSphere.position.set(x, y, z);
-      hotspotSphere.hotspotData = hotspot;
+        // Create hotspot with icon texture
+        const iconName = hotspot.iconName || (hotspot.type === 'LINK_SCENE' ? 'MapPin' : 'info');
+        const { geometry, material } = createHotspotGeometry(iconName);
 
-      hotspotGroupRef.current?.add(hotspotSphere);
-      hotspotsRef.current.push(hotspotSphere);
+        const hotspotMesh = new THREE.Mesh(geometry, material) as HotspotMesh;
+        hotspotMesh.position.set(x, y, z);
+        hotspotMesh.hotspotData = hotspot;
 
-      // Add glow effect
-      const glowGeometry = new THREE.SphereGeometry(18, 16, 16);
-      const glowMaterial = new THREE.MeshBasicMaterial({
-        color: 0x3b3b3b,
-        transparent: true,
-        opacity: 0.3,
-      });
-      const glow = new THREE.Mesh(glowGeometry, glowMaterial);
-      glow.position.copy(hotspotSphere.position);
-      hotspotGroupRef.current?.add(glow);
+        // Make the hotspot face the camera (billboard effect)
+        hotspotMesh.lookAt(0, 0, 0);
+
+        hotspotGroupRef.current?.add(hotspotMesh);
+        hotspotsRef.current.push(hotspotMesh);
+
+        // Add glow halo effect around hotspot
+        const haloGeometry = new THREE.PlaneGeometry(55, 55);
+        const haloMaterial = createHotspotHaloMaterial();
+        const halo = new THREE.Mesh(haloGeometry, haloMaterial);
+
+        halo.position.copy(hotspotMesh.position);
+        halo.lookAt(0, 0, 0);
+        hotspotGroupRef.current?.add(halo);
+
+        logger.debug(
+          { hotspotId: hotspot.id, iconName },
+          '[WebXR] Hotspot created with icon'
+        );
+      } catch (err) {
+        logger.error(
+          { hotspotId: hotspot.id, error: String(err) },
+          '[WebXR] Failed to create hotspot'
+        );
+      }
     });
 
     logger.debug({ count: sceneHotspots.length }, '[WebXR] Hotspots updated');
