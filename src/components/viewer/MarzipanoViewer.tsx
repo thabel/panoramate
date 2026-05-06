@@ -6,6 +6,7 @@ import { logger } from '@/lib/logger';
 import { HotspotPopover } from './HotspotPopover';
 import { InfoHotspot } from './InfoHotspot';
 import { getHotspotIconSvg } from '@/lib/hotspotIconsSvg';
+import VRButton from './VRButton';
 
 declare global {
   interface Window {
@@ -855,6 +856,12 @@ export const MarzipanoViewer: React.FC<MarzipanoViewerProps> = ({
           onClose={() => setOpenedInfoHotspot(null)}
         />
       )}
+
+      {/* VR Button - Bottom Right Corner */}
+      <div className="absolute bottom-6 right-6 z-40">
+        <VRButton />
+      </div>
+
       <style jsx global>{`
         .marzipano-hotspot {
           z-index: 10;
