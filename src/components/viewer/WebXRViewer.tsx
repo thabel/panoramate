@@ -38,6 +38,9 @@ export const WebXRViewer: React.FC<WebXRViewerProps> = ({
   const [vrSession, setVrSession] = useState<XRSession | null>(null);
   const sessionRef = useRef<XRSession | null>(null);
   const hotspotsRef = useRef<HotspotMesh[]>([]);
+  // Always-current ref for the callback so stale animation-loop closures don't call old versions
+  const onHotspotClickRef = useRef(onHotspotClick);
+  useEffect(() => { onHotspotClickRef.current = onHotspotClick; }, [onHotspotClick]);
 
   // Visual feedback tracking
   const hoveredHotspotRef = useRef<HotspotMesh | null>(null);
@@ -388,8 +391,8 @@ export const WebXRViewer: React.FC<WebXRViewerProps> = ({
                 }
 
                 // Trigger the callback
-                if (onHotspotClick) {
-                  onHotspotClick(hitObject.hotspotData);
+                if (onHotspotClickRef.current) {
+                  onHotspotClickRef.current(hitObject.hotspotData);
                   logger.debug(
                     { hotspotId: hitObject.hotspotData.id },
                     '[WebXR] Hotspot clicked with haptic feedback'
@@ -398,9 +401,10 @@ export const WebXRViewer: React.FC<WebXRViewerProps> = ({
               }
             }
           } else {
-            // Not hovering over any hotspot - clear highlight for THIS controller
-            // We only clear the global hovered state if NO controller is hovering (handled after the loop)
-            lastButtonStateRef.current.set(sourceIndex, false);
+            // Not hovering over any hotspot — track the real button state so we
+            // don't treat a held trigger as a new press when the ray enters a hotspot
+            const triggerPressed = inputSource.gamepad?.buttons[0]?.pressed || false;
+            lastButtonStateRef.current.set(sourceIndex, triggerPressed);
           }
         }
       } catch (err) {
@@ -509,6 +513,31 @@ export const WebXRViewer: React.FC<WebXRViewerProps> = ({
       }
 
       logger.info({}, '[WebXR] VR session started');
+
+      // Primary input handler — fires for controllers, gaze, and screen-tap.
+      // This is the reliable path; the per-frame gamepad polling in handleVRInput
+      // only adds hover highlights for tracked-pointer controllers.
+      session.addEventListener('select', (event: XRInputSourceEvent) => {
+        const referenceSpace = rendererRef.current?.xr.getReferenceSpace();
+        if (!referenceSpace || !hotspotsRef.current.length) return;
+
+        const pose = event.frame.getPose(event.inputSource.targetRaySpace, referenceSpace);
+        if (!pose) return;
+
+        const selectMatrix = new THREE.Matrix4().fromArray(pose.transform.matrix);
+        const selectRaycaster = new THREE.Raycaster();
+        selectRaycaster.ray.origin.setFromMatrixPosition(selectMatrix);
+        selectRaycaster.ray.direction.set(0, 0, -1).applyMatrix4(selectMatrix);
+
+        const intersects = selectRaycaster.intersectObjects(hotspotsRef.current);
+        if (intersects.length > 0) {
+          const hitObject = intersects[0].object as HotspotMesh;
+          if (hitObject.hotspotData && onHotspotClickRef.current) {
+            onHotspotClickRef.current(hitObject.hotspotData);
+            logger.debug({ hotspotId: hitObject.hotspotData.id }, '[WebXR] Hotspot selected via select event');
+          }
+        }
+      });
 
       // Handle session end
       session.addEventListener('end', () => {
