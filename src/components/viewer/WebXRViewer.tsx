@@ -326,10 +326,13 @@ export const WebXRViewer: React.FC<WebXRViewerProps> = ({
 
   // Handle VR controller input for hotspot clicks
   const handleVRInput = (session: XRSession, frame: XRFrame) => {
-    // Try to get the reference space for the session
-    const referenceSpace = frame.session.renderState.baseLayer as any;
+    if (!rendererRef.current) return;
 
-    if (!referenceSpace?.getSpace) {
+    // Get the reference space from Three.js renderer
+    // This is the correct way to get the reference space in Three.js WebXR
+    const referenceSpace = rendererRef.current.xr.getReferenceSpace();
+
+    if (!referenceSpace) {
       // Fallback: just handle input without precise pose data
       const inputSources = Array.from(session.inputSources);
 
@@ -346,10 +349,10 @@ export const WebXRViewer: React.FC<WebXRViewerProps> = ({
 
     inputSources.forEach((inputSource, sourceIndex) => {
       try {
-        const space = (referenceSpace as any).space || (session as any).renderState.baseLayer?.space;
-        if (!space) return;
+        // We need a valid targetRaySpace to get the pose
+        if (!inputSource.targetRaySpace) return;
 
-        const pose = frame.getPose(inputSource.targetRaySpace, space);
+        const pose = frame.getPose(inputSource.targetRaySpace, referenceSpace);
 
         if (pose && cameraRef.current && sceneRef.current) {
           // Set raycaster from controller direction (do this every frame for continuous raycasting)
@@ -395,7 +398,8 @@ export const WebXRViewer: React.FC<WebXRViewerProps> = ({
               }
             }
           } else {
-            // Not hovering over any hotspot - clear highlight
+            // Not hovering over any hotspot - clear highlight for THIS controller
+            // We only clear the global hovered state if NO controller is hovering (handled after the loop)
             lastButtonStateRef.current.set(sourceIndex, false);
           }
         }
@@ -404,7 +408,7 @@ export const WebXRViewer: React.FC<WebXRViewerProps> = ({
       }
     });
 
-    // If no hotspots are being hovered, clear the previous highlight
+    // If no hotspots are being hovered by ANY controller, clear the previous highlight
     if (!anyHotspotHovered && hoveredHotspotRef.current) {
       clearHotspotHovered();
     }
@@ -529,14 +533,14 @@ export const WebXRViewer: React.FC<WebXRViewerProps> = ({
   };
 
   return (
-    <div className="w-full h-full relative">
+    <div className="relative w-full h-full">
       <div ref={containerRef} className="w-full h-full" />
 
       {/* Exit VR Button */}
       {vrSession && (
         <button
           onClick={exitVR}
-          className="absolute top-4 right-4 z-50 flex items-center justify-center p-3 text-white bg-red-600 hover:bg-red-700 rounded-lg transition-all"
+          className="absolute z-50 flex items-center justify-center p-3 text-white transition-all bg-red-600 rounded-lg top-4 right-4 hover:bg-red-700"
           title="Exit VR"
         >
           <X size={20} />
@@ -547,7 +551,7 @@ export const WebXRViewer: React.FC<WebXRViewerProps> = ({
       {!vrSession && (
         <button
           onClick={startVRSession}
-          className="absolute bottom-6 left-1/2 -translate-x-1/2 z-50 px-6 py-3 text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-all font-medium"
+          className="absolute z-50 px-6 py-3 font-medium text-white transition-all -translate-x-1/2 rounded-lg bottom-6 left-1/2 bg-primary-600 hover:bg-primary-700"
         >
           📱 Start VR Session
         </button>
