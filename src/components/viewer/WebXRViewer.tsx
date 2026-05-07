@@ -39,6 +39,121 @@ export const WebXRViewer: React.FC<WebXRViewerProps> = ({
   const sessionRef = useRef<XRSession | null>(null);
   const hotspotsRef = useRef<HotspotMesh[]>([]);
 
+  // Visual feedback tracking
+  const hoveredHotspotRef = useRef<HotspotMesh | null>(null);
+  const originalScalesRef = useRef<Map<HotspotMesh, THREE.Vector3>>(new Map());
+  const reticleRef = useRef<THREE.Mesh | null>(null);
+  const lastButtonStateRef = useRef<Map<number, boolean>>(new Map());
+
+  // Set hotspot as hovered with visual feedback
+  const setHotspotHovered = (hotspot: HotspotMesh) => {
+    if (hoveredHotspotRef.current === hotspot) return; // Already hovered
+
+    // Clear previous hover
+    clearHotspotHovered();
+
+    hoveredHotspotRef.current = hotspot;
+
+    // Save original scale and apply visual highlight by scaling up
+    const originalScale = hotspot.scale.clone();
+    originalScalesRef.current.set(hotspot, originalScale);
+
+    // Scale up hotspot slightly to indicate hover
+    hotspot.scale.multiplyScalar(1.15);
+
+    logger.debug(
+      { hotspotId: hotspot.hotspotData?.id },
+      '[WebXR] Hotspot hover highlighted'
+    );
+  };
+
+  // Clear hotspot hover highlight
+  const clearHotspotHovered = () => {
+    if (!hoveredHotspotRef.current) return;
+
+    const hotspot = hoveredHotspotRef.current;
+    const originalScale = originalScalesRef.current.get(hotspot);
+
+    if (originalScale) {
+      hotspot.scale.copy(originalScale);
+      originalScalesRef.current.delete(hotspot);
+    }
+
+    logger.debug(
+      { hotspotId: hotspot.hotspotData?.id },
+      '[WebXR] Hotspot hover cleared'
+    );
+
+    hoveredHotspotRef.current = null;
+  };
+
+  // Create reticle (crosshair at center of screen)
+  const createReticle = (scene: THREE.Scene) => {
+    if (reticleRef.current) {
+      scene.remove(reticleRef.current);
+    }
+
+    // Create a canvas texture for the reticle
+    const canvas = document.createElement('canvas');
+    canvas.width = 64;
+    canvas.height = 64;
+    const ctx = canvas.getContext('2d')!;
+
+    // Draw reticle (white circle with center dot)
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+    // Center dot
+    ctx.beginPath();
+    ctx.arc(32, 32, 3, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Ring around center
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.arc(32, 32, 8, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Crosshair lines
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+    ctx.lineWidth = 1;
+    // Horizontal
+    ctx.beginPath();
+    ctx.moveTo(20, 32);
+    ctx.lineTo(12, 32);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(44, 32);
+    ctx.lineTo(52, 32);
+    ctx.stroke();
+    // Vertical
+    ctx.beginPath();
+    ctx.moveTo(32, 20);
+    ctx.lineTo(32, 12);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(32, 44);
+    ctx.lineTo(32, 52);
+    ctx.stroke();
+
+    const texture = new THREE.CanvasTexture(canvas);
+    const material = new THREE.MeshBasicMaterial({
+      map: texture,
+      transparent: true,
+      depthTest: false,
+      depthWrite: false,
+    });
+
+    // Create plane geometry that always stays in front of camera
+    const geometry = new THREE.PlaneGeometry(0.1, 0.1);
+    const reticle = new THREE.Mesh(geometry, material);
+
+    // Position far in front of camera (in front of everything)
+    reticle.position.z = -3;
+
+    scene.add(reticle);
+    reticleRef.current = reticle;
+  };
+
   // Initialize Three.js scene
   const initializeScene = () => {
     if (!containerRef.current) return;
@@ -73,6 +188,9 @@ export const WebXRViewer: React.FC<WebXRViewerProps> = ({
       const hotspotGroup = new THREE.Group();
       scene.add(hotspotGroup);
       hotspotGroupRef.current = hotspotGroup;
+
+      // Create reticle
+      createReticle(scene);
 
       setIsInitialized(true);
       logger.info({}, '[WebXR] Scene initialized');
@@ -133,6 +251,9 @@ export const WebXRViewer: React.FC<WebXRViewerProps> = ({
   const updateHotspots = () => {
     if (!hotspotGroupRef.current) return;
 
+    // Clear hover state when updating hotspots
+    clearHotspotHovered();
+
     // Clear existing hotspots
     hotspotsRef.current = [];
     hotspotGroupRef.current.children.slice().forEach((child) => {
@@ -146,6 +267,9 @@ export const WebXRViewer: React.FC<WebXRViewerProps> = ({
         }
       }
     });
+
+    // Clean up original scales map
+    originalScalesRef.current.clear();
 
     // Add hotspots for current scene
     const sceneHotspots = hotspots.filter((h) => h.imageId === currentSceneId);
@@ -218,38 +342,72 @@ export const WebXRViewer: React.FC<WebXRViewerProps> = ({
     }
 
     const inputSources = Array.from(session.inputSources);
+    let anyHotspotHovered = false;
 
-    inputSources.forEach((inputSource) => {
-      if (inputSource.gamepad?.buttons[0]?.pressed) {
-        // Primary button (trigger) pressed on controller
-        try {
-          const space = (referenceSpace as any).space || (session as any).renderState.baseLayer?.space;
-          if (!space) return;
+    inputSources.forEach((inputSource, sourceIndex) => {
+      try {
+        const space = (referenceSpace as any).space || (session as any).renderState.baseLayer?.space;
+        if (!space) return;
 
-          const pose = frame.getPose(inputSource.targetRaySpace, space);
+        const pose = frame.getPose(inputSource.targetRaySpace, space);
 
-          if (pose && cameraRef.current && sceneRef.current) {
-            // Set raycaster from controller direction
-            tempMatrixRef.current.fromArray(pose.transform.matrix);
-            raycasterRef.current.ray.origin.setFromMatrixPosition(tempMatrixRef.current);
-            raycasterRef.current.ray.direction.set(0, 0, -1).applyMatrix4(tempMatrixRef.current);
+        if (pose && cameraRef.current && sceneRef.current) {
+          // Set raycaster from controller direction (do this every frame for continuous raycasting)
+          tempMatrixRef.current.fromArray(pose.transform.matrix);
+          raycasterRef.current.ray.origin.setFromMatrixPosition(tempMatrixRef.current);
+          raycasterRef.current.ray.direction.set(0, 0, -1).applyMatrix4(tempMatrixRef.current);
 
-            // Check for intersections with hotspots
-            const intersects = raycasterRef.current.intersectObjects(hotspotsRef.current);
+          // Check for intersections with hotspots (continuous raycasting)
+          const intersects = raycasterRef.current.intersectObjects(hotspotsRef.current);
 
-            if (intersects.length > 0) {
-              const hitObject = intersects[0].object as HotspotMesh;
-              if (hitObject.hotspotData && onHotspotClick) {
-                onHotspotClick(hitObject.hotspotData);
-                logger.debug({ hotspotId: hitObject.hotspotData.id }, '[WebXR] Hotspot clicked');
+          if (intersects.length > 0) {
+            const hitObject = intersects[0].object as HotspotMesh;
+            anyHotspotHovered = true;
+
+            // Visual feedback: highlight the hovered hotspot
+            if (hitObject.hotspotData) {
+              setHotspotHovered(hitObject);
+
+              // Check if trigger was just pressed (transition from not-pressed to pressed)
+              const triggerPressed = inputSource.gamepad?.buttons[0]?.pressed || false;
+              const wasPreviouslyPressed = lastButtonStateRef.current.get(sourceIndex) || false;
+              const justPressed = triggerPressed && !wasPreviouslyPressed;
+
+              // Update button state
+              lastButtonStateRef.current.set(sourceIndex, triggerPressed);
+
+              if (justPressed) {
+                // Haptic feedback: vibrate controller on click
+                if (inputSource.gamepad?.hapticActuators && inputSource.gamepad.hapticActuators.length > 0) {
+                  inputSource.gamepad.hapticActuators[0].pulse(0.8, 100).catch((err) => {
+                    logger.warn({ error: String(err) }, '[WebXR] Haptic feedback failed');
+                  });
+                }
+
+                // Trigger the callback
+                if (onHotspotClick) {
+                  onHotspotClick(hitObject.hotspotData);
+                  logger.debug(
+                    { hotspotId: hitObject.hotspotData.id },
+                    '[WebXR] Hotspot clicked with haptic feedback'
+                  );
+                }
               }
             }
+          } else {
+            // Not hovering over any hotspot - clear highlight
+            lastButtonStateRef.current.set(sourceIndex, false);
           }
-        } catch (err) {
-          logger.warn({ error: String(err) }, '[WebXR] Error getting controller pose');
         }
+      } catch (err) {
+        logger.warn({ error: String(err) }, '[WebXR] Error getting controller pose');
       }
     });
+
+    // If no hotspots are being hovered, clear the previous highlight
+    if (!anyHotspotHovered && hoveredHotspotRef.current) {
+      clearHotspotHovered();
+    }
   };
 
   // Handle window resize
@@ -283,6 +441,12 @@ export const WebXRViewer: React.FC<WebXRViewerProps> = ({
 
     return () => {
       window.removeEventListener('resize', onWindowResize);
+
+      // Clean up VR resources
+      clearHotspotHovered();
+      originalScalesRef.current.clear();
+      lastButtonStateRef.current.clear();
+
       if (rendererRef.current && containerRef.current) {
         containerRef.current.removeChild(rendererRef.current.domElement);
       }
