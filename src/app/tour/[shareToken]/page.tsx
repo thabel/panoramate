@@ -33,6 +33,7 @@ export default function PublicTourPage({
   const [showSceneNavigation, setShowSceneNavigation] = useState(false);
   const [isAutoRotating, setIsAutoRotating] = useState(true);
   const [isVRMode, setIsVRMode] = useState(false);
+  const [selectedHotspotVR, setSelectedHotspotVR] = useState<any | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
 
@@ -141,6 +142,19 @@ export default function PublicTourPage({
     }
   };
 
+  const handleHotspotSelected = (hotspot: any | null) => {
+    setSelectedHotspotVR(hotspot);
+    if (hotspot) {
+      console.log('[VR] Hotspot selected:', {
+        id: hotspot.id,
+        title: hotspot.title,
+        type: hotspot.type,
+      });
+    } else {
+      console.log('[VR] Hotspot deselected');
+    }
+  };
+
   const toggleFullScreen = () => {
     if (!containerRef.current) return;
 
@@ -197,6 +211,8 @@ export default function PublicTourPage({
                 currentSceneId={currentSceneId || undefined}
                 onExitVR={() => setIsVRMode(false)}
                 onHotspotClick={handleHotspotClick}
+                onHotspotSelected={handleHotspotSelected}
+                showControllerRays={true}
               />
             ) : (
               <MarzipanoViewer

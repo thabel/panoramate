@@ -13,6 +13,8 @@ interface WebXRViewerProps {
   currentSceneId?: string;
   onExitVR?: () => void;
   onHotspotClick?: (hotspot: HotspotType) => void;
+  onHotspotSelected?: (hotspot: HotspotType | null) => void;
+  showControllerRays?: boolean;
 }
 
 interface HotspotMesh extends THREE.Mesh {
@@ -25,6 +27,8 @@ export const WebXRViewer: React.FC<WebXRViewerProps> = ({
   currentSceneId,
   onExitVR,
   onHotspotClick,
+  onHotspotSelected,
+  showControllerRays = true,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
@@ -43,9 +47,15 @@ export const WebXRViewer: React.FC<WebXRViewerProps> = ({
 
   // Visual feedback tracking
   const hoveredHotspotRef = useRef<HotspotMesh | null>(null);
+  const selectedHotspotRef = useRef<HotspotMesh | null>(null);
   const originalScalesRef = useRef<Map<HotspotMesh, THREE.Vector3>>(new Map());
   const reticleRef = useRef<THREE.Mesh | null>(null);
   const lastButtonStateRef = useRef<Map<number, boolean>>(new Map());
+
+  // Controller rays
+  const controllerRaysRef = useRef<Map<number, THREE.Line>>(new Map());
+  const rayMaterialHitRef = useRef<THREE.LineBasicMaterial>(new THREE.LineBasicMaterial({ color: 0x00ff00, linewidth: 3 }));
+  const rayMaterialDefaultRef = useRef<THREE.LineBasicMaterial>(new THREE.LineBasicMaterial({ color: 0x0066ff, linewidth: 2 }));
 
   // Set hotspot as hovered with visual feedback
   const setHotspotHovered = (hotspot: HotspotMesh) => {
@@ -87,6 +97,64 @@ export const WebXRViewer: React.FC<WebXRViewerProps> = ({
     );
 
     hoveredHotspotRef.current = null;
+  };
+
+  // Create or update controller ray visual
+  const createOrUpdateControllerRay = (
+    sourceIndex: number,
+    origin: THREE.Vector3,
+    direction: THREE.Vector3,
+    hitDistance: number | null
+  ) => {
+    if (!sceneRef.current || !showControllerRays) return;
+
+    // Get or create ray line
+    let rayLine = controllerRaysRef.current.get(sourceIndex);
+
+    // Ray length: if hitting hotspot, draw to hit point; otherwise draw 100 units
+    const rayLength = hitDistance !== null ? hitDistance : 100;
+    const endPoint = origin.clone().addScaledVector(direction, rayLength);
+
+    if (!rayLine) {
+      // Create new ray line
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute('position', new THREE.BufferAttribute(
+        new Float32Array([origin.x, origin.y, origin.z, endPoint.x, endPoint.y, endPoint.z]),
+        3
+      ));
+
+      const material = hitDistance !== null ? rayMaterialHitRef.current : rayMaterialDefaultRef.current;
+      rayLine = new THREE.Line(geometry, material);
+      sceneRef.current.add(rayLine);
+      controllerRaysRef.current.set(sourceIndex, rayLine);
+    } else {
+      // Update existing ray
+      const geometry = rayLine.geometry as THREE.BufferGeometry;
+      const positions = geometry.attributes.position.array as Float32Array;
+
+      positions[0] = origin.x;
+      positions[1] = origin.y;
+      positions[2] = origin.z;
+      positions[3] = endPoint.x;
+      positions[4] = endPoint.y;
+      positions[5] = endPoint.z;
+
+      geometry.attributes.position.needsUpdate = true;
+
+      // Change material color based on hit
+      rayLine.material = hitDistance !== null ? rayMaterialHitRef.current : rayMaterialDefaultRef.current;
+    }
+  };
+
+  // Clean up controller rays
+  const cleanupControllerRays = () => {
+    if (!sceneRef.current) return;
+
+    controllerRaysRef.current.forEach((ray) => {
+      sceneRef.current?.remove(ray);
+      ray.geometry.dispose();
+    });
+    controllerRaysRef.current.clear();
   };
 
   // Create reticle (crosshair at center of screen)
@@ -395,6 +463,15 @@ export const WebXRViewer: React.FC<WebXRViewerProps> = ({
 
         // Check for intersections with hotspots (continuous raycasting)
         const intersects = raycasterRef.current.intersectObjects(hotspotsRef.current);
+        const hitDistance = intersects.length > 0 ? intersects[0].distance : null;
+
+        // Create or update the visible controller ray
+        createOrUpdateControllerRay(
+          sourceIndex,
+          raycasterRef.current.ray.origin,
+          raycasterRef.current.ray.direction,
+          hitDistance
+        );
 
         // Debug logging for raycasting (only log when there are changes)
         if (process.env.NODE_ENV === 'development') {
@@ -417,6 +494,16 @@ export const WebXRViewer: React.FC<WebXRViewerProps> = ({
           // Visual feedback: highlight the hovered hotspot
           if (hitObject.hotspotData) {
             setHotspotHovered(hitObject);
+
+            // Track selected hotspot (when pointing at it)
+            if (selectedHotspotRef.current !== hitObject) {
+              selectedHotspotRef.current = hitObject;
+              onHotspotSelected?.(hitObject.hotspotData);
+              logger.debug(
+                { hotspotId: hitObject.hotspotData.id, title: hitObject.hotspotData.title },
+                '[WebXR] Hotspot selected (raycasting)'
+              );
+            }
 
             // Check if trigger was just pressed (transition from not-pressed to pressed)
             const triggerPressed = inputSource.gamepad?.buttons[0]?.pressed || false;
@@ -445,8 +532,15 @@ export const WebXRViewer: React.FC<WebXRViewerProps> = ({
             }
           }
         } else {
-          // Not hovering over any hotspot - clear highlight
+          // Not hovering over any hotspot - clear highlight and selection
           lastButtonStateRef.current.set(sourceIndex, false);
+
+          // Clear selected hotspot if moving away
+          if (selectedHotspotRef.current) {
+            onHotspotSelected?.(null);
+            logger.debug({}, '[WebXR] Hotspot deselected');
+            selectedHotspotRef.current = null;
+          }
         }
       } catch (err) {
         logger.warn({ error: String(err) }, '[WebXR] Error getting controller pose');
@@ -495,6 +589,7 @@ export const WebXRViewer: React.FC<WebXRViewerProps> = ({
       clearHotspotHovered();
       originalScalesRef.current.clear();
       lastButtonStateRef.current.clear();
+      cleanupControllerRays();
 
       if (rendererRef.current && containerRef.current) {
         containerRef.current.removeChild(rendererRef.current.domElement);
