@@ -2,9 +2,14 @@
 
 import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
+import { XRButton } from 'three/addons/webxr/XRButton.js';
+import { XRControllerModelFactory } from 'three/addons/webxr/XRControllerModelFactory.js';
+
+
 import { TourImage, Hotspot as HotspotType } from '@/types';
 import { logger } from '@/lib/logger';
 import { X } from 'lucide-react';
+
 import { createHotspotGeometry, createHotspotHaloMaterial } from '@/lib/webxr-hotspot-texture';
 
 interface WebXRViewerProps {
@@ -79,6 +84,14 @@ export const WebXRViewer: React.FC<WebXRViewerProps> = ({
     );
   };
 
+
+  function onSelectStart() {
+    alert('select start , esceque ca marche ?Thabel');
+  }
+
+  function onSelectEnd() {
+    alert('select end , esceque ca marche ?Thabel');
+  }
   // Clear hotspot hover highlight
   const clearHotspotHovered = () => {
     if (!hoveredHotspotRef.current) return;
@@ -253,6 +266,47 @@ export const WebXRViewer: React.FC<WebXRViewerProps> = ({
       renderer.xr.setReferenceSpaceType('local');
       containerRef.current.appendChild(renderer.domElement);
       rendererRef.current = renderer;
+      const xrButton = XRButton.createButton(renderer, {
+        'optionalFeatures': ['depth-sensing'],
+        'depthSensing': { 'usagePreference': ['gpu-optimized'], 'dataFormatPreference': [] }
+      });
+      // make xr btn a little higher
+      xrButton.style.position = 'absolute';
+      xrButton.style.bottom = '100px';
+      xrButton.style.left = '50%';
+      xrButton.style.transform = 'translateX(-50%)';
+      containerRef.current.appendChild(xrButton);
+      // Controllers
+
+      const controller1 = renderer.xr.getController(0);
+      controller1.addEventListener('selectstart', onSelectStart);
+      controller1.addEventListener('selectend', onSelectEnd);
+      scene.add(controller1);
+
+      const controller2 = renderer.xr.getController(1);
+      controller2.addEventListener('selectstart', onSelectStart);
+      controller2.addEventListener('selectend', onSelectEnd);
+      scene.add(controller2);
+
+      const controllerModelFactory = new XRControllerModelFactory();
+
+      const controllerGrip1 = renderer.xr.getControllerGrip(0);
+      controllerGrip1.add(controllerModelFactory.createControllerModel(controllerGrip1));
+      scene.add(controllerGrip1);
+
+      const controllerGrip2 = renderer.xr.getControllerGrip(1);
+      controllerGrip2.add(controllerModelFactory.createControllerModel(controllerGrip2));
+      scene.add(controllerGrip2);
+
+
+
+      const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 0, - 1)]));
+      line.name = 'line';
+      line.scale.z = 5;
+
+      controller1.add(line.clone());
+      controller2.add(line.clone());
+
 
       // Hotspot group
       const hotspotGroup = new THREE.Group();
@@ -661,41 +715,12 @@ export const WebXRViewer: React.FC<WebXRViewerProps> = ({
     }
   };
 
-  // Handle exit VR
-  const exitVR = async () => {
-    if (sessionRef.current) {
-      try {
-        await sessionRef.current.end();
-      } catch (err) {
-        logger.error({ error: String(err) }, '[WebXR] Failed to end VR session');
-      }
-    }
-  };
+
 
   return (
-    <div className="w-full h-full relative">
+    <div className="relative w-full h-full">
       <div ref={containerRef} className="w-full h-full" />
 
-      {/* Exit VR Button */}
-      {vrSession && (
-        <button
-          onClick={exitVR}
-          className="absolute top-4 right-4 z-50 flex items-center justify-center p-3 text-white bg-red-600 hover:bg-red-700 rounded-lg transition-all"
-          title="Exit VR"
-        >
-          <X size={20} />
-        </button>
-      )}
-
-      {/* Start VR Button */}
-      {!vrSession && (
-        <button
-          onClick={startVRSession}
-          className="absolute bottom-6 left-1/2 -translate-x-1/2 z-50 px-6 py-3 text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-all font-medium"
-        >
-          📱 Start VR Session
-        </button>
-      )}
     </div>
   );
 };

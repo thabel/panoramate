@@ -9,7 +9,7 @@ import { SceneNavigation } from '@/components/viewer/SceneNavigation';
 import { TopSceneMenu } from '@/components/viewer/TopSceneMenu';
 import { HotspotContentPanel } from '@/components/viewer/HotspotContentPanel';
 import { useWebXRSupport } from '@/hooks/useWebXRSupport';
-import { Maximize, Minimize, ChevronLeft, ChevronRight, Volume2, VolumeX, Play, Pause, Settings, Grid3x3, ChevronDown, RotateCw, Headphones } from 'lucide-react';
+import { Maximize, Minimize, ChevronLeft, ChevronRight, Volume2, VolumeX, Play, Pause, Settings, Grid3x3, ChevronDown, RotateCw   } from 'lucide-react';
 
 export default function PublicTourPage({
   params,
@@ -194,7 +194,7 @@ export default function PublicTourPage({
       {!isEmbed && !isFullScreen && (
         <div className="absolute z-30 top-2 left-2 sm:top-4 sm:left-4 bg-black/60 p-2 rounded-lg max-h-[60px] [@media(max-height:500px)]:hidden">
           <h1 className="text-xs sm:text-sm font-semibold text-white truncate max-w-[150px] sm:max-w-xs">{tour.title}</h1>
-          <p className="text-xs text-dark-400 hidden sm:block">
+          <p className="hidden text-xs text-dark-400 sm:block">
              views {tour.organization && `• ${tour.organization.name}`}
           </p>
         </div>
@@ -307,8 +307,8 @@ export default function PublicTourPage({
                   className="flex items-center justify-center p-2 text-white transition-all border rounded-lg bg-dark-900/60 hover:bg-dark-800 backdrop-blur-sm border-dark-700/50 [@media(max-height:500px)]:p-1 [@media(max-height:500px)]:rounded"
                   title="Enter VR Mode"
                 >
-                  <Headphones size={16} className="sm:hidden [@media(max-height:500px)]:size-3" />
-                  <Headphones size={20} className="hidden sm:block" />
+                  <img src='/icons/cardboard.png'   className="sm:hidden [@media(max-height:500px)]:size-3 w-3" />
+                  <img src='/icons/cardboard.png'   className="hidden w-5 sm:block" />
                 </button>
               )}
 
@@ -436,14 +436,14 @@ export default function PublicTourPage({
             {isSettingsOpen && (
               <div className="absolute z-30 w-48 sm:w-64 p-2 sm:p-4 space-y-2 sm:space-y-4 border shadow-2xl top-10 sm:top-20 right-1 sm:right-4 rounded-xl bg-dark-900/95 backdrop-blur-md border-dark-700/50 animate-fade-in [@media(max-height:500px)]:w-44 [@media(max-height:500px)]:p-2 [@media(max-height:500px)]:top-8 [@media(max-height:500px)]:right-0.5">
                 <div>
-                  <h3 className="mb-2 sm:mb-3 text-xs sm:text-sm font-semibold text-white">Display Settings</h3>
+                  <h3 className="mb-2 text-xs font-semibold text-white sm:mb-3 sm:text-sm">Display Settings</h3>
                   <div className="space-y-1">
-                    <label className="flex items-center gap-2 p-1 sm:p-2 transition-all rounded cursor-pointer hover:bg-dark-800">
+                    <label className="flex items-center gap-2 p-1 transition-all rounded cursor-pointer sm:p-2 hover:bg-dark-800">
                       <input
                         type="checkbox"
                         checked={showHotspotTitles}
                         onChange={(e) => setShowHotspotTitles(e.target.checked)}
-                        className="w-3 h-3 sm:w-4 sm:h-4 rounded accent-primary-500"
+                        className="w-3 h-3 rounded sm:w-4 sm:h-4 accent-primary-500"
                       />
                       <span className="text-xs sm:text-sm text-dark-300">Show hotspot titles</span>
                     </label>
@@ -468,8 +468,8 @@ export default function PublicTourPage({
             rel="noopener noreferrer"
             className="inline-flex items-center gap-1.5 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg bg-black/60 backdrop-blur-sm hover:bg-black/75 transition-colors cursor-pointer text-xs sm:text-sm"
           >
-            <span className="text-dark-300 hidden sm:inline">Powered by</span>
-            <span className="font-semibold text-primary-400 hover:text-primary-300 transition-colors">BATIVY</span>
+            <span className="hidden text-dark-300 sm:inline">Powered by</span>
+            <span className="font-semibold transition-colors text-primary-400 hover:text-primary-300">BATIVY</span>
           </a>
         </div>
       )}
