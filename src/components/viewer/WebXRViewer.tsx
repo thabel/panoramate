@@ -34,6 +34,8 @@ export const WebXRViewer: React.FC<WebXRViewerProps> = ({
   const hotspotGroupRef = useRef<THREE.Group | null>(null);
   const raycasterRef = useRef<THREE.Raycaster>(new THREE.Raycaster());
   const tempMatrixRef = useRef<THREE.Matrix4>(new THREE.Matrix4());
+  const rotationMatrixRef = useRef<THREE.Matrix3>(new THREE.Matrix3());
+  const directionVectorRef = useRef<THREE.Vector3>(new THREE.Vector3());
   const [isInitialized, setIsInitialized] = useState(false);
   const [vrSession, setVrSession] = useState<XRSession | null>(null);
   const sessionRef = useRef<XRSession | null>(null);
@@ -326,6 +328,12 @@ export const WebXRViewer: React.FC<WebXRViewerProps> = ({
 
   // Handle VR controller input for hotspot clicks
   const handleVRInput = (session: XRSession, frame: XRFrame) => {
+    // Validate frame and session
+    if (!frame || !session) {
+      logger.warn({}, '[WebXR] Invalid frame or session in handleVRInput');
+      return;
+    }
+
     // Try to get the reference space for the session
     const referenceSpace = frame.session.renderState.baseLayer as any;
 
@@ -351,53 +359,94 @@ export const WebXRViewer: React.FC<WebXRViewerProps> = ({
 
         const pose = frame.getPose(inputSource.targetRaySpace, space);
 
-        if (pose && cameraRef.current && sceneRef.current) {
-          // Set raycaster from controller direction (do this every frame for continuous raycasting)
-          tempMatrixRef.current.fromArray(pose.transform.matrix);
-          raycasterRef.current.ray.origin.setFromMatrixPosition(tempMatrixRef.current);
-          raycasterRef.current.ray.direction.set(0, 0, -1).applyMatrix4(tempMatrixRef.current);
+        if (!pose) {
+          logger.warn({ sourceIndex }, '[WebXR] Failed to get controller pose');
+          lastButtonStateRef.current.set(sourceIndex, false);
+          return;
+        }
 
-          // Check for intersections with hotspots (continuous raycasting)
-          const intersects = raycasterRef.current.intersectObjects(hotspotsRef.current);
+        if (!pose.transform || !pose.transform.matrix) {
+          logger.warn({ sourceIndex }, '[WebXR] Pose has no transform matrix');
+          lastButtonStateRef.current.set(sourceIndex, false);
+          return;
+        }
 
-          if (intersects.length > 0) {
-            const hitObject = intersects[0].object as HotspotMesh;
-            anyHotspotHovered = true;
+        if (!cameraRef.current || !sceneRef.current) {
+          logger.warn({}, '[WebXR] Camera or scene not initialized');
+          return;
+        }
 
-            // Visual feedback: highlight the hovered hotspot
-            if (hitObject.hotspotData) {
-              setHotspotHovered(hitObject);
+        // Set raycaster from controller direction (do this every frame for continuous raycasting)
+        const poseMatrix = pose.transform.matrix;
+        if (!poseMatrix || poseMatrix.length !== 16) {
+          logger.warn({ matrixLength: poseMatrix?.length }, '[WebXR] Invalid pose matrix');
+          return;
+        }
 
-              // Check if trigger was just pressed (transition from not-pressed to pressed)
-              const triggerPressed = inputSource.gamepad?.buttons[0]?.pressed || false;
-              const wasPreviouslyPressed = lastButtonStateRef.current.get(sourceIndex) || false;
-              const justPressed = triggerPressed && !wasPreviouslyPressed;
+        tempMatrixRef.current.fromArray(poseMatrix);
+        raycasterRef.current.ray.origin.setFromMatrixPosition(tempMatrixRef.current);
 
-              // Update button state
-              lastButtonStateRef.current.set(sourceIndex, triggerPressed);
+        // FIXED: Direction vectors should only be rotated, not translated
+        // Extract the rotation part (3x3) from the 4x4 matrix and apply it to the direction
+        // This ensures the ray direction is properly oriented in world space
+        rotationMatrixRef.current.setFromMatrix4(tempMatrixRef.current);
+        directionVectorRef.current.set(0, 0, -1).applyMatrix3(rotationMatrixRef.current).normalize();
+        raycasterRef.current.ray.direction.copy(directionVectorRef.current);
 
-              if (justPressed) {
-                // Haptic feedback: vibrate controller on click
-                if (inputSource.gamepad?.hapticActuators && inputSource.gamepad.hapticActuators.length > 0) {
-                  inputSource.gamepad.hapticActuators[0].pulse(0.8, 100).catch((err) => {
-                    logger.warn({ error: String(err) }, '[WebXR] Haptic feedback failed');
-                  });
-                }
+        // Check for intersections with hotspots (continuous raycasting)
+        const intersects = raycasterRef.current.intersectObjects(hotspotsRef.current);
 
-                // Trigger the callback
-                if (onHotspotClick) {
-                  onHotspotClick(hitObject.hotspotData);
-                  logger.debug(
-                    { hotspotId: hitObject.hotspotData.id },
-                    '[WebXR] Hotspot clicked with haptic feedback'
-                  );
-                }
+        // Debug logging for raycasting (only log when there are changes)
+        if (process.env.NODE_ENV === 'development') {
+          logger.debug(
+            {
+              controllerIndex: sourceIndex,
+              rayOrigin: { x: raycasterRef.current.ray.origin.x, y: raycasterRef.current.ray.origin.y, z: raycasterRef.current.ray.origin.z },
+              rayDirection: { x: raycasterRef.current.ray.direction.x, y: raycasterRef.current.ray.direction.y, z: raycasterRef.current.ray.direction.z },
+              hotspotsInScene: hotspotsRef.current.length,
+              intersectionsFound: intersects.length,
+            },
+            '[WebXR] Raycasting debug info'
+          );
+        }
+
+        if (intersects.length > 0) {
+          const hitObject = intersects[0].object as HotspotMesh;
+          anyHotspotHovered = true;
+
+          // Visual feedback: highlight the hovered hotspot
+          if (hitObject.hotspotData) {
+            setHotspotHovered(hitObject);
+
+            // Check if trigger was just pressed (transition from not-pressed to pressed)
+            const triggerPressed = inputSource.gamepad?.buttons[0]?.pressed || false;
+            const wasPreviouslyPressed = lastButtonStateRef.current.get(sourceIndex) || false;
+            const justPressed = triggerPressed && !wasPreviouslyPressed;
+
+            // Update button state
+            lastButtonStateRef.current.set(sourceIndex, triggerPressed);
+
+            if (justPressed) {
+              // Haptic feedback: vibrate controller on click
+              if (inputSource.gamepad?.hapticActuators && inputSource.gamepad.hapticActuators.length > 0) {
+                inputSource.gamepad.hapticActuators[0].pulse(0.8, 100).catch((err) => {
+                  logger.warn({ error: String(err) }, '[WebXR] Haptic feedback failed');
+                });
+              }
+
+              // Trigger the callback
+              if (onHotspotClick) {
+                onHotspotClick(hitObject.hotspotData);
+                logger.info(
+                  { hotspotId: hitObject.hotspotData.id, title: hitObject.hotspotData.title },
+                  '[WebXR] ✅ Hotspot clicked with haptic feedback'
+                );
               }
             }
-          } else {
-            // Not hovering over any hotspot - clear highlight
-            lastButtonStateRef.current.set(sourceIndex, false);
           }
+        } else {
+          // Not hovering over any hotspot - clear highlight
+          lastButtonStateRef.current.set(sourceIndex, false);
         }
       } catch (err) {
         logger.warn({ error: String(err) }, '[WebXR] Error getting controller pose');
