@@ -42,47 +42,11 @@ export const WebXRViewer: React.FC<WebXRViewerProps> = ({
   const sphereRef = useRef<THREE.Mesh | null>(null);
   const hotspotGroupRef = useRef<THREE.Group | null>(null);
   const raycasterRef = useRef<THREE.Raycaster>(new THREE.Raycaster());
-  const tempMatrixRef = useRef<THREE.Matrix4>(new THREE.Matrix4());
-  const rotationMatrixRef = useRef<THREE.Matrix3>(new THREE.Matrix3());
-  const directionVectorRef = useRef<THREE.Vector3>(new THREE.Vector3());
   const [isInitialized, setIsInitialized] = useState(false);
   const [vrSession, setVrSession] = useState<XRSession | null>(null);
   const sessionRef = useRef<XRSession | null>(null);
   const hotspotsRef = useRef<HotspotMesh[]>([]);
 
-  // Visual feedback tracking
-  const hoveredHotspotRef = useRef<HotspotMesh | null>(null);
-  const selectedHotspotRef = useRef<HotspotMesh | null>(null);
-  const originalScalesRef = useRef<Map<HotspotMesh, THREE.Vector3>>(new Map());
-  const reticleRef = useRef<THREE.Mesh | null>(null);
-  const lastButtonStateRef = useRef<Map<number, boolean>>(new Map());
-
-  // Controller rays
-  const controllerRaysRef = useRef<Map<number, THREE.Line>>(new Map());
-  const rayMaterialHitRef = useRef<THREE.LineBasicMaterial>(new THREE.LineBasicMaterial({ color: 0x00ff00, linewidth: 3 }));
-  const rayMaterialDefaultRef = useRef<THREE.LineBasicMaterial>(new THREE.LineBasicMaterial({ color: 0x0066ff, linewidth: 2 }));
-
-  // Set hotspot as hovered with visual feedback
-  const setHotspotHovered = (hotspot: HotspotMesh) => {
-    if (hoveredHotspotRef.current === hotspot) return; // Already hovered
-
-    // Clear previous hover
-    clearHotspotHovered();
-
-    hoveredHotspotRef.current = hotspot;
-
-    // Save original scale and apply visual highlight by scaling up
-    const originalScale = hotspot.scale.clone();
-    originalScalesRef.current.set(hotspot, originalScale);
-
-    // Scale up hotspot slightly to indicate hover
-    hotspot.scale.multiplyScalar(1.15);
-
-    logger.debug(
-      { hotspotId: hotspot.hotspotData?.id },
-      '[WebXR] Hotspot hover highlighted'
-    );
-  };
 
   function getIntersections(controller: THREE.XRTargetRaySpace) {
 
@@ -96,187 +60,25 @@ export const WebXRViewer: React.FC<WebXRViewerProps> = ({
   }
 
   function onSelectStart(event: any) {
-    // TODO: find proper type for the event
-    const controller = event.target;
+    const controller = event.target as THREE.XRTargetRaySpace;
 
     const intersections = getIntersections(controller);
     if (intersections.length > 0) {
+      const intersection = intersections[0];
+      const object = intersection.object as HotspotMesh;
 
-        const intersection = intersections[0];
-
-        const object = intersection.object;
-        // should check event name if it's a hotpost 
-        // then this hotspot should tell us what to do
-        // that means where to go ? that means 
-        // whish image to load ?
-        // So each hotspot should contain the info
-        console.log('all hotspots ', scenes);
-        // random hotspot from all hotspot ;
-        // TODO: profine the logic: ASK : CLAUDE
-        if(onHotspotClick && scenes.length > 0) {
-        onHotspotClick(hotspots[Math.floor(Math.random() * hotspots.length)]);
-        }
-
+      // Check if the clicked object is a hotspot and trigger the callback
+      if (object.hotspotData && onHotspotClick) {
+        onHotspotClick(object.hotspotData);
+        logger.info(
+          { hotspotId: object.hotspotData.id, title: object.hotspotData.title },
+          '[WebXR] ✅ Hotspot clicked via selectstart'
+        );
+      }
     }
-
-    console.log('select start , esceque ca marche ?Thabel');
   }
 
-  function onSelectEnd() {
-    // remove the cube geometry after a short delay
-    console.log('select end , esceque ca marche ?Thabel');
-    const cube = sceneRef.current?.getObjectByName('debug-cube') as THREE.Mesh;
-    if (cube) {
-      sceneRef.current?.remove(cube);
-      cube.geometry.dispose();
-      (cube.material as THREE.Material).dispose();
-    }
 
-  }
-  // Clear hotspot hover highlight
-  const clearHotspotHovered = () => {
-    if (!hoveredHotspotRef.current) return;
-
-    const hotspot = hoveredHotspotRef.current;
-    const originalScale = originalScalesRef.current.get(hotspot);
-
-    if (originalScale) {
-      hotspot.scale.copy(originalScale);
-      originalScalesRef.current.delete(hotspot);
-    }
-
-    logger.debug(
-      { hotspotId: hotspot.hotspotData?.id },
-      '[WebXR] Hotspot hover cleared'
-    );
-
-    hoveredHotspotRef.current = null;
-  };
-
-  // Create or update controller ray visual
-  const createOrUpdateControllerRay = (
-    sourceIndex: number,
-    origin: THREE.Vector3,
-    direction: THREE.Vector3,
-    hitDistance: number | null
-  ) => {
-    if (!sceneRef.current || !showControllerRays) return;
-
-    // Get or create ray line
-    let rayLine = controllerRaysRef.current.get(sourceIndex);
-
-    // Ray length: if hitting hotspot, draw to hit point; otherwise draw 100 units
-    const rayLength = hitDistance !== null ? hitDistance : 100;
-    const endPoint = origin.clone().addScaledVector(direction, rayLength);
-
-    if (!rayLine) {
-      // Create new ray line
-      const geometry = new THREE.BufferGeometry();
-      geometry.setAttribute('position', new THREE.BufferAttribute(
-        new Float32Array([origin.x, origin.y, origin.z, endPoint.x, endPoint.y, endPoint.z]),
-        3
-      ));
-
-      const material = hitDistance !== null ? rayMaterialHitRef.current : rayMaterialDefaultRef.current;
-      rayLine = new THREE.Line(geometry, material);
-      sceneRef.current.add(rayLine);
-      controllerRaysRef.current.set(sourceIndex, rayLine);
-    } else {
-      // Update existing ray
-      const geometry = rayLine.geometry as THREE.BufferGeometry;
-      const positions = geometry.attributes.position.array as Float32Array;
-
-      positions[0] = origin.x;
-      positions[1] = origin.y;
-      positions[2] = origin.z;
-      positions[3] = endPoint.x;
-      positions[4] = endPoint.y;
-      positions[5] = endPoint.z;
-
-      geometry.attributes.position.needsUpdate = true;
-
-      // Change material color based on hit
-      rayLine.material = hitDistance !== null ? rayMaterialHitRef.current : rayMaterialDefaultRef.current;
-    }
-  };
-
-  // Clean up controller rays
-  const cleanupControllerRays = () => {
-    if (!sceneRef.current) return;
-
-    controllerRaysRef.current.forEach((ray) => {
-      sceneRef.current?.remove(ray);
-      ray.geometry.dispose();
-    });
-    controllerRaysRef.current.clear();
-  };
-
-  // Create reticle (crosshair at center of screen)
-  const createReticle = (scene: THREE.Scene) => {
-    if (reticleRef.current) {
-      scene.remove(reticleRef.current);
-    }
-
-    // Create a canvas texture for the reticle
-    const canvas = document.createElement('canvas');
-    canvas.width = 64;
-    canvas.height = 64;
-    const ctx = canvas.getContext('2d')!;
-
-    // Draw reticle (white circle with center dot)
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-    // Center dot
-    ctx.beginPath();
-    ctx.arc(32, 32, 3, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Ring around center
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.arc(32, 32, 8, 0, Math.PI * 2);
-    ctx.stroke();
-
-    // Crosshair lines
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
-    ctx.lineWidth = 1;
-    // Horizontal
-    ctx.beginPath();
-    ctx.moveTo(20, 32);
-    ctx.lineTo(12, 32);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(44, 32);
-    ctx.lineTo(52, 32);
-    ctx.stroke();
-    // Vertical
-    ctx.beginPath();
-    ctx.moveTo(32, 20);
-    ctx.lineTo(32, 12);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(32, 44);
-    ctx.lineTo(32, 52);
-    ctx.stroke();
-
-    const texture = new THREE.CanvasTexture(canvas);
-    const material = new THREE.MeshBasicMaterial({
-      map: texture,
-      transparent: true,
-      depthTest: false,
-      depthWrite: false,
-    });
-
-    // Create plane geometry that always stays in front of camera
-    const geometry = new THREE.PlaneGeometry(0.1, 0.1);
-    const reticle = new THREE.Mesh(geometry, material);
-
-    // Position far in front of camera (in front of everything)
-    reticle.position.z = -3;
-
-    scene.add(reticle);
-    reticleRef.current = reticle;
-  };
 
   // Initialize Three.js scene
   const initializeScene = () => {
@@ -321,12 +123,10 @@ export const WebXRViewer: React.FC<WebXRViewerProps> = ({
 
       const controller1 = renderer.xr.getController(0);
       controller1.addEventListener('selectstart', onSelectStart);
-      controller1.addEventListener('selectend', onSelectEnd);
       scene.add(controller1);
 
       const controller2 = renderer.xr.getController(1);
       controller2.addEventListener('selectstart', onSelectStart);
-      controller2.addEventListener('selectend', onSelectEnd);
       scene.add(controller2);
 
       const controllerModelFactory = new XRControllerModelFactory();
@@ -416,9 +216,6 @@ export const WebXRViewer: React.FC<WebXRViewerProps> = ({
   const updateHotspots = () => {
     if (!hotspotGroupRef.current) return;
 
-    // Clear hover state when updating hotspots
-    clearHotspotHovered();
-
     // Clear existing hotspots
     hotspotsRef.current = [];
     hotspotGroupRef.current.children.slice().forEach((child) => {
@@ -432,9 +229,6 @@ export const WebXRViewer: React.FC<WebXRViewerProps> = ({
         }
       }
     });
-
-    // Clean up original scales map
-    originalScalesRef.current.clear();
 
     // Add hotspots for current scene
     const sceneHotspots = hotspots.filter((h) => h.imageId === currentSceneId);
@@ -489,164 +283,6 @@ export const WebXRViewer: React.FC<WebXRViewerProps> = ({
     logger.debug({ count: sceneHotspots.length }, '[WebXR] Hotspots updated');
   };
 
-  // Handle VR controller input for hotspot clicks
-  const handleVRInput = (session: XRSession, frame: XRFrame) => {
-    // Validate frame and session
-    if (!frame || !session) {
-      logger.warn({}, '[WebXR] Invalid frame or session in handleVRInput');
-      return;
-    }
-
-    // Try to get the reference space for the session
-    const referenceSpace = frame.session.renderState.baseLayer as any;
-
-    if (!referenceSpace?.getSpace) {
-      // Fallback: just handle input without precise pose data
-      const inputSources = Array.from(session.inputSources);
-
-      inputSources.forEach((inputSource) => {
-        if (inputSource.gamepad?.buttons[0]?.pressed) {
-          logger.debug({}, '[WebXR] Controller trigger pressed (no precise pose data)');
-        }
-      });
-      return;
-    }
-
-    const inputSources = Array.from(session.inputSources);
-    let anyHotspotHovered = false;
-
-    inputSources.forEach((inputSource, sourceIndex) => {
-      try {
-        const space = (referenceSpace as any).space || (session as any).renderState.baseLayer?.space;
-        if (!space) return;
-
-        const pose = frame.getPose(inputSource.targetRaySpace, space);
-
-        if (!pose) {
-          logger.warn({ sourceIndex }, '[WebXR] Failed to get controller pose');
-          lastButtonStateRef.current.set(sourceIndex, false);
-          return;
-        }
-
-        if (!pose.transform || !pose.transform.matrix) {
-          logger.warn({ sourceIndex }, '[WebXR] Pose has no transform matrix');
-          lastButtonStateRef.current.set(sourceIndex, false);
-          return;
-        }
-
-        if (!cameraRef.current || !sceneRef.current) {
-          logger.warn({}, '[WebXR] Camera or scene not initialized');
-          return;
-        }
-
-        // Set raycaster from controller direction (do this every frame for continuous raycasting)
-        const poseMatrix = pose.transform.matrix;
-        if (!poseMatrix || poseMatrix.length !== 16) {
-          logger.warn({ matrixLength: poseMatrix?.length }, '[WebXR] Invalid pose matrix');
-          return;
-        }
-
-        tempMatrixRef.current.fromArray(poseMatrix);
-        raycasterRef.current.ray.origin.setFromMatrixPosition(tempMatrixRef.current);
-
-        // FIXED: Direction vectors should only be rotated, not translated
-        // Extract the rotation part (3x3) from the 4x4 matrix and apply it to the direction
-        // This ensures the ray direction is properly oriented in world space
-        rotationMatrixRef.current.setFromMatrix4(tempMatrixRef.current);
-        directionVectorRef.current.set(0, 0, -1).applyMatrix3(rotationMatrixRef.current).normalize();
-        raycasterRef.current.ray.direction.copy(directionVectorRef.current);
-
-        // Check for intersections with hotspots (continuous raycasting)
-        const intersects = raycasterRef.current.intersectObjects(hotspotsRef.current);
-        const hitDistance = intersects.length > 0 ? intersects[0].distance : null;
-
-        // Create or update the visible controller ray
-        createOrUpdateControllerRay(
-          sourceIndex,
-          raycasterRef.current.ray.origin,
-          raycasterRef.current.ray.direction,
-          hitDistance
-        );
-
-        // Debug logging for raycasting (only log when there are changes)
-        if (process.env.NODE_ENV === 'development') {
-          logger.debug(
-            {
-              controllerIndex: sourceIndex,
-              rayOrigin: { x: raycasterRef.current.ray.origin.x, y: raycasterRef.current.ray.origin.y, z: raycasterRef.current.ray.origin.z },
-              rayDirection: { x: raycasterRef.current.ray.direction.x, y: raycasterRef.current.ray.direction.y, z: raycasterRef.current.ray.direction.z },
-              hotspotsInScene: hotspotsRef.current.length,
-              intersectionsFound: intersects.length,
-            },
-            '[WebXR] Raycasting debug info'
-          );
-        }
-
-        if (intersects.length > 0) {
-          const hitObject = intersects[0].object as HotspotMesh;
-          anyHotspotHovered = true;
-
-          // Visual feedback: highlight the hovered hotspot
-          if (hitObject.hotspotData) {
-            setHotspotHovered(hitObject);
-
-            // Track selected hotspot (when pointing at it)
-            if (selectedHotspotRef.current !== hitObject) {
-              selectedHotspotRef.current = hitObject;
-              onHotspotSelected?.(hitObject.hotspotData);
-              logger.debug(
-                { hotspotId: hitObject.hotspotData.id, title: hitObject.hotspotData.title },
-                '[WebXR] Hotspot selected (raycasting)'
-              );
-            }
-
-            // Check if trigger was just pressed (transition from not-pressed to pressed)
-            const triggerPressed = inputSource.gamepad?.buttons[0]?.pressed || false;
-            const wasPreviouslyPressed = lastButtonStateRef.current.get(sourceIndex) || false;
-            const justPressed = triggerPressed && !wasPreviouslyPressed;
-
-            // Update button state
-            lastButtonStateRef.current.set(sourceIndex, triggerPressed);
-
-            if (justPressed) {
-              // Haptic feedback: vibrate controller on click
-              if (inputSource.gamepad?.hapticActuators && inputSource.gamepad.hapticActuators.length > 0) {
-                inputSource.gamepad.hapticActuators[0].pulse(0.8, 100).catch((err) => {
-                  logger.warn({ error: String(err) }, '[WebXR] Haptic feedback failed');
-                });
-              }
-
-              // Trigger the callback
-              if (onHotspotClick) {
-                onHotspotClick(hitObject.hotspotData);
-                logger.info(
-                  { hotspotId: hitObject.hotspotData.id, title: hitObject.hotspotData.title },
-                  '[WebXR] ✅ Hotspot clicked with haptic feedback'
-                );
-              }
-            }
-          }
-        } else {
-          // Not hovering over any hotspot - clear highlight and selection
-          lastButtonStateRef.current.set(sourceIndex, false);
-
-          // Clear selected hotspot if moving away
-          if (selectedHotspotRef.current) {
-            onHotspotSelected?.(null);
-            logger.debug({}, '[WebXR] Hotspot deselected');
-            selectedHotspotRef.current = null;
-          }
-        }
-      } catch (err) {
-        logger.warn({ error: String(err) }, '[WebXR] Error getting controller pose');
-      }
-    });
-
-    // If no hotspots are being hovered, clear the previous highlight
-    if (!anyHotspotHovered && hoveredHotspotRef.current) {
-      clearHotspotHovered();
-    }
-  };
 
   // Handle window resize
   const onWindowResize = () => {
@@ -661,12 +297,7 @@ export const WebXRViewer: React.FC<WebXRViewerProps> = ({
   };
 
   // Animation loop
-  const animate = (time: number, frame?: XRFrame) => {
-    if (frame && sessionRef.current) {
-      // Handle VR input in the frame
-      handleVRInput(sessionRef.current, frame);
-    }
-
+  const animate = () => {
     if (sceneRef.current && cameraRef.current && rendererRef.current) {
       rendererRef.current.render(sceneRef.current, cameraRef.current);
     }
@@ -681,11 +312,6 @@ export const WebXRViewer: React.FC<WebXRViewerProps> = ({
       window.removeEventListener('resize', onWindowResize);
 
       // Clean up VR resources
-      clearHotspotHovered();
-      originalScalesRef.current.clear();
-      lastButtonStateRef.current.clear();
-      cleanupControllerRays();
-
       if (rendererRef.current && containerRef.current) {
         containerRef.current.removeChild(rendererRef.current.domElement);
       }
@@ -711,9 +337,9 @@ export const WebXRViewer: React.FC<WebXRViewerProps> = ({
   useEffect(() => {
     if (!rendererRef.current) return;
 
-    // Create animation loop that handles both regular and XR frames
-    const animationLoop = (time: number, frame?: XRFrame) => {
-      animate(time, frame);
+    // Create animation loop
+    const animationLoop = () => {
+      animate();
     };
 
     rendererRef.current.setAnimationLoop(animationLoop as any);
