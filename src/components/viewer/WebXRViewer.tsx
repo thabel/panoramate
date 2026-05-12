@@ -84,35 +84,55 @@ export const WebXRViewer: React.FC<WebXRViewerProps> = ({
     );
   };
 
+  function getIntersections(controller: THREE.XRTargetRaySpace) {
 
-  function onSelectStart() {
-    // add a cube geometry at the controller position for debugging
-    const cubeGeometry = new THREE.BoxGeometry(0.1, 0.1, 0.1);
-    const cubeMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
-    const cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
-    cube.name = 'debug-cube';
-      if (rendererRef.current) {
-        const controller = rendererRef.current.xr.getController(0);
-        console.log('Controller position on select start:', controller.position);
-        cube.position.x = 0;
-        cube.position.y = 0;
-        cube.position.z = -1;
-        sceneRef.current?.add(cube);
-      }
+    controller.updateMatrixWorld();
+
+    raycasterRef.current.setFromXRController(controller);
+    // recursive search is set to false here
+
+    return raycasterRef.current.intersectObjects(sceneRef.current?.children || [], true);
+
+  }
+
+  function onSelectStart(event: any) {
+    // TODO: find proper type for the event
+    const controller = event.target;
+
+    const intersections = getIntersections(controller);
+    if (intersections.length > 0) {
+
+        const intersection = intersections[0];
+
+        const object = intersection.object;
+        // should check event name if it's a hotpost 
+        // then this hotspot should tell us what to do
+        // that means where to go ? that means 
+        // whish image to load ?
+        // So each hotspot should contain the info
+        console.log('all hotspots ', scenes);
+        // random hotspot from all hotspot ;
+        // TODO: profine the logic: ASK : CLAUDE
+        if(onHotspotClick && scenes.length > 0) {
+        onHotspotClick(hotspots[Math.floor(Math.random() * hotspots.length)]);
+        }
+
+    }
+
     console.log('select start , esceque ca marche ?Thabel');
   }
 
   function onSelectEnd() {
     // remove the cube geometry after a short delay
-  console.log('select end , esceque ca marche ?Thabel');
-  const cube = sceneRef.current?.getObjectByName('debug-cube') as THREE.Mesh;
-  if (cube) {
-    sceneRef.current?.remove(cube);
-    cube.geometry.dispose();
-    (cube.material as THREE.Material).dispose();
-  }
+    console.log('select end , esceque ca marche ?Thabel');
+    const cube = sceneRef.current?.getObjectByName('debug-cube') as THREE.Mesh;
+    if (cube) {
+      sceneRef.current?.remove(cube);
+      cube.geometry.dispose();
+      (cube.material as THREE.Material).dispose();
+    }
 
-}
+  }
   // Clear hotspot hover highlight
   const clearHotspotHovered = () => {
     if (!hoveredHotspotRef.current) return;
@@ -335,7 +355,7 @@ export const WebXRViewer: React.FC<WebXRViewerProps> = ({
       hotspotGroupRef.current = hotspotGroup;
 
       // Create reticle
-      createReticle(scene);
+      // createReticle(scene);
 
       setIsInitialized(true);
       logger.info({}, '[WebXR] Scene initialized');
@@ -740,7 +760,7 @@ export const WebXRViewer: React.FC<WebXRViewerProps> = ({
 
   return (
     <div className="relative w-full h-full">
-    
+
       <div ref={containerRef} className="w-full h-full" />
 
     </div>
