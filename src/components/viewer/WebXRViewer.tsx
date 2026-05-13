@@ -114,7 +114,7 @@ console.log('Select Start - Canvas and context found, updating debug info');
       textMesh.visible = true;
 
       // 1. Display Click Position
-      ctx.fillText(`Pos: X:${point.x.toFixed(2)} Y:${point.y.toFixed(2)} Z:${point.z.toFixed(2)}`, 10, yOffset);
+      ctx.fillText(`Position clicked: X:${point.x.toFixed(2)} Y:${point.y.toFixed(2)} Z:${point.z.toFixed(2)}`, 10, yOffset);
       yOffset += 25;
 
       // 2. Display Intersections
@@ -196,7 +196,6 @@ console.log('Select Start - Canvas and context found, updating debug info');
       containerRef.current.appendChild(renderer.domElement);
       rendererRef.current = renderer;
       const xrButton = VRButton .createButton(renderer, {
-        'mode': 'immersive-vr', 
         'optionalFeatures': ['depth-sensing'],
         'depthSensing': { 'usagePreference': ['gpu-optimized'], 'dataFormatPreference': [] }
       });
@@ -387,9 +386,9 @@ console.log('Select Start - Canvas and context found, updating debug info');
         const phi = (Math.PI / 2) - hotspot.pitch;
         const theta = hotspot.yaw;
 
-        const x = 400 * Math.sin(phi) * Math.cos(theta);
-        const y = 400 * Math.cos(phi);
-        const z = 400 * Math.sin(phi) * Math.sin(theta);
+        const x = 200 * Math.sin(phi) * Math.cos(theta);
+        const y = 200 * Math.cos(phi);
+        const z = 200 * Math.sin(phi) * Math.sin(theta);
 
         // Create hotspot with icon texture
         const iconName = hotspot.iconName || (hotspot.type === 'LINK_SCENE' ? 'MapPin' : 'info');
@@ -398,6 +397,7 @@ console.log('Select Start - Canvas and context found, updating debug info');
         const hotspotMesh = new THREE.Mesh(geometry, material) as HotspotMesh;
         hotspotMesh.position.set(x, y, z);
         hotspotMesh.hotspotData = hotspot;
+        hotspotMesh.name = `hotspot-${hotspot.id}`;
 
         // Make the hotspot face the camera (billboard effect)
         hotspotMesh.lookAt(0, 0, 0);
