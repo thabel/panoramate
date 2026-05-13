@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
-import { XRButton } from 'three/addons/webxr/XRButton.js';
+import { VRButton } from 'three/addons/webxr/VRButton.js';
 import { XRControllerModelFactory } from 'three/addons/webxr/XRControllerModelFactory.js';
 
 
@@ -60,6 +60,7 @@ export const WebXRViewer: React.FC<WebXRViewerProps> = ({
   const ctxRef = useRef<CanvasRenderingContext2D | null>(null);
   const textureCanvasRef = useRef<THREE.CanvasTexture | null>(null);
   const textMeshRef = useRef<THREE.Mesh | null>(null);
+  const exitMeshRef = useRef<THREE.Mesh | null>(null);
 
   function getIntersections(controller: THREE.XRTargetRaySpace) {
     controller.updateMatrixWorld();
@@ -68,6 +69,7 @@ export const WebXRViewer: React.FC<WebXRViewerProps> = ({
     const objectsToIntersect = [];
     if (hotspotGroupRef.current) objectsToIntersect.push(...hotspotGroupRef.current.children);
     if (sphereRef.current) objectsToIntersect.push(sphereRef.current);
+    if (exitMeshRef.current) objectsToIntersect.push(exitMeshRef.current);
 
     return raycasterRef.current.intersectObjects(objectsToIntersect, false);
   }
@@ -76,8 +78,16 @@ export const WebXRViewer: React.FC<WebXRViewerProps> = ({
     const controller = event.target as THREE.XRTargetRaySpace;
     const intersections = getIntersections(controller);
 
+    // Check for Exit Button Click
+    const exitIntersect = intersections.find(i => i.object.name === 'exitButton');
+    if (exitIntersect && sessionRef.current) {
+      sessionRef.current.end();
+      return;
+    }
+
     const canvas = canvasRef.current;
     const ctx = ctxRef.current;
+
     const textureCanvas = textureCanvasRef.current;
     const textMesh = textMeshRef.current;
     console.log('Select Start - Intersections:', intersections);
@@ -185,7 +195,8 @@ console.log('Select Start - Canvas and context found, updating debug info');
       renderer.xr.setReferenceSpaceType('local');
       containerRef.current.appendChild(renderer.domElement);
       rendererRef.current = renderer;
-      const xrButton = XRButton.createButton(renderer, {
+      const xrButton = VRButton .createButton(renderer, {
+        'mode': 'immersive-vr', 
         'optionalFeatures': ['depth-sensing'],
         'depthSensing': { 'usagePreference': ['gpu-optimized'], 'dataFormatPreference': [] }
       });
@@ -265,6 +276,29 @@ console.log('Select Start - Canvas and context found, updating debug info');
       textMesh.name = 'textMesh';
       textMesh.visible = false; // Start hidden, show on select
       scene.add(textMesh);
+
+      // 3D Exit VR Button
+      const exitCanvas = document.createElement('canvas');
+      exitCanvas.width = 256;
+      exitCanvas.height = 128;
+      const exitCtx = exitCanvas.getContext('2d')!;
+      exitCtx.fillStyle = '#ff0000';
+      exitCtx.fillRect(0, 0, 256, 128);
+      exitCtx.fillStyle = '#ffffff';
+      exitCtx.font = 'bold 40px Arial';
+      exitCtx.textAlign = 'center';
+      exitCtx.textBaseline = 'middle';
+      exitCtx.fillText('EXIT VR', 128, 64);
+
+      const exitTexture = new THREE.CanvasTexture(exitCanvas);
+      const exitMesh = new THREE.Mesh(
+        new THREE.PlaneGeometry(0.3, 0.15),
+        new THREE.MeshBasicMaterial({ map: exitTexture, side: THREE.DoubleSide })
+      );
+      exitMesh.position.set(0, 1.8, -2); // Positioned above and in front
+      exitMesh.name = 'exitButton';
+      scene.add(exitMesh);
+      exitMeshRef.current = exitMesh;
 
       hotspotGroupRef.current = hotspotGroup;
 
@@ -500,9 +534,17 @@ console.log('Select Start - Canvas and context found, updating debug info');
 
   return (
     <div className="relative w-full h-full">
-
       <div ref={containerRef} className="w-full h-full" />
-
+      
+      {vrSession && (
+        <button
+          onClick={() => vrSession.end()}
+          className="absolute z-50 px-6 py-3 font-bold text-white transition-colors -translate-x-1/2 bg-red-600 rounded-full shadow-lg top-10 left-1/2 hover:bg-red-700"
+          style={{ pointerEvents: 'auto' }}
+        >
+          Quitter la VR
+        </button>
+      )}
     </div>
   );
 };
