@@ -743,7 +743,7 @@ export default function TourEditorPage({
                   <label className="block mb-3 text-sm font-medium text-dark-300">Hotspot Icon</label>
 
                   {isEditingHotspot && (
-                    <p className="mb-4 text-xs text-primary-300 bg-primary-500/10 p-2 rounded border border-primary-500/30">
+                    <p className="p-2 mb-4 text-xs border rounded text-primary-300 bg-primary-500/10 border-primary-500/30">
                       ℹ️ In edit mode, you can only switch between icons of the same type.
                     </p>
                   )}
@@ -1009,7 +1009,6 @@ export default function TourEditorPage({
                 className="flex-1 text-sm font-semibold"
                 disabled={
                   isSaving ||
-                  !hotspotForm.title.trim() ||
                   (hotspotForm.type === 'LINK_SCENE' && !hotspotForm.targetImageId) ||
                   (hotspotForm.type === 'INFO' && !hotspotForm.content) ||
                   (hotspotForm.type === 'URL' && !hotspotForm.url) ||

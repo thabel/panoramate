@@ -44,7 +44,7 @@ export const HOTSPOT_ICON_CONFIG: Record<HotspotIconType, IconConfig> = {
         name: 'title',
         label: 'Hotspot Title',
         type: 'text',
-        required: true,
+        required: false,
         placeholder: 'e.g., Property Details',
         description: 'The label shown when hovering over this hotspot'
       },
@@ -66,7 +66,7 @@ export const HOTSPOT_ICON_CONFIG: Record<HotspotIconType, IconConfig> = {
         name: 'title',
         label: 'Hotspot Title',
         type: 'text',
-        required: true,
+        required: false,
         placeholder: 'e.g., Next Room',
         description: 'The label shown when hovering over this hotspot'
       },
@@ -88,7 +88,7 @@ export const HOTSPOT_ICON_CONFIG: Record<HotspotIconType, IconConfig> = {
         name: 'title',
         label: 'Hotspot Title',
         type: 'text',
-        required: true,
+        required: false,
         placeholder: 'e.g., Next Room',
         description: 'The label shown when hovering over this hotspot'
       },
@@ -110,7 +110,7 @@ export const HOTSPOT_ICON_CONFIG: Record<HotspotIconType, IconConfig> = {
         name: 'title',
         label: 'Hotspot Title',
         type: 'text',
-        required: true,
+        required: false,
         placeholder: 'e.g., Visit Website',
         description: 'The label shown when hovering over this hotspot'
       },
@@ -133,7 +133,7 @@ export const HOTSPOT_ICON_CONFIG: Record<HotspotIconType, IconConfig> = {
         name: 'title',
         label: 'Hotspot Title',
         type: 'text',
-        required: true,
+        required: false,
         placeholder: 'e.g., Watch Demo',
         description: 'The label shown when hovering over this hotspot'
       },
@@ -155,7 +155,7 @@ export const HOTSPOT_ICON_CONFIG: Record<HotspotIconType, IconConfig> = {
         name: 'title',
         label: 'Hotspot Title',
         type: 'text',
-        required: true,
+        required: false,
         placeholder: 'e.g., Info Box',
         description: 'The label shown when hovering over this hotspot'
       },
@@ -178,7 +178,7 @@ export const HOTSPOT_ICON_CONFIG: Record<HotspotIconType, IconConfig> = {
         name: 'title',
         label: 'Hotspot Title',
         type: 'text',
-        required: true,
+        required: false,
         placeholder: 'e.g., Photo Gallery',
         description: 'The label shown when hovering over this hotspot'
       },
@@ -201,7 +201,7 @@ export const HOTSPOT_ICON_CONFIG: Record<HotspotIconType, IconConfig> = {
         name: 'title',
         label: 'Hotspot Title',
         type: 'text',
-        required: true,
+        required: false,
         placeholder: 'e.g., Learn More',
         description: 'The label shown when hovering over this hotspot'
       },
@@ -224,7 +224,7 @@ export const HOTSPOT_ICON_CONFIG: Record<HotspotIconType, IconConfig> = {
         name: 'title',
         label: 'Hotspot Title',
         type: 'text',
-        required: true,
+        required: false,
         placeholder: 'e.g., Main Lobby',
         description: 'The label shown when hovering over this hotspot'
       },
@@ -246,7 +246,7 @@ export const HOTSPOT_ICON_CONFIG: Record<HotspotIconType, IconConfig> = {
         name: 'title',
         label: 'Hotspot Title',
         type: 'text',
-        required: true,
+        required: false,
         placeholder: 'e.g., Tour Video',
         description: 'The label shown when hovering over this hotspot'
       },
@@ -268,7 +268,7 @@ export const HOTSPOT_ICON_CONFIG: Record<HotspotIconType, IconConfig> = {
         name: 'title',
         label: 'Hotspot Title',
         type: 'text',
-        required: true,
+        required: false,
         placeholder: 'e.g., Master Bedroom',
         description: 'The label shown when hovering over this hotspot'
       },
@@ -291,7 +291,7 @@ export const HOTSPOT_ICON_CONFIG: Record<HotspotIconType, IconConfig> = {
         name: 'title',
         label: 'Hotspot Title',
         type: 'text',
-        required: true,
+        required: false,
         placeholder: 'e.g., Book Now',
         description: 'The label shown when hovering over this hotspot'
       },
