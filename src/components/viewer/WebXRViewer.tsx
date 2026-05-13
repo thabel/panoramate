@@ -46,40 +46,116 @@ export const WebXRViewer: React.FC<WebXRViewerProps> = ({
   const [vrSession, setVrSession] = useState<XRSession | null>(null);
   const sessionRef = useRef<XRSession | null>(null);
   const hotspotsRef = useRef<HotspotMesh[]>([]);
+  const currentHotspotsRef = useRef<HotspotType[]>(hotspots);
+  const currentSceneIdRef = useRef<string | undefined>(currentSceneId);
 
+  // Update refs when props change
+  useEffect(() => {
+    currentHotspotsRef.current = hotspots;
+    currentSceneIdRef.current = currentSceneId;
+  }, [hotspots, currentSceneId]);
+
+  // Debug canvas refs
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const ctxRef = useRef<CanvasRenderingContext2D | null>(null);
+  const textureCanvasRef = useRef<THREE.CanvasTexture | null>(null);
+  const textMeshRef = useRef<THREE.Mesh | null>(null);
 
   function getIntersections(controller: THREE.XRTargetRaySpace) {
-
     controller.updateMatrixWorld();
-
     raycasterRef.current.setFromXRController(controller);
-    // recursive search is set to false here
 
-    return raycasterRef.current.intersectObjects(sceneRef.current?.children || [], true);
+    const objectsToIntersect = [];
+    if (hotspotGroupRef.current) objectsToIntersect.push(...hotspotGroupRef.current.children);
+    if (sphereRef.current) objectsToIntersect.push(sphereRef.current);
 
+    return raycasterRef.current.intersectObjects(objectsToIntersect, false);
   }
 
   function onSelectStart(event: any) {
     const controller = event.target as THREE.XRTargetRaySpace;
-
     const intersections = getIntersections(controller);
+
+    const canvas = canvasRef.current;
+    const ctx = ctxRef.current;
+    const textureCanvas = textureCanvasRef.current;
+    const textMesh = textMeshRef.current;
+    console.log('Select Start - Intersections:', intersections);
+    if (!canvas || !ctx || !textureCanvas || !textMesh) return;
+console.log('Select Start - Canvas and context found, updating debug info');
+    // Clear and prepare canvas
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#ffffff';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    ctx.font = 'bold 20px Arial';
+
+    let yOffset = 10;
+
     if (intersections.length > 0) {
       const intersection = intersections[0];
-      const object = intersection.object as HotspotMesh;
+      const point = intersection.point;
 
-      // Check if the clicked object is a hotspot and trigger the callback
-      if (object.hotspotData && onHotspotClick) {
-        onHotspotClick(object.hotspotData);
-        logger.info(
-          { hotspotId: object.hotspotData.id, title: object.hotspotData.title },
-          '[WebXR] ✅ Hotspot clicked via selectstart'
-        );
+      // Position text mesh near the intersection point, but closer to camera
+      const direction = new THREE.Vector3().copy(point).normalize();
+      textMesh.position.set(intersection.point.x, intersection.point.y, 0); // Move 5 units towards center (0,0,0)
+      textMesh.lookAt(0, 0, 0);
+      textMesh.visible = true;
+
+      // 1. Display Click Position
+      ctx.fillText(`Pos: X:${point.x.toFixed(2)} Y:${point.y.toFixed(2)} Z:${point.z.toFixed(2)}`, 10, yOffset);
+      yOffset += 25;
+
+      // 2. Display Intersections
+      ctx.font = '16px Arial';
+      ctx.fillText(`Intersects: ${intersections.length} objects`, 10, yOffset);
+      yOffset += 20;
+
+      intersections.slice(0, 3).forEach((intersect, i) => {
+        const name = intersect.object.name || (intersect.object as any).hotspotData?.id || 'unknown';
+        ctx.fillText(`  ${i + 1}: ${name.substring(0, 20)} dist:${intersect.distance.toFixed(1)}`, 10, yOffset);
+        yOffset += 20;
+      });
+
+      // Handle Hotspot Logic
+      const hotspotObj = intersections.find(i => (i.object as HotspotMesh).hotspotData);
+      if (hotspotObj) {
+        const object = hotspotObj.object as HotspotMesh;
+        if (object.hotspotData && onHotspotClick) {
+          onHotspotClick(object.hotspotData);
+        }
       }
+    } else {
+      textMesh.visible = false;
     }
+
+    // 3. Display Scene Hotspots
+    yOffset += 10;
+    const sceneHotspots = currentHotspotsRef.current.filter((h) => h.imageId === currentSceneIdRef.current);
+    ctx.font = 'bold 20px Arial';
+    ctx.fillText(`Scene Hotspots (${sceneHotspots.length}):`, 10, yOffset);
+    yOffset += 25;
+
+    ctx.font = '14px Arial';
+    sceneHotspots.slice(0, 5).forEach((h, i) => {
+      ctx.fillText(`${i + 1}: ${h.title || h.id.substring(0, 8)} (P:${h.pitch.toFixed(2)}, Y:${h.yaw.toFixed(2)})`, 10, yOffset);
+      yOffset += 18;
+    });
+
+    textureCanvas.needsUpdate = true;
   }
 
 
+  function onSelectEnd(event: any) {
+    const textMesh = textMeshRef.current;
+    const controller = event.target;
+    if (!textMesh) return;
 
+    textMesh.visible = false; // Hide the text when selection ends
+
+
+  }
   // Initialize Three.js scene
   const initializeScene = () => {
     if (!containerRef.current) return;
@@ -123,10 +199,12 @@ export const WebXRViewer: React.FC<WebXRViewerProps> = ({
 
       const controller1 = renderer.xr.getController(0);
       controller1.addEventListener('selectstart', onSelectStart);
+      controller1.addEventListener('selectend', onSelectEnd);
       scene.add(controller1);
 
       const controller2 = renderer.xr.getController(1);
       controller2.addEventListener('selectstart', onSelectStart);
+      controller2.addEventListener('selectend', onSelectEnd);
       scene.add(controller2);
 
       const controllerModelFactory = new XRControllerModelFactory();
@@ -152,6 +230,42 @@ export const WebXRViewer: React.FC<WebXRViewerProps> = ({
       // Hotspot group
       const hotspotGroup = new THREE.Group();
       scene.add(hotspotGroup);
+
+
+
+      // canvas
+      // 1. Create Canvas & Draw Text
+      const canvas = document.createElement('canvas');
+      canvasRef.current = canvas;
+      const ctx = canvas.getContext('2d')!;
+      ctxRef.current = ctx;
+
+      canvas.width = 512;
+      canvas.height = 512; // Increased height for more debug info
+
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.6)'; // Background so it's readable in VR
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 36px Arial';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('WebXR Debug Active', 256, 64);
+
+      // 2. Map to standard Three.js Mesh
+      const textureCanvas = new THREE.CanvasTexture(canvas);
+      textureCanvasRef.current = textureCanvas;
+
+      const textMesh = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({
+        map: textureCanvas,
+        transparent: true,
+        depthTest: false, // Ensure it's always visible
+        side: THREE.DoubleSide
+      }));
+      textMeshRef.current = textMesh;
+      textMesh.name = 'textMesh';
+      textMesh.visible = false; // Start hidden, show on select
+      scene.add(textMesh);
+
       hotspotGroupRef.current = hotspotGroup;
 
       // Create reticle
