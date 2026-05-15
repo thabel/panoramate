@@ -42,7 +42,7 @@ export async function PATCH(
       [role, params.memberId]
     );
 
-    const member = await db.queryOne(
+    const updatedMember = await db.queryOne(
       'SELECT id, email, firstName, lastName, role, createdAt FROM users WHERE id = ?',
       [params.memberId]
     );
