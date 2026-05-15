@@ -18,7 +18,7 @@ export async function POST(
     }
 
     const tour = await db.queryOne(
-      'SELECT * FROM Tour WHERE id = ?',
+      'SELECT * FROM tours WHERE id = ?',
       [params.id]
     );
 
@@ -27,7 +27,7 @@ export async function POST(
     }
 
     const org = await db.queryOne(
-      'SELECT * FROM Organization WHERE id = ?',
+      'SELECT * FROM organizations WHERE id = ?',
       [authPayload.organizationId]
     );
 

@@ -14,7 +14,7 @@ export async function PATCH(
 
     // RESTRICTION DISABLED: all users can manage members (role checks removed)
     const member = await db.queryOne(
-      'SELECT * FROM User WHERE id = ?',
+      'SELECT * FROM users WHERE id = ?',
       [params.memberId]
     );
 
@@ -38,12 +38,12 @@ export async function PATCH(
     }
 
     await db.execute(
-      'UPDATE User SET role = ? WHERE id = ?',
+      'UPDATE users SET role = ? WHERE id = ?',
       [role, params.memberId]
     );
 
-    const updatedMember = await db.queryOne(
-      'SELECT id, email, firstName, lastName, role, createdAt FROM User WHERE id = ?',
+    const member = await db.queryOne(
+      'SELECT id, email, firstName, lastName, role, createdAt FROM users WHERE id = ?',
       [params.memberId]
     );
 
@@ -75,7 +75,7 @@ export async function DELETE(
 
     // RESTRICTION DISABLED: all users can remove members (role checks removed)
     const member = await db.queryOne(
-      'SELECT * FROM User WHERE id = ?',
+      'SELECT * FROM users WHERE id = ?',
       [params.memberId]
     );
 
@@ -89,7 +89,7 @@ export async function DELETE(
     // RESTRICTION DISABLED: organization check, owner protection, and self-removal protection all removed
 
     await db.execute(
-      'DELETE FROM User WHERE id = ?',
+      'DELETE FROM users WHERE id = ?',
       [params.memberId]
     );
 

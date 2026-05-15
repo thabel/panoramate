@@ -34,7 +34,7 @@ export async function POST(
 
     // Check organization exists
     const org = await db.queryOne(
-      'SELECT * FROM Organization WHERE id = ?',
+      'SELECT * FROM organizations WHERE id = ?',
       [authPayload.organizationId]
     );
 

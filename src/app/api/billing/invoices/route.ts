@@ -17,11 +17,11 @@ export async function GET(request: NextRequest) {
 
     const [invoices, totalResult]: any = await Promise.all([
       db.query(
-        'SELECT * FROM Invoice WHERE organizationId = ? ORDER BY createdAt DESC LIMIT ? OFFSET ?',
+        'SELECT * FROM invoices WHERE organizationId = ? ORDER BY createdAt DESC LIMIT ? OFFSET ?',
         [authPayload.organizationId, limit, offset]
       ),
       db.queryOne(
-        'SELECT COUNT(*) as total FROM Invoice WHERE organizationId = ?',
+        'SELECT COUNT(*) as total FROM invoices WHERE organizationId = ?',
         [authPayload.organizationId]
       ),
     ]);

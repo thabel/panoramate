@@ -24,8 +24,8 @@ export async function POST(request: NextRequest) {
     // Find invitation with organization
     const invitation: any = await db.queryOne(
       `SELECT i.*, o.id as org_id, o.name as org_name, o.slug as org_slug
-       FROM Invitation i
-       JOIN Organization o ON i.organizationId = o.id
+       FROM invitations i
+       JOIN organizations o ON i.organizationId = o.id
        WHERE i.token = ?`,
       [token]
     );
@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
 
     // Check if email already exists
     const existingUser = await db.queryOne(
-      'SELECT * FROM User WHERE email = ?',
+      'SELECT * FROM users WHERE email = ?',
       [invitation.email]
     );
 
@@ -72,19 +72,19 @@ export async function POST(request: NextRequest) {
     // Create user
     const userId = require('crypto').randomUUID();
     await db.execute(
-      `INSERT INTO User (id, email, password, firstName, lastName, role, organizationId, isVerified, createdAt, updatedAt)
+      `INSERT INTO users (id, email, password, firstName, lastName, role, organizationId, isVerified, createdAt, updatedAt)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
       [userId, invitation.email, hashedPassword, firstName, lastName, invitation.role, invitation.organizationId, true]
     );
 
     const user = await db.queryOne(
-      'SELECT * FROM User WHERE id = ?',
+      'SELECT * FROM users WHERE id = ?',
       [userId]
     );
 
     // Mark invitation as accepted
     await db.execute(
-      'UPDATE Invitation SET acceptedAt = NOW() WHERE id = ?',
+      'UPDATE invitations SET acceptedAt = NOW() WHERE id = ?',
       [invitation.id]
     );
 

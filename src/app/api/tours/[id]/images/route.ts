@@ -220,7 +220,7 @@ export async function DELETE(
 
     // Delete hotspots first
     await db.execute(
-      'DELETE FROM Hotspot WHERE imageId = ?',
+      'DELETE FROM hotspots WHERE imageId = ?',
       [imageId]
     );
 
