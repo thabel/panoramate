@@ -69,7 +69,7 @@ export const WebXRViewer: React.FC<WebXRViewerProps> = ({
     const objectsToIntersect = [];
     if (hotspotGroupRef.current) objectsToIntersect.push(...hotspotGroupRef.current.children);
     if (sphereRef.current) objectsToIntersect.push(sphereRef.current);
-    if (exitMeshRef.current) objectsToIntersect.push(exitMeshRef.current);
+    // Removed exitMeshRef - using HTML DOM button instead
 
     return raycasterRef.current.intersectObjects(objectsToIntersect, false);
   }
@@ -78,82 +78,74 @@ export const WebXRViewer: React.FC<WebXRViewerProps> = ({
     const controller = event.target as THREE.XRTargetRaySpace;
     const intersections = getIntersections(controller);
 
-    // Check for Exit Button Click
-    const exitIntersect = intersections.find(i => i.object.name === 'exitButton');
-    if (exitIntersect && sessionRef.current) {
-      sessionRef.current.end();
-      return;
-    }
-
     const canvas = canvasRef.current;
     const ctx = ctxRef.current;
 
     const textureCanvas = textureCanvasRef.current;
     const textMesh = textMeshRef.current;
-    console.log('Select Start - Intersections:', intersections);
+
     if (!canvas || !ctx || !textureCanvas || !textMesh) return;
-console.log('Select Start - Canvas and context found, updating debug info');
-    // Clear and prepare canvas
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = '#ffffff';
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'top';
-    ctx.font = 'bold 20px Arial';
 
-    let yOffset = 10;
+    // Look for hotspot intersection
+    const hotspotObj = intersections.find(i => (i.object as HotspotMesh).hotspotData);
 
-    if (intersections.length > 0) {
-      const intersection = intersections[0];
-      const point = intersection.point;
+    if (hotspotObj) {
+      const object = hotspotObj.object as HotspotMesh;
+      const hotspot = object.hotspotData;
 
-      // Position text mesh near the intersection point, but closer to camera
-      const direction = new THREE.Vector3().copy(point).normalize();
-      textMesh.position.set(intersection.point.x, intersection.point.y, 0); // Move 5 units towards center (0,0,0)
-      textMesh.lookAt(0, 0, 0);
-      textMesh.visible = true;
+      if (hotspot) {
+        // Display hotspot info
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.9)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#ffffff';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'top';
 
-      // 1. Display Click Position
-      ctx.fillText(`Position clicked: X:${point.x.toFixed(2)} Y:${point.y.toFixed(2)} Z:${point.z.toFixed(2)}`, 10, yOffset);
-      yOffset += 25;
+        let yOffset = 20;
 
-      // 2. Display Intersections
-      ctx.font = '16px Arial';
-      ctx.fillText(`Intersects: ${intersections.length} objects`, 10, yOffset);
-      yOffset += 20;
+        // Title
+        ctx.font = 'bold 28px Arial';
+        const title = hotspot.title || 'Hotspot';
+        const maxTitleLength = 30;
+        const displayTitle = title.length > maxTitleLength ? title.substring(0, maxTitleLength) + '...' : title;
+        ctx.fillText(displayTitle, 20, yOffset);
+        yOffset += 40;
 
-      intersections.slice(0, 3).forEach((intersect, i) => {
-        const name = intersect.object.name || (intersect.object as any).hotspotData?.id || 'unknown';
-        ctx.fillText(`  ${i + 1}: ${name.substring(0, 20)} dist:${intersect.distance.toFixed(1)}`, 10, yOffset);
-        yOffset += 20;
-      });
-
-      // Handle Hotspot Logic
-      const hotspotObj = intersections.find(i => (i.object as HotspotMesh).hotspotData);
-      if (hotspotObj) {
-        const object = hotspotObj.object as HotspotMesh;
-        if (object.hotspotData && onHotspotClick) {
-          onHotspotClick(object.hotspotData);
+        // Description or info
+        ctx.font = '18px Arial';
+        if (hotspot.content) {
+          const lines = hotspot.content.split('\n');
+          lines.slice(0, 6).forEach((line) => {
+            const maxLineLength = 40;
+            const displayLine = line.length > maxLineLength ? line.substring(0, maxLineLength) + '...' : line;
+            ctx.fillText(displayLine, 20, yOffset);
+            yOffset += 30;
+          });
+        } else if (hotspot.type === 'LINK_SCENE') {
+          ctx.fillText('→ Click to navigate', 20, yOffset);
+          yOffset += 30;
+        } else if (hotspot.type === 'INFO') {
+          ctx.fillText('ℹ Information point', 20, yOffset);
+          yOffset += 30;
         }
+
+        // Position text mesh near the hotspot
+        textMesh.position.copy(object.position).multiplyScalar(0.95);
+        textMesh.lookAt(0, 0, 0);
+        textMesh.visible = true;
+
+        // Trigger hotspot click callback
+        if (onHotspotClick) {
+          onHotspotClick(hotspot);
+        }
+
+        textureCanvas.needsUpdate = true;
+        return;
       }
-    } else {
-      textMesh.visible = false;
     }
 
-    // 3. Display Scene Hotspots
-    yOffset += 10;
-    const sceneHotspots = currentHotspotsRef.current.filter((h) => h.imageId === currentSceneIdRef.current);
-    ctx.font = 'bold 20px Arial';
-    ctx.fillText(`Scene Hotspots (${sceneHotspots.length}):`, 10, yOffset);
-    yOffset += 25;
-
-    ctx.font = '14px Arial';
-    sceneHotspots.slice(0, 5).forEach((h, i) => {
-      ctx.fillText(`${i + 1}: ${h.title || h.id.substring(0, 8)} (P:${h.pitch.toFixed(2)}, Y:${h.yaw.toFixed(2)})`, 10, yOffset);
-      yOffset += 18;
-    });
-
-    textureCanvas.needsUpdate = true;
+    // No hotspot clicked - hide info
+    textMesh.visible = false;
   }
 
 
@@ -179,10 +171,10 @@ console.log('Select Start - Canvas and context found, updating debug info');
       const camera = new THREE.PerspectiveCamera(
         75,
         window.innerWidth / window.innerHeight,
-        0.1,
+        0.5,  // Increased near plane from 0.1 to 0.5 to avoid clipping
         1000
       );
-      camera.position.set(0, 0, 0);
+      camera.position.set(0, 0, 0);  // Center of panorama sphere
       cameraRef.current = camera;
 
       // Renderer setup
@@ -276,28 +268,8 @@ console.log('Select Start - Canvas and context found, updating debug info');
       textMesh.visible = false; // Start hidden, show on select
       scene.add(textMesh);
 
-      // 3D Exit VR Button
-      const exitCanvas = document.createElement('canvas');
-      exitCanvas.width = 256;
-      exitCanvas.height = 128;
-      const exitCtx = exitCanvas.getContext('2d')!;
-      exitCtx.fillStyle = '#ff0000';
-      exitCtx.fillRect(0, 0, 256, 128);
-      exitCtx.fillStyle = '#ffffff';
-      exitCtx.font = 'bold 40px Arial';
-      exitCtx.textAlign = 'center';
-      exitCtx.textBaseline = 'middle';
-      exitCtx.fillText('EXIT VR', 128, 64);
-
-      const exitTexture = new THREE.CanvasTexture(exitCanvas);
-      const exitMesh = new THREE.Mesh(
-        new THREE.PlaneGeometry(0.3, 0.15),
-        new THREE.MeshBasicMaterial({ map: exitTexture, side: THREE.DoubleSide })
-      );
-      exitMesh.position.set(0, 1.8, -2); // Positioned above and in front
-      exitMesh.name = 'exitButton';
-      scene.add(exitMesh);
-      exitMeshRef.current = exitMesh;
+      // Note: 3D Exit VR Button removed - use HTML DOM button instead (line 540)
+      // Keeping exitMeshRef for compatibility but not creating the mesh
 
       hotspotGroupRef.current = hotspotGroup;
 
@@ -386,9 +358,12 @@ console.log('Select Start - Canvas and context found, updating debug info');
         const phi = (Math.PI / 2) - hotspot.pitch;
         const theta = hotspot.yaw;
 
-        const x = 200 * Math.sin(phi) * Math.cos(theta);
-        const y = 200 * Math.cos(phi);
-        const z = 200 * Math.sin(phi) * Math.sin(theta);
+        // Position hotspots at radius 380 (closer to camera but on panorama sphere surface)
+        // Sphere is at radius 500, so 380 places hotspots proportionally on the visible surface
+        const radius = 380;
+        const x = radius * Math.sin(phi) * Math.cos(theta);
+        const y = radius * Math.cos(phi);
+        const z = radius * Math.sin(phi) * Math.sin(theta);
 
         // Create hotspot with icon texture
         const iconName = hotspot.iconName || (hotspot.type === 'LINK_SCENE' ? 'MapPin' : 'info');
@@ -406,7 +381,8 @@ console.log('Select Start - Canvas and context found, updating debug info');
         hotspotsRef.current.push(hotspotMesh);
 
         // Add glow halo effect around hotspot
-        const haloGeometry = new THREE.PlaneGeometry(55, 55);
+        // Reduced from 55x55 to 28x28 to match hotspot size reduction (40→20)
+        const haloGeometry = new THREE.PlaneGeometry(28, 28);
         const haloMaterial = createHotspotHaloMaterial();
         const halo = new THREE.Mesh(haloGeometry, haloMaterial);
 

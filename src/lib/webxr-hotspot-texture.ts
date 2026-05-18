@@ -102,7 +102,8 @@ export function createHotspotGeometry(iconName: string): {
   material: THREE.Material;
 } {
   // Use a plane instead of sphere for better icon visibility
-  const geometry = new THREE.PlaneGeometry(40, 40);
+  // Reduced from 40x40 to 20x20 for proper VR scale
+  const geometry = new THREE.PlaneGeometry(20, 20);
 
   const texture = createHotspotIconTexture(iconName);
 
