@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
-import { VRButton } from 'three/addons/webxr/VRButton.js';
+import { XRButton } from 'three/addons/webxr/XRButton.js';
 import { XRControllerModelFactory } from 'three/addons/webxr/XRControllerModelFactory.js';
 
 
@@ -132,7 +132,7 @@ export const WebXRViewer: React.FC<WebXRViewerProps> = ({
         // Position text mesh near the hotspot
         textMesh.position.copy(object.position).multiplyScalar(0.95);
         textMesh.lookAt(0, 0, 0);
-        textMesh.visible = true;
+        textMesh.visible = false;
 
         // Trigger hotspot click callback
         if (onHotspotClick) {
@@ -187,7 +187,7 @@ export const WebXRViewer: React.FC<WebXRViewerProps> = ({
       renderer.xr.setReferenceSpaceType('local');
       containerRef.current.appendChild(renderer.domElement);
       rendererRef.current = renderer;
-      const xrButton = VRButton .createButton(renderer, {
+      const xrButton = XRButton .createButton(renderer, {
         'optionalFeatures': ['depth-sensing'],
         'depthSensing': { 'usagePreference': ['gpu-optimized'], 'dataFormatPreference': [] }
       });
