@@ -356,7 +356,7 @@ export const WebXRViewer: React.FC<WebXRViewerProps> = ({
       try {
         // Convert spherical coordinates to 3D position
         const phi = (Math.PI / 2) - hotspot.pitch;
-        const theta = hotspot.yaw;
+        const theta = -hotspot.yaw;  // Inverted to match Marzipano coordinates (sphere is flipped on X axis)
 
         // Position hotspots at radius 380 (closer to camera but on panorama sphere surface)
         // Sphere is at radius 500, so 380 places hotspots proportionally on the visible surface
