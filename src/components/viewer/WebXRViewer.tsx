@@ -355,14 +355,15 @@ export const WebXRViewer: React.FC<WebXRViewerProps> = ({
     sceneHotspots.forEach((hotspot) => {
       try {
         // Convert spherical coordinates to 3D position
-        const phi = (Math.PI / 2) - hotspot.pitch;
+        // CORRECTED: Using phi = (π/2) + pitch for proper Marzipano alignment
+        const phi = (Math.PI / 2) + hotspot.pitch;
         const theta = -hotspot.yaw;
 
         // Position hotspots at radius 380 (closer to camera but on panorama sphere surface)
         // Sphere is at radius 500, so 380 places hotspots proportionally on the visible surface
-        const radius = 125;
+        const radius = 380;
         const x = radius * Math.sin(phi) * Math.cos(theta);
-        const y = Math.cos(phi);
+        const y = radius * Math.cos(phi);
         const z = radius * Math.sin(phi) * Math.sin(theta);
 
         // Create hotspot with icon texture
