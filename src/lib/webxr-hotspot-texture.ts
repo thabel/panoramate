@@ -6,10 +6,10 @@ import { getHotspotIconSvg } from './hotspotIconsSvg';
  * Used for rendering hotspot icons in WebXR viewer
  */
 export function createHotspotIconTexture(iconName: string): THREE.Texture {
-  // Create canvas
+  // Create canvas - increased from 256 to 512 for better clarity in VR
   const canvas = document.createElement('canvas');
-  canvas.width = 256;
-  canvas.height = 256;
+  canvas.width = 512;
+  canvas.height = 512;
 
   const ctx = canvas.getContext('2d');
   if (!ctx) {
@@ -18,17 +18,17 @@ export function createHotspotIconTexture(iconName: string): THREE.Texture {
   }
 
   try {
-    // Draw background circle (dark gray)
+    // Draw background circle (dark gray) - scaled for 512x512
     ctx.fillStyle = '#3b3b3b';
     ctx.beginPath();
-    ctx.arc(128, 128, 128, 0, Math.PI * 2);
+    ctx.arc(256, 256, 256, 0, Math.PI * 2);
     ctx.fill();
 
-    // Draw outer glow circle
+    // Draw outer glow circle - scaled for 512x512
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 4;
     ctx.beginPath();
-    ctx.arc(128, 128, 128, 0, Math.PI * 2);
+    ctx.arc(256, 256, 256, 0, Math.PI * 2);
     ctx.stroke();
 
     // Get SVG from the hotspot icon function
@@ -51,9 +51,9 @@ export function createHotspotIconTexture(iconName: string): THREE.Texture {
     const img = new Image();
     img.onload = () => {
       // Draw the SVG icon centered on canvas (scaled down a bit)
-      const iconSize = 140; // Size of the icon
-      const x = (256 - iconSize) / 2;
-      const y = (256 - iconSize) / 2;
+      const iconSize = 280; // Size of the icon - scaled for 512x512
+      const x = (512 - iconSize) / 2;
+      const y = (512 - iconSize) / 2;
 
       ctx.drawImage(img, x, y, iconSize, iconSize);
       
