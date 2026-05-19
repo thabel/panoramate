@@ -12,22 +12,6 @@ import { X } from 'lucide-react';
 
 import { createHotspotGeometry, createHotspotHaloMaterial } from '@/lib/webxr-hotspot-texture';
 
-// ========================================
-// TEST MODE: Coordinate Formula Testing
-// ========================================
-// INSTRUCTIONS: Change FORMULA_TEST to test different coordinate conversions
-// Current options: 'ORIGINAL', 'FORMULA_A', 'FORMULA_B', 'FORMULA_C'
-// Each formula will display hotspots with different colors for easy identification
-const FORMULA_TEST = 'ORIGINAL' as const;
-
-// Color mapping for each formula (for easy visual identification)
-const FORMULA_COLORS: Record<string, string> = {
-  ORIGINAL: '#FFFF00',  // Yellow - Original formula
-  FORMULA_A: '#FF0000', // Red - theta = yaw + π
-  FORMULA_B: '#00FF00', // Green - theta = yaw
-  FORMULA_C: '#0000FF', // Blue - phi = (π/2) + pitch
-};
-
 interface WebXRViewerProps {
   scenes: TourImage[];
   hotspots?: HotspotType[];
@@ -70,51 +54,6 @@ export const WebXRViewer: React.FC<WebXRViewerProps> = ({
     currentHotspotsRef.current = hotspots;
     currentSceneIdRef.current = currentSceneId;
   }, [hotspots, currentSceneId]);
-
-  // ========================================
-  // FORMULA TEST FUNCTION
-  // ========================================
-  // This function applies the selected coordinate formula
-  const calculateHotspotPosition = (hotspot: HotspotType, radius: number): { x: number; y: number; z: number; phi: number; theta: number } => {
-    let phi: number;
-    let theta: number;
-
-    switch (FORMULA_TEST as string) {
-      // ORIGINAL: Current implementation (theta = -yaw)
-      case 'ORIGINAL':
-        phi = (Math.PI / 2) - hotspot.pitch;
-        theta = -hotspot.yaw;
-        break;
-
-      // FORMULA_A: theta = yaw + π (inversion for flipped sphere)
-      case 'FORMULA_A':
-        phi = (Math.PI / 2) - hotspot.pitch;
-        theta = hotspot.yaw + Math.PI;
-        break;
-
-      // FORMULA_B: theta = yaw (no inversion)
-      case 'FORMULA_B':
-        phi = (Math.PI / 2) - hotspot.pitch;
-        theta = hotspot.yaw;
-        break;
-
-      // FORMULA_C: phi = (π/2) + pitch (different phi calculation)
-      case 'FORMULA_C':
-        phi = (Math.PI / 2) + hotspot.pitch;
-        theta = -hotspot.yaw;
-        break;
-
-      default:
-        phi = (Math.PI / 2) - hotspot.pitch;
-        theta = -hotspot.yaw;
-    }
-
-    const x = radius * Math.sin(phi) * Math.cos(theta);
-    const y = radius * Math.cos(phi);
-    const z = radius * Math.sin(phi) * Math.sin(theta);
-
-    return { x, y, z, phi, theta };
-  };
 
   // Debug canvas refs
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -413,17 +352,19 @@ export const WebXRViewer: React.FC<WebXRViewerProps> = ({
     // Add hotspots for current scene
     const sceneHotspots = hotspots.filter((h) => h.imageId === currentSceneId);
 
-    // Log test mode info
-    logger.info(
-      { formulaTest: FORMULA_TEST, hotspotCount: sceneHotspots.length },
-      '[WebXR] TEST MODE: Using formula ' + FORMULA_TEST
-    );
-
     sceneHotspots.forEach((hotspot) => {
       try {
-        // Use the formula test function to calculate position
+        // Convert spherical coordinates to 3D position
+        // Using FORMULA_C (corrected coordinate system)
+        const phi = (Math.PI / 2) + hotspot.pitch;
+        const theta = -hotspot.yaw;
+
+        // Position hotspots at radius 380 (closer to camera but on panorama sphere surface)
+        // Sphere is at radius 500, so 380 places hotspots proportionally on the visible surface
         const radius = 380;
-        const { x, y, z, phi, theta } = calculateHotspotPosition(hotspot, radius);
+        const x = radius * Math.sin(phi) * Math.cos(theta);
+        const y = radius * Math.cos(phi);
+        const z = radius * Math.sin(phi) * Math.sin(theta);
 
         // Create hotspot with icon texture
         const iconName = hotspot.iconName || (hotspot.type === 'LINK_SCENE' ? 'MapPin' : 'info');
@@ -436,22 +377,6 @@ export const WebXRViewer: React.FC<WebXRViewerProps> = ({
 
         // Make the hotspot face the camera (billboard effect)
         hotspotMesh.lookAt(0, 0, 0);
-
-        // ========================================
-        // TEST MODE: Color the material based on formula
-        // ========================================
-        const testColor = FORMULA_COLORS[FORMULA_TEST];
-        if (material instanceof THREE.MeshBasicMaterial) {
-          // Create a new material with the test color tint
-          const testMaterial = new THREE.MeshBasicMaterial({
-            map: material.map,
-            transparent: true,
-            side: THREE.DoubleSide,
-            alphaTest: 0.1,
-            color: new THREE.Color(testColor),
-          });
-          hotspotMesh.material = testMaterial;
-        }
 
         hotspotGroupRef.current?.add(hotspotMesh);
         hotspotsRef.current.push(hotspotMesh);
@@ -466,19 +391,9 @@ export const WebXRViewer: React.FC<WebXRViewerProps> = ({
         halo.lookAt(0, 0, 0);
         hotspotGroupRef.current?.add(halo);
 
-        // ========================================
-        // TEST MODE: Log coordinates for comparison
-        // ========================================
         logger.debug(
-          {
-            hotspotId: hotspot.id,
-            formula: FORMULA_TEST,
-            input: { yaw: hotspot.yaw.toFixed(4), pitch: hotspot.pitch.toFixed(4) },
-            output: { x: x.toFixed(2), y: y.toFixed(2), z: z.toFixed(2) },
-            angles: { phi: phi.toFixed(4), theta: theta.toFixed(4) },
-            color: testColor,
-          },
-          '[WebXR] Hotspot position - TEST MODE'
+          { hotspotId: hotspot.id, iconName },
+          '[WebXR] Hotspot created with icon'
         );
       } catch (err) {
         logger.error(
@@ -488,10 +403,7 @@ export const WebXRViewer: React.FC<WebXRViewerProps> = ({
       }
     });
 
-    logger.debug(
-      { count: sceneHotspots.length, formula: FORMULA_TEST },
-      '[WebXR] Hotspots updated'
-    );
+    logger.debug({ count: sceneHotspots.length }, '[WebXR] Hotspots updated');
   };
 
 
