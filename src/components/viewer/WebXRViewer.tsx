@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
-import { VRButton } from 'three/addons/webxr/VRButton.js';
+import { XRButton } from 'three/addons/webxr/XRButton.js';
 import { XRControllerModelFactory } from 'three/addons/webxr/XRControllerModelFactory.js';
 
 
@@ -132,7 +132,7 @@ export const WebXRViewer: React.FC<WebXRViewerProps> = ({
         // Position text mesh near the hotspot
         textMesh.position.copy(object.position).multiplyScalar(0.95);
         textMesh.lookAt(0, 0, 0);
-        textMesh.visible = true;
+        textMesh.visible = false;
 
         // Trigger hotspot click callback
         if (onHotspotClick) {
@@ -187,7 +187,7 @@ export const WebXRViewer: React.FC<WebXRViewerProps> = ({
       renderer.xr.setReferenceSpaceType('local');
       containerRef.current.appendChild(renderer.domElement);
       rendererRef.current = renderer;
-      const xrButton = VRButton .createButton(renderer, {
+      const xrButton = XRButton .createButton(renderer, {
         'optionalFeatures': ['depth-sensing'],
         'depthSensing': { 'usagePreference': ['gpu-optimized'], 'dataFormatPreference': [] }
       });
@@ -356,13 +356,13 @@ export const WebXRViewer: React.FC<WebXRViewerProps> = ({
       try {
         // Convert spherical coordinates to 3D position
         const phi = (Math.PI / 2) - hotspot.pitch;
-        const theta = -hotspot.yaw;  // Inverted to match Marzipano coordinates (sphere is flipped on X axis)
+        const theta = -hotspot.yaw;
 
         // Position hotspots at radius 380 (closer to camera but on panorama sphere surface)
         // Sphere is at radius 500, so 380 places hotspots proportionally on the visible surface
-        const radius = 380;
+        const radius = 125;
         const x = radius * Math.sin(phi) * Math.cos(theta);
-        const y = radius * Math.cos(phi);
+        const y = Math.cos(phi);
         const z = radius * Math.sin(phi) * Math.sin(theta);
 
         // Create hotspot with icon texture
